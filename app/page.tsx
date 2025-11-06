@@ -1,9 +1,18 @@
+'use client'
+
 import Link from 'next/link'
+import WalletButton from './components/WalletButton'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export default function HomePage() {
+  const { publicKey } = useWallet()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-black">
       <div className="container mx-auto px-6 py-20">
+        <div className="flex justify-end mb-8">
+          <WalletButton />
+        </div>
         <div className="text-center">
           <h1 className="text-6xl font-bold text-white mb-4">
             ParallaxPay

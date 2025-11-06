@@ -1,12 +1,30 @@
 'use client'
 
 import { useState } from 'react'
+import { useWallet, useConnection } from '@solana/wallet-adapter-react'
+import WalletButton from '../components/WalletButton'
+import {
+  Transaction,
+  PublicKey,
+  SystemProgram,
+  LAMPORTS_PER_SOL
+} from '@solana/web3.js'
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID
+} from '@solana/spl-token'
 
 export default function TestPaymentPage() {
+  const wallet = useWallet()
+  const { publicKey, signTransaction, sendTransaction, signMessage } = wallet
+  const { connection } = useConnection()
   const [tier, setTier] = useState<'basic' | 'standard' | 'premium'>('basic')
   const [response, setResponse] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [paymentInfo, setPaymentInfo] = useState<any>(null)
 
   const prices = {
     basic: '$0.01',
@@ -15,31 +33,45 @@ export default function TestPaymentPage() {
   }
 
   const handlePayment = async () => {
+    if (!publicKey) {
+      setError('Please connect your wallet first!')
+      return
+    }
+
+    if (!signMessage) {
+      setError('Your wallet does not support message signing. Please use Phantom or Solflare wallet.')
+      return
+    }
+
     setLoading(true)
     setError(null)
     setResponse(null)
+    setPaymentInfo(null)
 
     try {
-      // First request will return 402 Payment Required
-      const res = await fetch(`/api/content/${tier}`)
-      
-      if (res.status === 402) {
-        const paymentData = await res.json()
-        console.log('Payment required:', paymentData)
-        
-        // Show payment requirements
-        setError(`Payment Required: ${prices[tier]} USDC on Solana Devnet`)
-        
-        // In a real app, you would handle the payment here
-        // For testing, the browser or wallet extension should handle it
-      } else if (res.ok) {
-        const data = await res.json()
-        setResponse(data)
-      } else {
-        throw new Error(`Request failed: ${res.statusText}`)
-      }
+      // Import the payment handler dynamically
+      const { fetchWithPayment } = await import('../lib/x402-payment')
+
+      // Use the x402 payment handler - it will automatically handle 402 responses
+      const data = await fetchWithPayment(
+        `/api/content/${tier}`,
+        wallet,
+        { method: 'GET' }
+      )
+
+      setResponse(data)
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+
+      // Check if it's a 402 payment required error
+      if (errorMessage.includes('402') || errorMessage.includes('Payment')) {
+        setError(`Payment Required: ${prices[tier]} USDC on Solana Devnet. ${errorMessage}`)
+      } else {
+        setError(errorMessage)
+      }
+
+      console.error('Payment error:', err)
     } finally {
       setLoading(false)
     }
@@ -48,8 +80,18 @@ export default function TestPaymentPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">x402 Payment Test - Solana Devnet</h1>
-        
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">x402 Payment Test - Solana Devnet</h1>
+          <WalletButton />
+        </div>
+
+        {!publicKey && (
+          <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500 rounded-lg">
+            <h3 className="font-bold mb-2">⚠️ Wallet Not Connected</h3>
+            <p>Please connect your Solana wallet (Phantom, Solflare, etc.) to test x402 payments.</p>
+          </div>
+        )}
+
         <div className="bg-gray-800 rounded-lg p-6 mb-6">
           <h2 className="text-2xl mb-4">Select Tier</h2>
           <div className="grid grid-cols-3 gap-4">

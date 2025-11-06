@@ -13,12 +13,33 @@ A Next.js application that implements the **x402 payment protocol** for instant,
 - **Next.js 15**: Modern React framework with App Router
 - **TypeScript**: Full type safety
 - **Custom Express Server**: x402 middleware for API routes
+- **Wallet Integration**: Full Solana wallet support (Phantom, Solflare, etc.)
+- **Client-Side Payments**: Automatic x402 payment handling with wallet signing
+
+## 🎮 Quick Start for Users
+
+Want to test x402 payments? Here's the fastest way:
+
+1. **Install Phantom Wallet**: [phantom.app](https://phantom.app)
+2. **Switch to Devnet**: Settings → Change Network → Devnet
+3. **Get Devnet USDC**: Use [Circle's faucet](https://faucet.circle.com)
+4. **Visit the app**: [http://localhost:3000](http://localhost:3000) (after running `npm run dev`)
+5. **Connect Wallet**: Click "Select Wallet" → Choose Phantom
+6. **Test Payment**: Go to `/test-payment` and try the Basic tier ($0.01)
+
+For detailed wallet setup instructions, see [WALLET_SETUP.md](./WALLET_SETUP.md).
 
 ## 📋 Prerequisites
 
+**For Developers (Running the Server):**
 - Node.js 18+ and npm
 - A Solana wallet address (for receiving payments)
 - For mainnet: [Coinbase Developer Platform](https://cdp.coinbase.com) account and API keys
+
+**For Users (Making Payments):**
+- Solana wallet (Phantom or Solflare recommended)
+- Devnet SOL (for transaction fees - get from [faucet.solana.com](https://faucet.solana.com))
+- Devnet USDC (for payments - get from [faucet.circle.com](https://faucet.circle.com))
 
 ## 🛠️ Installation
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { WalletContextProvider } from './components/WalletProvider'
 
 export const metadata: Metadata = {
   title: 'ParallaxPay - AI Micropayments on Solana',
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <WalletContextProvider>
+          {children}
+        </WalletContextProvider>
+      </body>
     </html>
   )
 }
