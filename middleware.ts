@@ -1,5 +1,9 @@
 import { paymentMiddleware, Resource, Network } from 'x402-next'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+// Development mode - bypass payments for local testing
+// Set NEXT_PUBLIC_DEV_MODE=true in .env.local to enable
+const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
 
 // Your Solana wallet address that receives payments
 const address = '9qzmG8vPymc2CAMchZgq26qiUFq4pEfTx6HZfpMhh51y' as any // Solana address (base58 format)
@@ -58,6 +62,13 @@ const x402PaymentMiddleware = paymentMiddleware(
 )
 
 export const middleware = (req: NextRequest) => {
+  // In dev mode, bypass x402 payments for easy testing
+  if (DEV_MODE) {
+    console.log(`🔓 [DEV MODE] Bypassing x402 payment for: ${req.nextUrl.pathname}`)
+    return NextResponse.next()
+  }
+
+  // Production mode - enforce x402 payments
   const delegate = x402PaymentMiddleware as unknown as (
     request: NextRequest,
   ) => ReturnType<typeof x402PaymentMiddleware>
