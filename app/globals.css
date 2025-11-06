@@ -1,26 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Cyberpunk Color System */
+  --color-background-primary: #0A0A0F;
+  --color-background-secondary: #12121A;
+  --color-background-tertiary: #1A1A24;
+
+  --color-accent-primary: #9945FF;
+  --color-accent-secondary: #14F195;
+  --color-accent-tertiary: #00D4FF;
+
+  --color-status-success: #14F195;
+  --color-status-warning: #FFB700;
+  --color-status-error: #FF3366;
+  --color-status-info: #00D4FF;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #8B8B9F;
+  --color-text-muted: #4A4A5E;
+
+  --color-border: #2A2A3A;
+  --color-border-focus: #9945FF;
+  --color-border-hover: #14F195;
+
+  /* Typography */
+  --font-heading: 'Inter Tight', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-data: 'Roboto Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  @apply border-border;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-background-primary text-text-primary antialiased;
+  font-family: var(--font-sans);
+  background-image: radial-gradient(at 40% 20%, rgba(153, 69, 255, 0.15) 0, transparent 50%),
+                    radial-gradient(at 80% 0%, rgba(20, 241, 149, 0.1) 0, transparent 50%),
+                    radial-gradient(at 0% 50%, rgba(0, 212, 255, 0.1) 0, transparent 50%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+/* Glass morphism */
+.glass {
+  background: rgba(18, 18, 26, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(42, 42, 58, 0.5);
+}
+
+.glass-hover {
+  background: rgba(18, 18, 26, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(42, 42, 58, 0.5);
+  transition: all 0.3s ease;
+}
+
+.glass-hover:hover {
+  background: rgba(18, 18, 26, 0.6);
+  border-color: rgba(153, 69, 255, 0.5);
+}
+
+/* Neon effects */
+.neon-border {
+  border: 1px solid var(--color-accent-primary);
+  box-shadow: 0 0 20px rgba(153, 69, 255, 0.4);
+}
+
+.neon-text {
+  text-shadow: 0 0 10px var(--color-accent-primary),
+               0 0 20px var(--color-accent-primary),
+               0 0 30px var(--color-accent-primary);
+}
+
+/* Grid background */
+.grid-bg {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background-tertiary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(153, 69, 255, 0.5);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(153, 69, 255, 0.7);
+}
+
+/* Text gradient */
+.text-gradient {
+  background: linear-gradient(to right, var(--color-accent-primary), var(--color-accent-secondary), var(--color-accent-tertiary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animations */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px rgba(153, 69, 255, 0.5), 0 0 10px rgba(153, 69, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(153, 69, 255, 0.8), 0 0 20px rgba(153, 69, 255, 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(153, 69, 255, 0.5);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 20px rgba(153, 69, 255, 0.8);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
