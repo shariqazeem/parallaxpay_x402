@@ -1,7 +1,15 @@
 /**
  * ParallaxPay Agent SDK
  * Build autonomous trading bots that trade AI compute like stocks
+ *
+ * Now with REAL Gradient Parallax integration!
  */
+
+import {
+  createParallaxClient,
+  isParallaxRunning,
+  type ParallaxClient,
+} from './parallax-client'
 
 export interface Provider {
   id: string
@@ -50,6 +58,9 @@ export interface AgentConfig {
   preferredRegions?: string[]
   onTrade?: (result: TradeResult) => void
   onError?: (error: Error) => void
+  // NEW: Enable real Parallax integration
+  useRealParallax?: boolean
+  parallaxSchedulerUrl?: string // Default: http://localhost:3001
 }
 
 /**
@@ -61,9 +72,17 @@ export abstract class Agent {
   protected totalTrades: number = 0
   protected totalProfit: number = 0
   protected lastTrade: TradeResult | null = null
+  protected parallaxClient: ParallaxClient | null = null
 
   constructor(config: AgentConfig) {
     this.config = config
+
+    // Initialize Parallax client if enabled
+    if (config.useRealParallax) {
+      this.parallaxClient = createParallaxClient(
+        config.parallaxSchedulerUrl || 'http://localhost:3001'
+      )
+    }
   }
 
   /**
@@ -138,11 +157,6 @@ export abstract class Agent {
   protected async executeTrade(
     request: TradeRequest
   ): Promise<TradeResult> {
-    // In production, this would:
-    // 1. Call Gradient Parallax API
-    // 2. Process payment via x402
-    // 3. Return inference results
-
     const provider = (await this.fetchProviders()).find(
       (p) => p.id === request.providerId
     )
@@ -151,6 +165,55 @@ export abstract class Agent {
       throw new Error(`Provider ${request.providerId} not found`)
     }
 
+    const startTime = Date.now()
+
+    // REAL PARALLAX INFERENCE if enabled
+    if (this.config.useRealParallax && this.parallaxClient) {
+      try {
+        // Check if Parallax is running
+        const isRunning = await this.parallaxClient.healthCheck()
+        if (!isRunning) {
+          throw new Error('Parallax scheduler is not running. Start it with: parallax run')
+        }
+
+        // Call REAL Parallax API for inference
+        const response = await this.parallaxClient.inference({
+          messages: [
+            {
+              role: 'user',
+              content: 'Generate a short response to test inference.',
+            },
+          ],
+          max_tokens: request.tokens,
+        })
+
+        const latency = Date.now() - startTime
+        const actualTokens = response.usage?.total_tokens || request.tokens
+        const cost = this.parallaxClient.estimateCost(actualTokens)
+
+        const result: TradeResult = {
+          success: true,
+          transactionId: response.id || `tx_${Date.now()}`,
+          provider: `Parallax-${response.model}`,
+          model: response.model,
+          tokens: actualTokens,
+          cost,
+          latency,
+          timestamp: Date.now(),
+        }
+
+        this.totalTrades++
+        this.totalProfit += cost // In real scenario, profit would be calculated differently
+        this.lastTrade = result
+
+        return result
+      } catch (error) {
+        console.error(`[${this.config.name}] Parallax error:`, error)
+        throw error
+      }
+    }
+
+    // DEMO MODE (mock data)
     const cost = (request.tokens / 1000) * provider.price
     const latency = provider.latency + Math.floor(Math.random() * 20)
 
