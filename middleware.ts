@@ -2,7 +2,7 @@ import { paymentMiddleware, Resource, Network } from 'x402-next'
 import { NextRequest } from 'next/server'
 
 // Your Solana wallet address that receives payments
-const address = '9qzmG8vPymc2CAMchZgq26qiUFq4pEfTx6HZfpMhh51y'
+const address = '9qzmG8vPymc2CAMchZgq26qiUFq4pEfTx6HZfpMhh51y' as any // Solana address (base58 format)
 const network = 'solana-devnet' as Network
 
 // Use the testnet facilitator for development
@@ -65,5 +65,5 @@ export const middleware = (req: NextRequest) => {
 }
 
 export const config = {
-  matcher: ['/content/:path*'],
+  matcher: ['/content/:path*', '/test', '/test-payment'],
 }
