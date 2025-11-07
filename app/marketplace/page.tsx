@@ -59,7 +59,7 @@ export default function MarketplacePage() {
   )
 }
 
-// Trade Panel Component
+// Buy Inference Panel Component (formerly "Trade Panel")
 function TradePanel({
   selectedProvider,
   model,
@@ -72,12 +72,13 @@ function TradePanel({
   fetchWithPayment: (url: string, options?: RequestInit) => Promise<Response>
 }) {
   const [prompt, setPrompt] = useState('')
-  const [maxTokens, setMaxTokens] = useState(100)
+  const [maxTokens, setMaxTokens] = useState(500)
   const [isExecuting, setIsExecuting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const estimatedCost = (maxTokens / 1000) * 0.0012 // $0.0012 per 1K tokens
+  const pricePerToken = 0.000001 // $0.001 per 1K tokens
+  const estimatedCost = maxTokens * pricePerToken
 
   const handleExecuteTrade = async () => {
     if (!prompt.trim()) {
@@ -86,7 +87,7 @@ function TradePanel({
     }
 
     if (!isWalletConnected) {
-      setError('Please connect your wallet to execute trades')
+      setError('Please connect your wallet to buy AI inference')
       return
     }
 
@@ -147,8 +148,8 @@ function TradePanel({
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to execute trade')
-      console.error('Trade execution error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to complete inference request')
+      console.error('Inference request error:', err)
     } finally {
       setIsExecuting(false)
     }
@@ -160,60 +161,99 @@ function TradePanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
     >
-      <h3 className="text-xl font-heading font-bold mb-4 text-white">
-        Execute Trade
-      </h3>
+      <div className="mb-4">
+        <h3 className="text-xl font-heading font-bold text-white mb-1">
+          💰 Buy AI Inference
+        </h3>
+        <p className="text-xs text-text-muted">
+          Pay per token with x402 micropayments
+        </p>
+      </div>
 
-      {!selectedProvider ? (
+      {!isWalletConnected ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">💳</div>
+          <p className="text-text-secondary text-sm mb-2">
+            Connect your wallet to buy AI inference
+          </p>
+          <p className="text-xs text-text-muted">
+            No subscriptions • Pay only for what you use
+          </p>
+        </div>
+      ) : !selectedProvider ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">👈</div>
           <p className="text-text-secondary text-sm">
-            Select a provider from the list to start trading
+            Select a provider to start
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
-              Prompt
+              Your Prompt
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter your AI inference prompt..."
+              placeholder="What do you want the AI to do? (e.g., 'Explain quantum computing')"
               className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
               rows={4}
             />
           </div>
 
-          <div>
-            <label className="text-sm text-text-secondary mb-2 block">
-              Max Tokens: {maxTokens}
-            </label>
-            <input
-              type="range"
-              min="10"
-              max="1000"
-              value={maxTokens}
-              onChange={(e) => setMaxTokens(Number(e.target.value))}
-              className="w-full"
-            />
+          {/* Token Control Slider - matching inference page style */}
+          <div className="glass-hover p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-sm font-heading font-bold text-white">
+                  Max Tokens: {maxTokens.toLocaleString()}
+                </div>
+                <div className="text-xs text-text-muted">
+                  Controls response length
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-black text-status-success">
+                  ${estimatedCost.toFixed(4)}
+                </div>
+                <div className="text-xs text-text-muted">
+                  Cost
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-xs text-text-secondary font-mono">100</span>
+              <input
+                type="range"
+                min="100"
+                max="2000"
+                step="100"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(Number(e.target.value))}
+                className="flex-1 h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-primary"
+                style={{
+                  background: `linear-gradient(to right, #9945FF 0%, #14F195 ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a 100%)`
+                }}
+              />
+              <span className="text-xs text-text-secondary font-mono">2000</span>
+            </div>
+
+            <div className="text-xs text-text-muted">
+              💡 $0.001 per 1,000 tokens
+            </div>
           </div>
 
-          <div className="glass-hover p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-text-secondary text-sm">Provider</span>
-              <span className="text-white font-mono text-sm">{selectedProvider}</span>
+          {/* Provider Info */}
+          <div className="glass-hover p-3 rounded-lg space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-text-secondary">Provider</span>
+              <span className="text-white font-mono">{selectedProvider || 'None'}</span>
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-text-secondary text-sm">Model</span>
-              <span className="text-white font-mono text-sm">{model}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-text-secondary text-sm">Est. Cost</span>
-              <span className="text-accent-secondary font-bold">
-                ${estimatedCost.toFixed(4)}
-              </span>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-text-secondary">Model</span>
+              <span className="text-white font-mono">{model}</span>
             </div>
           </div>
 
@@ -223,9 +263,9 @@ function TradePanel({
             className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isExecuting ? (
-              <span className="text-text-muted">⚡ Running Inference...</span>
+              <span className="text-text-muted">⚡ Processing Payment...</span>
             ) : (
-              <span className="text-gradient">Execute with x402</span>
+              <span className="text-gradient">Buy Inference • ${estimatedCost.toFixed(4)}</span>
             )}
           </button>
 
