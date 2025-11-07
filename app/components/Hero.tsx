@@ -69,27 +69,23 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          <Link href="/marketplace">
+          <Link href="/inference">
             <button className="glass-hover neon-border px-8 py-4 rounded-xl font-heading font-bold text-lg transition-all hover:scale-105">
-              <span className="text-gradient">Enter Marketplace</span>
+              <span className="text-gradient">🤖 Try Real AI Inference</span>
             </button>
           </Link>
 
-          <Link href="/test-payment">
+          <Link href="/marketplace">
             <button className="glass px-8 py-4 rounded-xl font-heading font-semibold text-lg border border-border-hover hover:border-accent-secondary transition-all hover:scale-105">
-              Try Demo
+              📊 View Marketplace
             </button>
           </Link>
 
-          <a
-            href="https://github.com/yourusername/parallaxpay"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <button className="glass px-8 py-4 rounded-xl font-heading font-semibold text-lg border border-border hover:border-text-secondary transition-all hover:scale-105">
-              View Code
+          <Link href="/agents">
+            <button className="glass px-8 py-4 rounded-xl font-heading font-semibold text-lg border border-border hover:border-accent-primary transition-all hover:scale-105">
+              🤖 Agent Dashboard
             </button>
-          </a>
+          </Link>
         </motion.div>
 
         {/* Stats preview */}

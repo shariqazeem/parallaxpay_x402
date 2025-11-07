@@ -60,8 +60,38 @@ function TradePanel({
 }) {
   const [prompt, setPrompt] = useState('')
   const [maxTokens, setMaxTokens] = useState(100)
+  const [isExecuting, setIsExecuting] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const estimatedCost = (maxTokens / 1000) * 0.0012 // $0.0012 per 1K tokens
+
+  const handleExecuteTrade = async () => {
+    if (!prompt.trim()) {
+      setError('Please enter a prompt')
+      return
+    }
+
+    setIsExecuting(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const { createParallaxClient } = await import('@/lib/parallax-client')
+      const client = createParallaxClient('http://localhost:3001')
+
+      const response = await client.inference({
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: maxTokens,
+      })
+
+      setResult(response.choices[0].message.content)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to execute trade')
+    } finally {
+      setIsExecuting(false)
+    }
+  }
 
   return (
     <motion.div
@@ -126,12 +156,36 @@ function TradePanel({
             </div>
           </div>
 
-          <button className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105">
-            <span className="text-gradient">Execute with x402</span>
+          <button
+            onClick={handleExecuteTrade}
+            disabled={isExecuting || !prompt.trim()}
+            className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            {isExecuting ? (
+              <span className="text-text-muted">⚡ Running Inference...</span>
+            ) : (
+              <span className="text-gradient">Execute with x402</span>
+            )}
           </button>
 
+          {error && (
+            <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/30">
+              <div className="text-sm text-status-error">{error}</div>
+            </div>
+          )}
+
+          {result && (
+            <div className="p-4 rounded-lg bg-background-tertiary border border-accent-primary/30">
+              <div className="text-xs text-text-secondary mb-2">✅ Result:</div>
+              <div className="text-sm text-white whitespace-pre-wrap">{result}</div>
+            </div>
+          )}
+
           <div className="text-xs text-text-muted text-center">
-            Payment will be processed automatically via x402 on Solana
+            {isExecuting
+              ? 'Running on your local Parallax cluster...'
+              : 'Payment will be processed automatically via x402 on Solana'
+            }
           </div>
         </div>
       )}
