@@ -60,7 +60,7 @@ export class ParallaxClient {
 
   constructor(config: ParallaxConfig) {
     this.config = {
-      timeout: 30000, // 30 seconds default
+      timeout: 120000, // 120 seconds (2 minutes) - first inference is slow!
       ...config,
     }
   }
