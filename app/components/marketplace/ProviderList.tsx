@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 interface Provider {
   id: string
@@ -22,31 +22,6 @@ interface ProviderListProps {
   selectedProvider: string | null
 }
 
-// REAL PROVIDER: Your local Parallax node (running on localhost:3001)
-// In production, this would fetch from a real marketplace API
-const LOCAL_PROVIDER: Provider = {
-  id: 'local-parallax',
-  name: 'Local Parallax Node',
-  region: 'localhost:3001',
-  price: 0.00112,
-  latency: 45,
-  uptime: 100.0,
-  reputation: 100.0,
-  totalRequests: 0,
-  online: true,
-  models: ['Qwen/Qwen3-0.6B'], // Your actual model
-}
-
-// DEMO PROVIDERS (for UI showcase only - not connected)
-// These would be real GPU providers in production
-const DEMO_PROVIDERS: Provider[] = [
-  { id: 'demo-1', name: '[DEMO] ParallaxNode-Alpha', region: 'US-East', price: 0.00118, latency: 42, uptime: 99.97, reputation: 98.5, totalRequests: 847123, online: false, models: ['Qwen-2.5-72B', 'Llama-3.3-70B'] },
-  { id: 'demo-2', name: '[DEMO] ParallaxNode-Beta', region: 'EU-West', price: 0.00122, latency: 38, uptime: 99.94, reputation: 97.2, totalRequests: 723456, online: false, models: ['Llama-3.3-70B', 'DeepSeek-V3'] },
-  { id: 'demo-3', name: '[DEMO] ParallaxNode-Gamma', region: 'Asia-SE', price: 0.00115, latency: 51, uptime: 99.89, reputation: 96.8, totalRequests: 614789, online: false, models: ['Qwen-2.5-72B', 'Llama-3.1-8B'] },
-]
-
-const ALL_PROVIDERS = [LOCAL_PROVIDER, ...DEMO_PROVIDERS]
-
 export default function ProviderList({
   model,
   onSelectProvider,
@@ -54,11 +29,66 @@ export default function ProviderList({
 }: ProviderListProps) {
   const [sortBy, setSortBy] = useState<'price' | 'latency' | 'reputation'>('price')
   const [filterRegion, setFilterRegion] = useState<string>('all')
+  const [providers, setProviders] = useState<Provider[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch real providers from discovery service or API
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        // Try to fetch from API endpoint (server-side provider discovery)
+        const response = await fetch('/api/providers')
+        if (response.ok) {
+          const data = await response.json()
+          setProviders(data.providers || [])
+        } else {
+          // Fallback: Use local Parallax node
+          setProviders([
+            {
+              id: 'local-parallax',
+              name: 'Local Parallax Node',
+              region: 'Local',
+              price: 0.00112,
+              latency: 45,
+              uptime: 100.0,
+              reputation: 100.0,
+              totalRequests: 0,
+              online: true,
+              models: ['Qwen-0.6B', 'Qwen-1.7B'],
+            },
+          ])
+        }
+      } catch (error) {
+        console.error('Failed to fetch providers:', error)
+        // Fallback: Use local node
+        setProviders([
+          {
+            id: 'local-parallax',
+            name: 'Local Parallax Node',
+            region: 'Local',
+            price: 0.00112,
+            latency: 45,
+            uptime: 100.0,
+            reputation: 100.0,
+            totalRequests: 0,
+            online: true,
+            models: ['Qwen-0.6B', 'Qwen-1.7B'],
+          },
+        ])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProviders()
+
+    // Refresh providers every 30 seconds
+    const interval = setInterval(fetchProviders, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const filteredAndSortedProviders = useMemo(() => {
-    // Show all providers (online and offline) to demonstrate marketplace UI
-    // In production, you might want to filter only online providers
-    let filtered = ALL_PROVIDERS
+    let filtered = providers
 
     if (filterRegion !== 'all') {
       filtered = filtered.filter((p) => p.region === filterRegion)
@@ -70,9 +100,12 @@ export default function ProviderList({
       if (sortBy === 'reputation') return b.reputation - a.reputation
       return 0
     })
-  }, [sortBy, filterRegion])
+  }, [providers, sortBy, filterRegion])
 
-  const regions = ['all', 'localhost:3001', 'US-East', 'US-West', 'US-Central', 'EU-West', 'EU-Central', 'Asia-SE', 'Asia-East']
+  const regions = useMemo(() => {
+    const uniqueRegions = ['all', ...new Set(providers.map((p) => p.region))]
+    return uniqueRegions
+  }, [providers])
 
   const onlineCount = filteredAndSortedProviders.filter(p => p.online).length
 

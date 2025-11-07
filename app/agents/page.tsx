@@ -67,7 +67,7 @@ export default function AgentDashboardPage() {
     isReal: true,
   }))
 
-  // Run an agent's task
+  // Run an agent's task with REAL x402 PAYMENT
   const runAgent = async (agentId: string) => {
     const agent = deployedAgents.find(a => a.id === agentId)
     if (!agent) return
@@ -78,33 +78,42 @@ export default function AgentDashboardPage() {
     ))
 
     try {
-      const { createParallaxClient } = await import('@/lib/parallax-client')
-      const client = createParallaxClient('http://localhost:3001')
+      // Get private key from environment
+      const privateKey = process.env.NEXT_PUBLIC_SOLANA_PRIVATE_KEY || process.env.SOLANA_PRIVATE_KEY
 
-      const response = await client.inference({
-        messages: [{ role: 'user', content: agent.prompt }],
-        max_tokens: 300,
+      if (!privateKey) {
+        throw new Error('SOLANA_PRIVATE_KEY not configured. Please set it in .env.local to enable x402 payments.')
+      }
+
+      // Import x402 payment client
+      const { createPaymentClient } = await import('@/lib/x402-payment-client')
+
+      // Create payment client with agent's wallet
+      const paymentClient = createPaymentClient({
+        privateKey,
+        network: 'solana-devnet',
+        maxPaymentAmount: 1.0,
+        enableLogging: true,
       })
 
-      // Parse response
-      let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        content = choice.message?.content || ''
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
-        }
+      console.log(`🤖 [${agent.name}] Making REAL x402 payment...`)
+
+      // Make PAID request to inference API
+      const result = await paymentClient.request('/api/inference/paid', {
+        method: 'POST',
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: agent.prompt }],
+          max_tokens: 300,
+        }),
+      })
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Payment failed')
       }
 
-      // Clean up <think> tags
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-        }
-      }
+      console.log(`✅ [${agent.name}] Payment successful!`)
+      console.log(`   TX Hash: ${result.transaction?.txHash}`)
+      console.log(`   Cost: $${result.transaction?.amount.toFixed(6)}`)
 
       // Update agent stats
       setDeployedAgents(prev => prev.map(a =>
@@ -114,26 +123,48 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: content.substring(0, 200)
+              lastResult: result.data.response?.substring(0, 200) || 'Success'
             }
           : a
       ))
 
-      // Add to trade feed
+      // Add to trade feed with REAL transaction
       const newTrade: Trade = {
-        id: `trade-${Date.now()}`,
+        id: result.transaction?.id || `trade-${Date.now()}`,
         agentName: agent.name,
-        provider: 'Local Parallax Node',
-        tokens: response.usage?.total_tokens || 0,
-        cost: 0.00112 * ((response.usage?.total_tokens || 0) / 1000),
+        provider: result.data.provider || 'Local Parallax Node',
+        tokens: result.data.tokens || 0,
+        cost: result.transaction?.amount || 0,
         timestamp: Date.now(),
-        txHash: `0x${Math.random().toString(36).substr(2, 9)}...`,
+        txHash: result.transaction?.txHash || 'pending',
         isReal: true,
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
 
+      // Store in localStorage for transaction history
+      try {
+        const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+        const transactions = JSON.parse(stored)
+        transactions.push({
+          id: newTrade.id,
+          timestamp: newTrade.timestamp,
+          type: 'agent',
+          provider: newTrade.provider,
+          tokens: newTrade.tokens,
+          cost: newTrade.cost,
+          txHash: newTrade.txHash,
+          status: 'success',
+          network: 'solana-devnet',
+        })
+        localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+      } catch (e) {
+        console.warn('Failed to store transaction:', e)
+      }
+
     } catch (err) {
       console.error('Agent execution error:', err)
+      alert(`Agent execution failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nMake sure:\n1. SOLANA_PRIVATE_KEY is set in .env.local\n2. Wallet has testnet USDC\n3. Parallax is running`)
+
       // Reset status on error
       setDeployedAgents(prev => prev.map(a =>
         a.id === agentId ? { ...a, status: 'idle' as const } : a
