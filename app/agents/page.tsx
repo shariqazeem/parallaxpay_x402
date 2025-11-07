@@ -539,34 +539,52 @@ function DeployAgentModal({
 
       const response = await client.inference({
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 200,
+        max_tokens: 300, // Increased from 200 to avoid truncation
       })
 
-      // Parse response
+      console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
+
+      // Parse response - handle multiple formats
       let content = ''
       if (response.choices && response.choices.length > 0) {
         const choice = response.choices[0] as any
+        console.log('Choice object:', JSON.stringify(choice, null, 2))
+
+        // Try standard OpenAI format
         content = choice.message?.content || ''
+        // Try Parallax format (uses "messages" plural)
         if (!content && choice.messages?.content) {
           content = choice.messages.content
         }
+        // Try text format
         if (!content && choice.text) {
           content = choice.text
         }
       }
 
-      // Clean up <think> tags
+      console.log('Content before <think> cleanup:', content)
+
+      // Clean up <think> tags if present
       if (content.includes('<think>')) {
         const thinkEnd = content.indexOf('</think>')
         if (thinkEnd !== -1) {
+          // Found closing tag - remove everything including tags
           content = content.substring(thinkEnd + 8).trim()
         } else {
+          // No closing tag (response truncated) - remove from start
           content = content.replace(/<think>[\s\S]*$/, '').trim()
         }
       }
 
+      console.log('Content after <think> cleanup:', content)
+
       if (!content) {
-        throw new Error('No response from Parallax. Make sure it\'s running on port 3001.')
+        console.error('Failed to extract content. Full response:', response)
+        throw new Error(
+          'Could not extract content from Parallax response. ' +
+          'Check browser console for details. Response structure: ' +
+          JSON.stringify(response).substring(0, 200)
+        )
       }
 
       setResult(content)
