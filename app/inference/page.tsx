@@ -24,10 +24,9 @@ export default function AIInferencePage() {
   const [error, setError] = useState<string | null>(null)
   const [parallaxStatus, setParallaxStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
-  // Token controls - users can specify how many tokens they want to pay for
+  // Token controls - users can specify how many tokens they want
   const [maxTokens, setMaxTokens] = useState(512)
-  const pricePerToken = 0.000001 // $0.001 per 1K tokens
-  const estimatedCost = maxTokens * pricePerToken
+  const fixedCost = 0.001 // Fixed $0.001 per request (x402 middleware price)
 
   // Wallet connection
   const { publicKey } = useWallet()
@@ -295,23 +294,23 @@ export default function AIInferencePage() {
           )}
         </div>
 
-        {/* Token Control & Cost Estimator */}
+        {/* Token Control & Pricing */}
         <div className="glass p-4 rounded-xl border border-border mb-4">
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-sm font-heading font-bold text-white mb-1">
-                Max Tokens: {maxTokens.toLocaleString()}
+                Response Length: {maxTokens.toLocaleString()} tokens
               </div>
               <div className="text-xs text-text-muted">
-                More tokens = longer responses, higher cost
+                Control how long the AI response will be
               </div>
             </div>
             <div className="text-right">
               <div className="text-lg font-black text-status-success">
-                ${estimatedCost.toFixed(4)}
+                $0.001
               </div>
               <div className="text-xs text-text-muted">
-                Estimated cost
+                Fixed price
               </div>
             </div>
           </div>
@@ -340,13 +339,13 @@ export default function AIInferencePage() {
           {/* Pricing Info */}
           <div className="mt-3 pt-3 border-t border-border-hover flex items-center justify-between text-xs">
             <span className="text-text-muted">
-              💡 Pricing: <span className="font-mono font-bold text-accent-secondary">$0.001</span> per 1,000 tokens
+              💡 <span className="font-mono font-bold text-accent-secondary">$0.001</span> per request (any length up to 2000 tokens)
             </span>
             <span className="text-text-muted">
-              {maxTokens >= 1500 && '🚀 High quality response'}
-              {maxTokens >= 1000 && maxTokens < 1500 && '✨ Detailed response'}
-              {maxTokens >= 500 && maxTokens < 1000 && '📝 Standard response'}
-              {maxTokens < 500 && '⚡ Quick response'}
+              {maxTokens >= 1500 && '🚀 Very long response'}
+              {maxTokens >= 1000 && maxTokens < 1500 && '✨ Long response'}
+              {maxTokens >= 500 && maxTokens < 1000 && '📝 Medium response'}
+              {maxTokens < 500 && '⚡ Short response'}
             </span>
           </div>
         </div>
@@ -373,7 +372,7 @@ export default function AIInferencePage() {
               ) : !isWalletConnected ? (
                 <span className="text-text-muted">Connect Wallet</span>
               ) : (
-                <span className="text-gradient">Pay ${estimatedCost.toFixed(4)}</span>
+                <span className="text-gradient">Pay $0.001</span>
               )}
             </button>
           </div>

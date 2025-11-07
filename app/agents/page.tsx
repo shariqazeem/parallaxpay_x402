@@ -53,8 +53,7 @@ export default function AgentDashboardPage() {
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
-  const pricePerToken = 0.000001 // $0.001 per 1K tokens
-  const estimatedCost = maxTokens * pricePerToken
+  const fixedCost = 0.001 // Fixed $0.001 per request
 
   // Wallet connection for user payments
   const { publicKey } = useWallet()
