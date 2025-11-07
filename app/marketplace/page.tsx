@@ -111,13 +111,16 @@ function TradePanel({
       if (content.includes('<think>')) {
         const thinkEnd = content.indexOf('</think>')
         if (thinkEnd !== -1) {
-          // Found closing tag - remove everything including tags
+          // Found closing tag - remove reasoning, keep answer
           content = content.substring(thinkEnd + 8).trim()
         } else {
-          // No closing tag (response truncated) - remove from start
-          content = content.replace(/<think>[\s\S]*$/, '').trim()
-          if (!content) {
-            content = '⚠️ Response truncated during AI reasoning. Try increasing max tokens to 200+.'
+          // No closing tag (response truncated) - keep the reasoning but remove tag
+          // This happens when max_tokens is too small
+          content = content.replace('<think>\n', '').replace('<think>', '').trim()
+          if (content) {
+            content = '💭 AI Reasoning (increase max tokens for full answer):\n\n' + content
+          } else {
+            content = '⚠️ Response was empty. Increase max tokens to 300+.'
           }
         }
       }

@@ -568,11 +568,14 @@ function DeployAgentModal({
       if (content.includes('<think>')) {
         const thinkEnd = content.indexOf('</think>')
         if (thinkEnd !== -1) {
-          // Found closing tag - remove everything including tags
+          // Found closing tag - remove reasoning, keep answer
           content = content.substring(thinkEnd + 8).trim()
         } else {
-          // No closing tag (response truncated) - remove from start
-          content = content.replace(/<think>[\s\S]*$/, '').trim()
+          // No closing tag (response truncated) - keep the reasoning but remove tag
+          // This happens when max_tokens is too small
+          content = content.replace('<think>\n', '').replace('<think>', '').trim()
+          // Add a note that this is reasoning
+          content = '💭 AI Reasoning:\n\n' + content
         }
       }
 

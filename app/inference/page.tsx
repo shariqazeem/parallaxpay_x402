@@ -91,13 +91,16 @@ export default function AIInferencePage() {
       if (content.includes('<think>')) {
         const thinkEnd = content.indexOf('</think>')
         if (thinkEnd !== -1) {
-          // Found closing tag - remove everything including tags
+          // Found closing tag - remove reasoning, keep answer
           content = content.substring(thinkEnd + 8).trim()
         } else {
-          // No closing tag (response truncated) - remove from start
-          content = content.replace(/<think>[\s\S]*$/, '').trim()
-          if (!content) {
-            content = '⚠️ Response truncated during AI reasoning. Try a shorter prompt or the model will provide a more complete response on retry.'
+          // No closing tag (response truncated) - keep the reasoning but remove tag
+          // This happens when the model runs out of tokens while still thinking
+          content = content.replace('<think>\n', '').replace('<think>', '').trim()
+          if (content) {
+            content = '💭 AI Reasoning (response was truncated, here\'s the thinking process):\n\n' + content
+          } else {
+            content = '⚠️ Response was empty. The model may need more tokens or a simpler prompt.'
           }
         }
       }
