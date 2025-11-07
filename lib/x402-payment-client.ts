@@ -77,62 +77,71 @@ export class X402PaymentClient {
   private async initializeWallet(privateKey: string) {
     try {
       // Import Solana web3.js (works in both browser and Node.js)
-      const { Keypair, Transaction, VersionedTransaction } = await import('@solana/web3.js')
+      const { Keypair, Transaction, VersionedTransaction, PublicKey } = await import('@solana/web3.js')
       const secretKey = base58.decode(privateKey)
       const keypair = Keypair.fromSecretKey(secretKey)
 
-      // Create a wallet client compatible with x402-fetch SVM requirements
-      // Must match Solana Wallet Standard and Wallet Adapter interface
-      this.account = {
-        // publicKey as PublicKey object (required by x402-fetch for SVM)
-        publicKey: keypair.publicKey,
+      // Create a complete Solana Wallet Adapter compatible object
+      // This matches what x402-fetch expects for SVM wallets
+      class AutoWallet {
+        publicKey: typeof PublicKey.prototype
+        connected = true
+        autoApprove = true
+        readyState = 'Installed' as const
 
-        // Wallet metadata (helps x402-fetch identify this as a valid Solana wallet)
-        connected: true,
-        autoApprove: true,
+        constructor(public keypair: typeof keypair) {
+          this.publicKey = keypair.publicKey
+        }
 
-        // signTransaction - signs a transaction (required)
-        signTransaction: async (transaction: Transaction | VersionedTransaction) => {
+        async connect() {
+          return { publicKey: this.publicKey }
+        }
+
+        async disconnect() {
+          // no-op for autonomous wallet
+        }
+
+        async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
           if (transaction instanceof VersionedTransaction) {
-            transaction.sign([keypair])
+            transaction.sign([this.keypair])
           } else {
-            transaction.partialSign(keypair)
+            transaction.partialSign(this.keypair)
           }
           return transaction
-        },
+        }
 
-        // signAllTransactions - signs multiple transactions (required)
-        signAllTransactions: async (transactions: (Transaction | VersionedTransaction)[]) => {
+        async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
           return transactions.map(tx => {
             if (tx instanceof VersionedTransaction) {
-              tx.sign([keypair])
+              tx.sign([this.keypair])
             } else {
-              tx.partialSign(keypair)
+              tx.partialSign(this.keypair)
             }
             return tx
           })
-        },
+        }
 
-        // signMessage - signs arbitrary messages (for x402 payment proofs)
-        signMessage: async (message: Uint8Array) => {
+        async signMessage(message: Uint8Array): Promise<Uint8Array> {
           const nacl = await import('tweetnacl')
-          return nacl.sign.detached(message, keypair.secretKey)
-        },
+          return nacl.sign.detached(message, this.keypair.secretKey)
+        }
 
-        // signAndSendTransaction - alternative method some wallets use
-        signAndSendTransaction: async (transaction: Transaction | VersionedTransaction) => {
+        async signAndSendTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
           if (transaction instanceof VersionedTransaction) {
-            transaction.sign([keypair])
+            transaction.sign([this.keypair])
           } else {
-            transaction.partialSign(keypair)
+            transaction.partialSign(this.keypair)
           }
           return transaction
-        },
+        }
       }
+
+      this.account = new AutoWallet(keypair)
 
       if (this.config.enableLogging) {
         console.log(`🔑 Wallet initialized: ${keypair.publicKey.toBase58()}`)
         console.log(`   Type: Solana (SVM) autonomous agent wallet`)
+        console.log(`   Ready state: ${this.account.readyState}`)
       }
 
       // Initialize x402-fetch wrapper
