@@ -61,13 +61,34 @@ export default function AIInferencePage() {
         temperature: 0.7,
       })
 
+      console.log('Parallax response:', response)
+
       const latency = Date.now() - startTime
       const tokens = response.usage?.total_tokens || 0
       const cost = client.estimateCost(tokens)
 
+      // Handle response safely
+      let content = ''
+      if (response.choices && response.choices.length > 0) {
+        content = response.choices[0].message?.content || ''
+        // Fallback for non-standard response formats
+        if (!content && (response.choices[0] as any).text) {
+          content = (response.choices[0] as any).text
+        }
+      } else if ((response as any).content) {
+        // Some APIs return content directly
+        content = (response as any).content
+      } else if ((response as any).text) {
+        content = (response as any).text
+      }
+
+      if (!content) {
+        throw new Error('No content in response. Response: ' + JSON.stringify(response))
+      }
+
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.choices[0].message.content,
+        content: content,
         timestamp: Date.now(),
         tokens,
         latency,
