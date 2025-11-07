@@ -77,8 +77,7 @@ function TradePanel({
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const pricePerToken = 0.000001 // $0.001 per 1K tokens
-  const estimatedCost = maxTokens * pricePerToken
+  const fixedCost = 0.001 // Fixed $0.001 per request
 
   const handleExecuteTrade = async () => {
     if (!prompt.trim()) {
@@ -207,18 +206,18 @@ function TradePanel({
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="text-sm font-heading font-bold text-white">
-                  Max Tokens: {maxTokens.toLocaleString()}
+                  Response Length: {maxTokens.toLocaleString()} tokens
                 </div>
                 <div className="text-xs text-text-muted">
-                  Controls response length
+                  Control how long the response will be
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-lg font-black text-status-success">
-                  ${estimatedCost.toFixed(4)}
+                  $0.001
                 </div>
                 <div className="text-xs text-text-muted">
-                  Cost
+                  Fixed price
                 </div>
               </div>
             </div>
@@ -241,7 +240,7 @@ function TradePanel({
             </div>
 
             <div className="text-xs text-text-muted">
-              💡 $0.001 per 1,000 tokens
+              💡 $0.001 per request (any length)
             </div>
           </div>
 
@@ -265,7 +264,7 @@ function TradePanel({
             {isExecuting ? (
               <span className="text-text-muted">⚡ Processing Payment...</span>
             ) : (
-              <span className="text-gradient">Buy Inference • ${estimatedCost.toFixed(4)}</span>
+              <span className="text-gradient">Buy Inference • $0.001</span>
             )}
           </button>
 
