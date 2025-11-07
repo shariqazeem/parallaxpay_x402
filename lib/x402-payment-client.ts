@@ -54,6 +54,7 @@ export class X402PaymentClient {
   private transactions: X402Transaction[] = []
   private fetchWithPayment: typeof fetch | null = null
   private account: any = null
+  private initializationPromise: Promise<void> | null = null
 
   constructor(config: X402PaymentConfig = {}) {
     this.config = {
@@ -64,9 +65,9 @@ export class X402PaymentClient {
       ...config,
     }
 
-    // Initialize wallet if private key is provided
+    // Start initialization if private key is provided (but don't await in constructor)
     if (config.privateKey) {
-      this.initializeWallet(config.privateKey)
+      this.initializationPromise = this.initializeWallet(config.privateKey)
     }
   }
 
@@ -75,24 +76,24 @@ export class X402PaymentClient {
    */
   private async initializeWallet(privateKey: string) {
     try {
-      // Dynamic import for client-side only
-      if (typeof window === 'undefined') {
-        // Server-side: use @solana/web3.js
-        const { Keypair } = await import('@solana/web3.js')
-        const secretKey = base58.decode(privateKey)
-        const keypair = Keypair.fromSecretKey(secretKey)
+      // Import Solana web3.js (works in both browser and Node.js)
+      const { Keypair } = await import('@solana/web3.js')
+      const secretKey = base58.decode(privateKey)
+      const keypair = Keypair.fromSecretKey(secretKey)
 
-        // Create a signer compatible with x402
-        this.account = {
-          address: keypair.publicKey.toBase58(),
-          signMessage: async (message: Uint8Array) => {
-            return keypair.secretKey // Simplified for now
-          }
+      // Create a signer compatible with x402
+      this.account = {
+        address: keypair.publicKey.toBase58(),
+        signMessage: async (message: Uint8Array) => {
+          // Sign the message with the keypair
+          // x402 expects a signature
+          const nacl = await import('tweetnacl')
+          return nacl.sign.detached(message, keypair.secretKey)
         }
-      } else {
-        // Client-side: use wallet adapter
-        // For now, we'll handle this via wallet connect UI
-        console.warn('Client-side wallet initialization - use wallet connect UI instead')
+      }
+
+      if (this.config.enableLogging) {
+        console.log(`🔑 Wallet initialized: ${this.account.address}`)
       }
 
       // Initialize x402-fetch wrapper
@@ -135,6 +136,19 @@ export class X402PaymentClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<PaymentResult<T>> {
+    // Wait for initialization to complete if it's pending
+    if (this.initializationPromise) {
+      if (this.config.enableLogging) {
+        console.log('⏳ Waiting for wallet initialization...')
+      }
+      try {
+        await this.initializationPromise
+        this.initializationPromise = null // Clear after completion
+      } catch (error) {
+        throw new Error(`Wallet initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    }
+
     const startTime = Date.now()
     const url = endpoint.startsWith('http') ? endpoint : `${this.config.baseUrl}${endpoint}`
 
@@ -153,7 +167,7 @@ export class X402PaymentClient {
 
     try {
       if (!this.fetchWithPayment) {
-        throw new Error('Payment client not initialized. Call initializeWallet() first.')
+        throw new Error('Payment client not initialized. Make sure NEXT_PUBLIC_SOLANA_PRIVATE_KEY is set in .env.local and restart the dev server.')
       }
 
       // Make request with automatic payment handling
