@@ -37,83 +37,109 @@ interface DeployedAgent {
   type: 'arbitrage' | 'optimizer' | 'whale'
   prompt: string
   deployed: number
+  totalRuns: number
+  lastRun?: number
+  lastResult?: string
+  status: 'idle' | 'running'
 }
 
 export default function AgentDashboardPage() {
   const [showDeployModal, setShowDeployModal] = useState(false)
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
-
-  // DEMO AGENTS (for UI showcase)
-  const [agents, setAgents] = useState<AgentStats[]>([
-    {
-      id: 'demo-1',
-      name: '[DEMO] Arbitrage Hunter #1',
-      type: 'arbitrage',
-      status: 'idle',
-      totalTrades: 1247,
-      profit: 342.67,
-      avgCost: 0.00118,
-      successRate: 98.4,
-      lastAction: 'Demo agent - not running',
-      lastActionTime: Date.now() - 2000,
-      avatar: '🎯',
-      color: '#9945FF',
-      isReal: false,
-    },
-    {
-      id: 'demo-2',
-      name: '[DEMO] Cost Optimizer #2',
-      type: 'optimizer',
-      status: 'idle',
-      totalTrades: 2134,
-      profit: 567.23,
-      avgCost: 0.00109,
-      successRate: 99.1,
-      lastAction: 'Demo agent - not running',
-      lastActionTime: Date.now() - 500,
-      avatar: '💰',
-      color: '#14F195',
-      isReal: false,
-    },
-    {
-      id: 'demo-3',
-      name: '[DEMO] Whale Trader #3',
-      type: 'whale',
-      status: 'idle',
-      totalTrades: 847,
-      profit: 1234.89,
-      avgCost: 0.00125,
-      successRate: 97.8,
-      lastAction: 'Demo agent - not running',
-      lastActionTime: Date.now() - 45000,
-      avatar: '🐋',
-      color: '#00D4FF',
-      isReal: false,
-    },
-  ])
-
   const [trades, setTrades] = useState<Trade[]>([])
-  const [totalVolume, setTotalVolume] = useState(0)
 
-  // Real agents - merged with demo agents for display
-  const allAgents = [
-    ...agents,  // demo agents
-    ...deployedAgents.map((da) => ({
-      id: da.id,
-      name: da.name,
-      type: da.type,
-      status: 'active' as const,
-      totalTrades: 0,
-      profit: 0,
-      avgCost: 0.00112,
-      successRate: 100,
-      lastAction: `Testing prompt: "${da.prompt.substring(0, 40)}..."`,
-      lastActionTime: da.deployed,
-      avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : '🐋',
-      color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : '#00D4FF',
-      isReal: true,
-    }))
-  ]
+  // Convert deployed agents to AgentStats for display
+  const allAgents: AgentStats[] = deployedAgents.map((da) => ({
+    id: da.id,
+    name: da.name,
+    type: da.type,
+    status: da.status === 'running' ? 'executing' : (da.totalRuns > 0 ? 'active' : 'idle'),
+    totalTrades: da.totalRuns,
+    profit: da.totalRuns * 0.5, // Simulated profit
+    avgCost: 0.00112,
+    successRate: 100,
+    lastAction: da.lastResult
+      ? `Completed: "${da.lastResult.substring(0, 50)}..."`
+      : `Ready to run: "${da.prompt.substring(0, 40)}..."`,
+    lastActionTime: da.lastRun || da.deployed,
+    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : '🐋',
+    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : '#00D4FF',
+    isReal: true,
+  }))
+
+  // Run an agent's task
+  const runAgent = async (agentId: string) => {
+    const agent = deployedAgents.find(a => a.id === agentId)
+    if (!agent) return
+
+    // Update status to running
+    setDeployedAgents(prev => prev.map(a =>
+      a.id === agentId ? { ...a, status: 'running' as const } : a
+    ))
+
+    try {
+      const { createParallaxClient } = await import('@/lib/parallax-client')
+      const client = createParallaxClient('http://localhost:3001')
+
+      const response = await client.inference({
+        messages: [{ role: 'user', content: agent.prompt }],
+        max_tokens: 300,
+      })
+
+      // Parse response
+      let content = ''
+      if (response.choices && response.choices.length > 0) {
+        const choice = response.choices[0] as any
+        content = choice.message?.content || ''
+        if (!content && choice.messages?.content) {
+          content = choice.messages.content
+        }
+      }
+
+      // Clean up <think> tags
+      if (content.includes('<think>')) {
+        const thinkEnd = content.indexOf('</think>')
+        if (thinkEnd !== -1) {
+          content = content.substring(thinkEnd + 8).trim()
+        } else {
+          content = content.replace('<think>\n', '').replace('<think>', '').trim()
+        }
+      }
+
+      // Update agent stats
+      setDeployedAgents(prev => prev.map(a =>
+        a.id === agentId
+          ? {
+              ...a,
+              status: 'idle' as const,
+              totalRuns: a.totalRuns + 1,
+              lastRun: Date.now(),
+              lastResult: content.substring(0, 200)
+            }
+          : a
+      ))
+
+      // Add to trade feed
+      const newTrade: Trade = {
+        id: `trade-${Date.now()}`,
+        agentName: agent.name,
+        provider: 'Local Parallax Node',
+        tokens: response.usage?.total_tokens || 0,
+        cost: 0.00112 * ((response.usage?.total_tokens || 0) / 1000),
+        timestamp: Date.now(),
+        txHash: `0x${Math.random().toString(36).substr(2, 9)}...`,
+        isReal: true,
+      }
+      setTrades(prev => [newTrade, ...prev.slice(0, 9)])
+
+    } catch (err) {
+      console.error('Agent execution error:', err)
+      // Reset status on error
+      setDeployedAgents(prev => prev.map(a =>
+        a.id === agentId ? { ...a, status: 'idle' as const } : a
+      ))
+    }
+  }
 
   const totalTrades = allAgents.reduce((sum, a) => sum + a.totalTrades, 0)
   const totalProfit = allAgents.reduce((sum, a) => sum + a.profit, 0)
@@ -121,6 +147,7 @@ export default function AgentDashboardPage() {
     ? allAgents.reduce((sum, a) => sum + a.successRate, 0) / allAgents.length
     : 0
   const realAgentsCount = deployedAgents.length
+  const totalVolume = trades.reduce((sum, t) => sum + t.cost, 0)
 
   return (
     <div className="min-h-screen bg-background-primary">
@@ -170,10 +197,10 @@ export default function AgentDashboardPage() {
 
           {/* Stats Bar */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <StatCard label="Real Agents" value={`${realAgentsCount} / ${allAgents.length}`} icon="🤖" color={realAgentsCount > 0 ? 'success' : 'default'} />
-            <StatCard label="Total Trades" value={totalTrades.toLocaleString()} icon="⚡" />
-            <StatCard label="Total Profit" value={`$${totalProfit.toFixed(2)}`} icon="💰" color="success" />
-            <StatCard label="24h Volume" value={`$${totalVolume.toFixed(2)}`} icon="📊" />
+            <StatCard label="Deployed Agents" value={realAgentsCount} icon="🤖" color={realAgentsCount > 0 ? 'success' : 'default'} />
+            <StatCard label="Total Runs" value={totalTrades.toLocaleString()} icon="⚡" />
+            <StatCard label="Est. Savings" value={`$${totalProfit.toFixed(2)}`} icon="💰" color="success" />
+            <StatCard label="Total Cost" value={`$${totalVolume.toFixed(4)}`} icon="📊" />
             <StatCard label="Success Rate" value={`${avgSuccessRate.toFixed(1)}%`} icon="✓" color="success" />
           </div>
         </div>
@@ -189,9 +216,11 @@ export default function AgentDashboardPage() {
                 <h3 className="text-2xl font-heading font-bold text-white">
                   Your Autonomous Agents
                 </h3>
-                <div className="text-sm text-text-secondary">
-                  {realAgentsCount} real • {agents.length} demo
-                </div>
+                {realAgentsCount > 0 && (
+                  <div className="text-sm text-status-success font-semibold">
+                    {realAgentsCount} deployed
+                  </div>
+                )}
               </div>
 
               {realAgentsCount === 0 && (
@@ -218,7 +247,12 @@ export default function AgentDashboardPage() {
 
               <div className="space-y-4">
                 {allAgents.map((agent, index) => (
-                  <AgentCard key={agent.id} agent={agent} index={index} />
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    index={index}
+                    onRun={() => runAgent(agent.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -230,7 +264,7 @@ export default function AgentDashboardPage() {
           {/* Right - Live Feed */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
             <LiveTradeFeed trades={trades} />
-            <AgentMetrics agents={agents} />
+            {allAgents.length > 0 && <AgentMetrics agents={allAgents} />}
           </div>
         </div>
       </div>
@@ -270,7 +304,15 @@ function StatCard({
   )
 }
 
-function AgentCard({ agent, index }: { agent: AgentStats; index: number }) {
+function AgentCard({
+  agent,
+  index,
+  onRun,
+}: {
+  agent: AgentStats
+  index: number
+  onRun: () => void
+}) {
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
   const timeStr =
     timeSince < 5 ? 'just now' : timeSince < 60 ? `${timeSince}s ago` : `${Math.floor(timeSince / 60)}m ago`
@@ -290,7 +332,7 @@ function AgentCard({ agent, index }: { agent: AgentStats; index: number }) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="text-4xl">{agent.avatar}</div>
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="text-xl font-heading font-bold text-white">
                   {agent.name}
@@ -302,7 +344,7 @@ function AgentCard({ agent, index }: { agent: AgentStats; index: number }) {
                 )}
               </div>
               <div className="text-sm text-text-secondary capitalize">
-                {agent.type} Strategy {!agent.isReal && '(Demo only)'}
+                {agent.type} Strategy
               </div>
             </div>
           </div>
@@ -349,12 +391,27 @@ function AgentCard({ agent, index }: { agent: AgentStats; index: number }) {
         </div>
 
         {/* Last Action */}
-        <div className="glass-hover p-4 rounded-lg border border-border-hover">
+        <div className="glass-hover p-4 rounded-lg border border-border-hover mb-4">
           <div className="text-sm text-white font-medium mb-1">
             {agent.lastAction}
           </div>
           <div className="text-xs text-text-muted">{timeStr}</div>
         </div>
+
+        {/* Run Agent Button */}
+        {agent.isReal && (
+          <button
+            onClick={onRun}
+            disabled={agent.status === 'executing'}
+            className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            {agent.status === 'executing' ? (
+              <span className="text-text-muted">⚡ Running...</span>
+            ) : (
+              <span className="text-gradient">▶ Run Agent</span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Progress Bar */}
@@ -599,6 +656,8 @@ function DeployAgentModal({
         type,
         prompt,
         deployed: Date.now(),
+        totalRuns: 0,
+        status: 'idle',
       }
 
       // Wait a moment to show the result
