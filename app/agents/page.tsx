@@ -79,11 +79,18 @@ export default function AgentDashboardPage() {
 
     try {
       // Get private key from environment
-      const privateKey = process.env.NEXT_PUBLIC_SOLANA_PRIVATE_KEY || process.env.SOLANA_PRIVATE_KEY
+      const privateKey = process.env.NEXT_PUBLIC_SOLANA_PRIVATE_KEY
 
       if (!privateKey) {
-        throw new Error('SOLANA_PRIVATE_KEY not configured. Please set it in .env.local to enable x402 payments.')
+        throw new Error(
+          'NEXT_PUBLIC_SOLANA_PRIVATE_KEY not configured!\n\n' +
+          'Add to your .env.local:\n' +
+          'NEXT_PUBLIC_SOLANA_PRIVATE_KEY=your-base58-private-key\n\n' +
+          'Then restart: npm run dev'
+        )
       }
+
+      console.log(`🔑 Using wallet: ${privateKey.substring(0, 8)}...${privateKey.substring(privateKey.length - 8)}`)
 
       // Import x402 payment client
       const { createPaymentClient } = await import('@/lib/x402-payment-client')
@@ -163,7 +170,16 @@ export default function AgentDashboardPage() {
 
     } catch (err) {
       console.error('Agent execution error:', err)
-      alert(`Agent execution failed: ${err instanceof Error ? err.message : 'Unknown error'}\n\nMake sure:\n1. SOLANA_PRIVATE_KEY is set in .env.local\n2. Wallet has testnet USDC\n3. Parallax is running`)
+
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      alert(
+        `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
+        `Troubleshooting:\n` +
+        `1. Check NEXT_PUBLIC_SOLANA_PRIVATE_KEY in .env.local\n` +
+        `2. Ensure wallet has testnet USDC (get from faucet.solana.com)\n` +
+        `3. Verify Parallax is running on localhost:3001\n` +
+        `4. Check console for detailed error logs`
+      )
 
       // Reset status on error
       setDeployedAgents(prev => prev.map(a =>
