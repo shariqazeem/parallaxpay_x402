@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 interface AgentStats {
   id: string
@@ -48,6 +51,10 @@ export default function AgentDashboardPage() {
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
 
+  // Wallet connection for user payments
+  const { publicKey } = useWallet()
+  const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
   // Convert deployed agents to AgentStats for display
   const allAgents: AgentStats[] = deployedAgents.map((da) => ({
     id: da.id,
@@ -67,10 +74,16 @@ export default function AgentDashboardPage() {
     isReal: true,
   }))
 
-  // Run an agent's task with REAL x402 PAYMENT
+  // Run an agent's task with REAL x402 PAYMENT using USER WALLET
   const runAgent = async (agentId: string) => {
     const agent = deployedAgents.find(a => a.id === agentId)
     if (!agent) return
+
+    // Check wallet connection
+    if (!isWalletConnected) {
+      alert('💳 Please connect your wallet to run agents with paid inference')
+      return
+    }
 
     // Update status to running
     setDeployedAgents(prev => prev.map(a =>
@@ -78,30 +91,31 @@ export default function AgentDashboardPage() {
     ))
 
     try {
-      console.log(`🤖 [${agent.name}] Running agent with REAL x402 payment...`)
+      console.log(`🤖 [${agent.name}] Running agent with YOUR wallet payment...`)
+      console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
 
-      // Call server-side agent runner (x402-fetch works properly in Node.js)
-      const response = await fetch('/api/agents/run', {
+      // Call PROTECTED API endpoint with x402 payment using user's wallet
+      const response = await fetchWithPayment('/api/inference/paid', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          agentId: agent.id,
-          agentName: agent.name,
-          prompt: agent.prompt,
+          messages: [{ role: 'user', content: agent.prompt }],
+          max_tokens: 300,
         }),
       })
 
-      const result = await response.json()
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || 'Agent execution failed')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Request failed')
       }
 
+      const data = await response.json()
+
       console.log(`✅ [${agent.name}] Payment successful!`)
-      console.log(`   TX Hash: ${result.data.txHash}`)
-      console.log(`   Cost: $${result.data.cost.toFixed(6)}`)
+      console.log(`   TX Hash: ${data.txHash || 'pending'}`)
+      console.log(`   Cost: $${data.cost?.toFixed(6) || '0.001000'}`)
 
       // Update agent stats
       setDeployedAgents(prev => prev.map(a =>
@@ -111,7 +125,7 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: result.data.response?.substring(0, 200) || 'Success'
+              lastResult: data.response?.substring(0, 200) || 'Success'
             }
           : a
       ))
@@ -120,11 +134,11 @@ export default function AgentDashboardPage() {
       const newTrade: Trade = {
         id: `trade-${Date.now()}`,
         agentName: agent.name,
-        provider: result.data.provider,
-        tokens: result.data.tokens,
-        cost: result.data.cost,
+        provider: data.provider || 'Local Parallax Node',
+        tokens: data.tokens || 0,
+        cost: data.cost || 0.001,
         timestamp: Date.now(),
-        txHash: result.data.txHash,
+        txHash: data.txHash || 'pending',
         isReal: true,
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
@@ -156,11 +170,10 @@ export default function AgentDashboardPage() {
       alert(
         `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
         `Troubleshooting:\n` +
-        `1. Check SOLANA_PRIVATE_KEY in .env.local (server-side)\n` +
-        `2. Ensure wallet has testnet USDC (faucet.solana.com)\n` +
+        `1. Ensure wallet is connected (Phantom/Solflare)\n` +
+        `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
         `3. Verify Parallax is running on localhost:3001\n` +
-        `4. Restart dev server: npm run dev\n` +
-        `5. Check server console for detailed error logs`
+        `4. Check browser console for detailed error logs`
       )
 
       // Reset status on error
@@ -210,6 +223,9 @@ export default function AgentDashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Wallet Connect Button */}
+              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+
               <Link href="/marketplace">
                 <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
                   Marketplace
