@@ -85,14 +85,31 @@ export async function createFaremeterFetch(config: FaremeterPaymentConfig): Prom
         // Sign the transaction
         tx.sign([keypair])
 
-        // Capture the signature immediately after signing
-        // Solana signatures are 64-byte arrays that need to be base58 encoded
+        // Try to capture the signature after signing
+        // Note: Faremeter will handle sending the transaction, we just sign it
         if (tx.signatures && tx.signatures.length > 0) {
-          const signature = base58.encode(tx.signatures[0])
-          lastTxSignature = signature
+          const sigBytes = tx.signatures[0]
 
           if (enableLogging) {
-            console.log(`🔏 Transaction signed: ${signature.substring(0, 20)}...`)
+            console.log(`🔏 Signature bytes length: ${sigBytes?.length}`)
+            console.log(`   First 10 bytes: ${sigBytes ? Array.from(sigBytes.slice(0, 10)) : 'none'}`)
+          }
+
+          // Check if signature is valid (not all zeros)
+          if (sigBytes && sigBytes.length === 64) {
+            const signature = base58.encode(sigBytes)
+
+            // Skip if it's the zero signature (encodes to "111...")
+            if (!signature.startsWith('11111111111')) {
+              lastTxSignature = signature
+              if (enableLogging) {
+                console.log(`🔏 Transaction signed: ${signature}`)
+              }
+            } else {
+              if (enableLogging) {
+                console.warn(`⚠️  Signature appears to be all zeros - this may be a placeholder`)
+              }
+            }
           }
         }
 
