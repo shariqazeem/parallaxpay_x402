@@ -61,6 +61,10 @@ export interface AgentConfig {
   // NEW: Enable real Parallax integration
   useRealParallax?: boolean
   parallaxSchedulerUrl?: string // Default: http://localhost:3001
+  // NEW: Enable real x402 payments
+  useRealPayments?: boolean
+  solanaPrivateKey?: string // For x402 payment signing
+  paymentApiEndpoint?: string // Default: /api/inference/paid
 }
 
 /**
@@ -152,7 +156,7 @@ export abstract class Agent {
   ): Promise<TradeRequest | null>
 
   /**
-   * Execute a trade
+   * Execute a trade - NOW WITH REAL X402 PAYMENTS!
    */
   protected async executeTrade(
     request: TradeRequest
@@ -167,7 +171,76 @@ export abstract class Agent {
 
     const startTime = Date.now()
 
-    // REAL PARALLAX INFERENCE if enabled
+    // MODE 1: REAL X402 PAYMENTS (Production)
+    if (this.config.useRealPayments && this.config.solanaPrivateKey) {
+      try {
+        // Use x402 payment client to make paid inference request
+        const { createPaymentClient } = await import('./x402-payment-client')
+
+        const paymentClient = createPaymentClient({
+          privateKey: this.config.solanaPrivateKey,
+          network: 'solana-devnet',
+          maxPaymentAmount: this.config.maxBudget,
+          enableLogging: true,
+        })
+
+        const endpoint = this.config.paymentApiEndpoint || '/api/inference/paid'
+
+        // Make paid request with automatic x402 payment handling
+        const result = await paymentClient.request<{
+          response: string
+          tokens: number
+          provider: string
+          cost: number
+          latency: number
+          txHash?: string
+          model: string
+        }>(endpoint, {
+          method: 'POST',
+          body: JSON.stringify({
+            messages: [
+              {
+                role: 'user',
+                content: `Agent ${this.config.name} is testing AI inference with strategy: ${this.config.strategy}`,
+              },
+            ],
+            max_tokens: request.tokens,
+            provider: request.providerId,
+          }),
+        })
+
+        if (!result.success || !result.data) {
+          throw new Error(result.error || 'Payment failed')
+        }
+
+        const tradeResult: TradeResult = {
+          success: true,
+          transactionId: result.transaction?.txHash || result.transaction?.id || `tx_${Date.now()}`,
+          provider: result.data.provider,
+          model: result.data.model,
+          tokens: result.data.tokens,
+          cost: result.transaction?.amount || result.data.cost,
+          latency: result.data.latency,
+          timestamp: Date.now(),
+        }
+
+        this.totalTrades++
+        this.totalProfit += tradeResult.cost
+        this.lastTrade = tradeResult
+
+        console.log(`✅ [${this.config.name}] Paid trade completed via x402`)
+        console.log(`   TX Hash: ${tradeResult.transactionId}`)
+        console.log(`   Cost: $${tradeResult.cost.toFixed(6)}`)
+
+        return tradeResult
+
+      } catch (error) {
+        console.error(`[${this.config.name}] x402 payment error:`, error)
+        throw error
+      }
+    }
+
+    // MODE 2: REAL PARALLAX INFERENCE (No payment)
     if (this.config.useRealParallax && this.parallaxClient) {
       try {
         // Check if Parallax is running
@@ -181,7 +254,7 @@ export abstract class Agent {
           messages: [
             {
               role: 'user',
-              content: 'Generate a short response to test inference.',
+              content: `Agent ${this.config.name} is testing AI inference with strategy: ${this.config.strategy}`,
             },
           ],
           max_tokens: request.tokens,
@@ -203,7 +276,7 @@ export abstract class Agent {
         }
 
         this.totalTrades++
-        this.totalProfit += cost // In real scenario, profit would be calculated differently
+        this.totalProfit += cost
         this.lastTrade = result
 
         return result
@@ -213,13 +286,13 @@ export abstract class Agent {
       }
     }
 
-    // DEMO MODE (mock data)
+    // MODE 3: DEMO MODE (Mock data - for UI demonstration)
     const cost = (request.tokens / 1000) * provider.price
     const latency = provider.latency + Math.floor(Math.random() * 20)
 
     const result: TradeResult = {
       success: true,
-      transactionId: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      transactionId: `demo_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       provider: provider.name,
       model: request.model,
       tokens: request.tokens,
@@ -274,63 +347,43 @@ export abstract class Agent {
   }
 
   /**
-   * Fetch available providers
+   * Fetch available providers - NOW USING REAL DISCOVERY!
    */
   protected async fetchProviders(): Promise<Provider[]> {
-    // In production, this would call Gradient Parallax discovery API
-    // For demo, return mock data
-    return [
-      {
-        id: 'node-1',
-        name: 'ParallaxNode-Alpha',
-        price: 0.00118,
-        latency: 42,
-        uptime: 99.97,
-        reputation: 98.5,
-        region: 'US-East',
-        models: ['Qwen-2.5-72B', 'Llama-3.3-70B'],
-      },
-      {
-        id: 'node-2',
-        name: 'ParallaxNode-Beta',
-        price: 0.00122,
-        latency: 38,
-        uptime: 99.94,
-        reputation: 97.2,
-        region: 'EU-West',
-        models: ['Llama-3.3-70B', 'DeepSeek-V3'],
-      },
-      {
-        id: 'node-3',
-        name: 'ParallaxNode-Gamma',
-        price: 0.00115,
-        latency: 51,
-        uptime: 99.89,
-        reputation: 96.8,
-        region: 'Asia-SE',
-        models: ['Qwen-2.5-72B', 'Llama-3.1-8B'],
-      },
-      {
-        id: 'node-4',
-        name: 'ParallaxNode-Delta',
-        price: 0.00129,
-        latency: 47,
-        uptime: 99.85,
-        reputation: 95.4,
-        region: 'US-West',
-        models: ['DeepSeek-V3', 'Qwen-2.5-32B'],
-      },
-      {
-        id: 'node-5',
-        name: 'ParallaxNode-Epsilon',
-        price: 0.00112,
-        latency: 55,
-        uptime: 99.81,
-        reputation: 94.9,
-        region: 'EU-Central',
-        models: ['Llama-3.3-70B', 'Qwen-2.5-72B'],
-      },
-    ]
+    // Use real provider discovery service
+    try {
+      const { getProviderDiscoveryService } = await import('./provider-discovery')
+      const discoveryService = getProviderDiscoveryService()
+      const providers = discoveryService.getOnlineProviders()
+
+      // Convert ProviderMetrics to Provider interface
+      return providers.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        latency: p.latency,
+        uptime: p.uptime,
+        reputation: p.reputation,
+        region: p.region,
+        models: p.models,
+      }))
+    } catch (error) {
+      console.error('Failed to fetch providers from discovery service:', error)
+
+      // Fallback to local Parallax node
+      return [
+        {
+          id: 'local-node',
+          name: 'Local Parallax Node',
+          price: 0.001,
+          latency: 50,
+          uptime: 99.0,
+          reputation: 95.0,
+          region: 'Local',
+          models: ['Qwen-0.6B', 'Qwen-1.7B', 'Qwen-2.5B'],
+        },
+      ]
+    }
   }
 
   /**
