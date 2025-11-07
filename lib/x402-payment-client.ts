@@ -77,23 +77,47 @@ export class X402PaymentClient {
   private async initializeWallet(privateKey: string) {
     try {
       // Import Solana web3.js (works in both browser and Node.js)
-      const { Keypair } = await import('@solana/web3.js')
+      const { Keypair, Transaction, VersionedTransaction } = await import('@solana/web3.js')
       const secretKey = base58.decode(privateKey)
       const keypair = Keypair.fromSecretKey(secretKey)
 
-      // Create a signer compatible with x402
+      // Create a wallet client compatible with x402-fetch SVM requirements
+      // Must match Solana Wallet Adapter interface
       this.account = {
-        address: keypair.publicKey.toBase58(),
+        // publicKey as PublicKey object (required by x402-fetch for SVM)
+        publicKey: keypair.publicKey,
+
+        // signTransaction - signs a transaction
+        signTransaction: async (transaction: Transaction | VersionedTransaction) => {
+          if (transaction instanceof VersionedTransaction) {
+            transaction.sign([keypair])
+          } else {
+            transaction.partialSign(keypair)
+          }
+          return transaction
+        },
+
+        // signAllTransactions - signs multiple transactions
+        signAllTransactions: async (transactions: (Transaction | VersionedTransaction)[]) => {
+          return transactions.map(tx => {
+            if (tx instanceof VersionedTransaction) {
+              tx.sign([keypair])
+            } else {
+              tx.partialSign(keypair)
+            }
+            return tx
+          })
+        },
+
+        // signMessage - signs arbitrary messages (for x402 payment proofs)
         signMessage: async (message: Uint8Array) => {
-          // Sign the message with the keypair
-          // x402 expects a signature
           const nacl = await import('tweetnacl')
           return nacl.sign.detached(message, keypair.secretKey)
-        }
+        },
       }
 
       if (this.config.enableLogging) {
-        console.log(`🔑 Wallet initialized: ${this.account.address}`)
+        console.log(`🔑 Wallet initialized: ${keypair.publicKey.toBase58()}`)
       }
 
       // Initialize x402-fetch wrapper
