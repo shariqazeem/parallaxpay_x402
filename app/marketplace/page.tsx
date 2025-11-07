@@ -7,10 +7,17 @@ import ProviderList from '../components/marketplace/ProviderList'
 import TradingChart from '../components/marketplace/TradingChart'
 import MarketHeader from '../components/marketplace/MarketHeader'
 import AgentPanel from '../components/marketplace/AgentPanel'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 export default function MarketplacePage() {
   const [selectedModel, setSelectedModel] = useState('Qwen-2.5-72B')
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+
+  // Wallet connection for user payments
+  const { publicKey } = useWallet()
+  const { fetchWithPayment, isWalletConnected } = useX402Payment()
 
   return (
     <div className="min-h-screen bg-background-primary">
@@ -41,6 +48,8 @@ export default function MarketplacePage() {
             <TradePanel
               selectedProvider={selectedProvider}
               model={selectedModel}
+              isWalletConnected={isWalletConnected}
+              fetchWithPayment={fetchWithPayment}
             />
             <RecentTrades />
           </div>
@@ -53,10 +62,14 @@ export default function MarketplacePage() {
 // Trade Panel Component
 function TradePanel({
   selectedProvider,
-  model
+  model,
+  isWalletConnected,
+  fetchWithPayment
 }: {
   selectedProvider: string | null
   model: string
+  isWalletConnected: boolean
+  fetchWithPayment: (url: string, options?: RequestInit) => Promise<Response>
 }) {
   const [prompt, setPrompt] = useState('')
   const [maxTokens, setMaxTokens] = useState(100)
@@ -72,64 +85,67 @@ function TradePanel({
       return
     }
 
+    if (!isWalletConnected) {
+      setError('Please connect your wallet to execute trades')
+      return
+    }
+
     setIsExecuting(true)
     setError(null)
     setResult(null)
 
     try {
-      const { createParallaxClient } = await import('@/lib/parallax-client')
-      const client = createParallaxClient('http://localhost:3001')
-
-      const response = await client.inference({
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: maxTokens,
+      // Call PROTECTED API endpoint with x402 payment using user's wallet
+      const response = await fetchWithPayment('/api/inference/paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
+          provider: selectedProvider,
+        }),
       })
 
-      console.log('Parallax response:', response)
-
-      // Handle response safely - Parallax uses different formats
-      let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        // Try standard OpenAI format
-        content = choice.message?.content || ''
-        // Try Parallax format (uses "messages" plural)
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
-        }
-        // Try text format
-        if (!content && choice.text) {
-          content = choice.text
-        }
-      } else if ((response as any).content) {
-        content = (response as any).content
-      } else if ((response as any).text) {
-        content = (response as any).text
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Request failed')
       }
 
-      // Clean up <think> tags if present (Parallax includes reasoning process)
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          // Found closing tag - remove reasoning, keep answer
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          // No closing tag (response truncated) - keep the reasoning but remove tag
-          // This happens when max_tokens is too small
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-          if (content) {
-            content = '💭 AI Reasoning (increase max tokens for full answer):\n\n' + content
-          } else {
-            content = '⚠️ Response was empty. Increase max tokens to 300+.'
-          }
-        }
-      }
+      const data = await response.json()
+      console.log('Inference response:', data)
+
+      // Extract content from API response
+      const content = data.response || data.result || ''
 
       if (!content) {
-        throw new Error('No content in response. Response: ' + JSON.stringify(response))
+        throw new Error('No content in response from API')
       }
 
       setResult(content)
+
+      // Store transaction in localStorage if we have a txHash
+      if (data.txHash) {
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: `marketplace_${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'marketplace',
+            provider: selectedProvider || data.provider || 'Local Parallax Node',
+            tokens: data.tokens || maxTokens,
+            cost: data.cost || estimatedCost,
+            txHash: data.txHash,
+            status: 'success',
+            network: 'solana-devnet',
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        } catch (e) {
+          console.warn('Failed to store transaction:', e)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to execute trade')
       console.error('Trade execution error:', err)
