@@ -51,6 +51,11 @@ export default function AgentDashboardPage() {
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
 
+  // Token controls for agent runs
+  const [maxTokens, setMaxTokens] = useState(300)
+  const pricePerToken = 0.000001 // $0.001 per 1K tokens
+  const estimatedCost = maxTokens * pricePerToken
+
   // Wallet connection for user payments
   const { publicKey } = useWallet()
   const { fetchWithPayment, isWalletConnected } = useX402Payment()
@@ -102,7 +107,7 @@ export default function AgentDashboardPage() {
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: agent.prompt }],
-          max_tokens: 300,
+          max_tokens: maxTokens, // User-specified token limit
         }),
       })
 

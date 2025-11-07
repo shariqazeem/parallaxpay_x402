@@ -161,9 +161,9 @@ const x402PaymentMiddleware = paymentMiddleware(
 
     // API endpoint for agent inference payments
     '/api/inference/paid': {
-      price: '$0.001', // Per-token pricing for agents
+      price: '$0.0001', // Minimum service fee - actual cost calculated by token usage
       config: {
-        description: 'AI Inference API for autonomous agents - Pay per token',
+        description: 'AI Inference API - Pay per token ($0.001 per 1K tokens)',
         mimeType: 'application/json',
         inputSchema: {
           type: 'object',
@@ -179,7 +179,7 @@ const x402PaymentMiddleware = paymentMiddleware(
                 },
               },
             },
-            max_tokens: { type: 'number', description: 'Maximum tokens to generate' },
+            max_tokens: { type: 'number', description: 'Maximum tokens to generate (determines cost)' },
             provider: { type: 'string', description: 'Preferred Parallax provider ID' },
           },
           required: ['messages'],
@@ -190,7 +190,7 @@ const x402PaymentMiddleware = paymentMiddleware(
             response: { type: 'string', description: 'AI generated response' },
             tokens: { type: 'number', description: 'Total tokens used' },
             provider: { type: 'string', description: 'Provider used for inference' },
-            cost: { type: 'number', description: 'Total cost in USD' },
+            cost: { type: 'number', description: 'Total cost in USD ($0.001 per 1K tokens)' },
             txHash: { type: 'string', description: 'Solana transaction hash' },
           },
         },
