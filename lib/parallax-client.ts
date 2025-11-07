@@ -89,8 +89,21 @@ export class ParallaxClient {
       })
 
       if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+
+        if (response.status === 500) {
+          throw new Error(
+            `Parallax scheduler error (500). This usually means:\n` +
+            `1. A worker node is running but not properly connected\n` +
+            `2. The scheduler is in a bad state\n\n` +
+            `Fix: Stop all Parallax processes and run ONLY the scheduler:\n` +
+            `  killall -9 parallax\n` +
+            `  parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0 --port 3001`
+          )
+        }
+
         throw new Error(
-          `Parallax API error: ${response.status} ${response.statusText}`
+          `Parallax API error: ${response.status} ${response.statusText}${errorText ? '\n' + errorText : ''}`
         )
       }
 
