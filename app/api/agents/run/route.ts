@@ -1,11 +1,12 @@
 /**
- * Server-side Agent Runner
+ * Server-side Agent Runner with Faremeter/Corbits
  *
- * This endpoint runs agents server-side where x402-fetch works properly
- * with private keys. This is the CORRECT way to do autonomous agents.
+ * This endpoint runs agents server-side using Faremeter for x402 payments.
+ * This is the CORRECT way to do autonomous agents with real blockchain payments.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createFaremeterFetch } from '@/lib/faremeter-client'
 
 export interface RunAgentRequest {
   agentId: string
@@ -28,14 +29,14 @@ export interface RunAgentResponse {
 /**
  * POST /api/agents/run
  *
- * Runs an agent server-side with real x402 payments
+ * Runs an agent server-side with real Faremeter/Corbits x402 payments
  */
 export async function POST(request: NextRequest) {
   try {
     const body: RunAgentRequest = await request.json()
 
     // Get private key from server environment
-    const privateKey = process.env.NEXT_PUBLIC_SOLANA_PRIVATE_KEY || process.env.SOLANA_PRIVATE_KEY
+    const privateKey = process.env.SOLANA_PRIVATE_KEY || process.env.NEXT_PUBLIC_SOLANA_PRIVATE_KEY
 
     if (!privateKey) {
       return NextResponse.json(
@@ -47,46 +48,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`🤖 [${body.agentName}] Running agent server-side...`)
+    console.log(`🤖 [${body.agentName}] Running agent with Faremeter payment...`)
 
-    // Import x402-payment-client
-    const { createPaymentClient } = await import('@/lib/x402-payment-client')
-
-    // Create payment client (server-side - this should work!)
-    const paymentClient = createPaymentClient({
+    // Create Faremeter fetch with payment handling
+    const fetchWithPayment = await createFaremeterFetch({
       privateKey,
-      network: 'solana-devnet',
-      maxPaymentAmount: 1.0,
+      network: 'devnet',
+      asset: 'USDC',
       enableLogging: true,
     })
 
-    console.log(`💳 [${body.agentName}] Making x402 payment...`)
+    console.log(`💳 [${body.agentName}] Making x402 payment via Faremeter...`)
 
     // Make paid request to inference API
-    const result = await paymentClient.request('/api/inference/paid', {
+    const response = await fetchWithPayment(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/inference/paid`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         messages: [{ role: 'user', content: body.prompt }],
         max_tokens: 300,
       }),
     })
 
-    if (!result.success || !result.data) {
-      throw new Error(result.error || 'Payment failed')
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Inference API returned ${response.status}: ${errorText}`)
     }
 
+    const data = await response.json()
+
+    // Extract transaction hash from headers
+    const txHash = response.headers.get('x-payment-tx') ||
+                   response.headers.get('x-transaction-hash') ||
+                   data.txHash ||
+                   'pending'
+
     console.log(`✅ [${body.agentName}] Payment successful!`)
-    console.log(`   TX Hash: ${result.transaction?.txHash}`)
-    console.log(`   Cost: $${result.transaction?.amount.toFixed(6)}`)
+    console.log(`   TX Hash: ${txHash}`)
+    console.log(`   Cost: $${data.cost || '0.001000'}`)
 
     return NextResponse.json({
       success: true,
       data: {
-        response: result.data.response,
-        tokens: result.data.tokens,
-        cost: result.transaction?.amount || 0,
-        provider: result.data.provider || 'Local Parallax Node',
-        txHash: result.transaction?.txHash || 'pending',
+        response: data.response || data.result || 'Success',
+        tokens: data.tokens || 0,
+        cost: data.cost || 0.001,
+        provider: data.provider || 'Local Parallax Node',
+        txHash,
       },
     })
   } catch (error) {
