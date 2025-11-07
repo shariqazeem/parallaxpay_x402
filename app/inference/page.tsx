@@ -67,19 +67,33 @@ export default function AIInferencePage() {
       const tokens = response.usage?.total_tokens || 0
       const cost = client.estimateCost(tokens)
 
-      // Handle response safely
+      // Handle response safely - Parallax uses different formats
       let content = ''
       if (response.choices && response.choices.length > 0) {
-        content = response.choices[0].message?.content || ''
-        // Fallback for non-standard response formats
-        if (!content && (response.choices[0] as any).text) {
-          content = (response.choices[0] as any).text
+        const choice = response.choices[0] as any
+        // Try standard OpenAI format
+        content = choice.message?.content || ''
+        // Try Parallax format (uses "messages" plural)
+        if (!content && choice.messages?.content) {
+          content = choice.messages.content
+        }
+        // Try text format
+        if (!content && choice.text) {
+          content = choice.text
         }
       } else if ((response as any).content) {
-        // Some APIs return content directly
         content = (response as any).content
       } else if ((response as any).text) {
         content = (response as any).text
+      }
+
+      // Clean up <think> tags if present
+      if (content.includes('<think>')) {
+        // Remove thinking process, just show the final answer
+        const thinkEnd = content.indexOf('</think>')
+        if (thinkEnd !== -1) {
+          content = content.substring(thinkEnd + 8).trim()
+        }
       }
 
       if (!content) {

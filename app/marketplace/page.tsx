@@ -87,13 +87,19 @@ function TradePanel({
 
       console.log('Parallax response:', response)
 
-      // Handle response safely
+      // Handle response safely - Parallax uses different formats
       let content = ''
       if (response.choices && response.choices.length > 0) {
-        content = response.choices[0].message?.content || ''
-        // Fallback for non-standard response formats
-        if (!content && (response.choices[0] as any).text) {
-          content = (response.choices[0] as any).text
+        const choice = response.choices[0] as any
+        // Try standard OpenAI format
+        content = choice.message?.content || ''
+        // Try Parallax format (uses "messages" plural)
+        if (!content && choice.messages?.content) {
+          content = choice.messages.content
+        }
+        // Try text format
+        if (!content && choice.text) {
+          content = choice.text
         }
       } else if ((response as any).content) {
         content = (response as any).content
@@ -101,8 +107,17 @@ function TradePanel({
         content = (response as any).text
       }
 
+      // Clean up <think> tags if present
+      if (content.includes('<think>')) {
+        // Remove thinking process, just show the final answer
+        const thinkEnd = content.indexOf('</think>')
+        if (thinkEnd !== -1) {
+          content = content.substring(thinkEnd + 8).trim()
+        }
+      }
+
       if (!content) {
-        throw new Error('No content in response. Check console for details.')
+        throw new Error('No content in response. Response: ' + JSON.stringify(response))
       }
 
       setResult(content)
