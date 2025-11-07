@@ -37,9 +37,25 @@ const address = (process.env.SOLANA_WALLET_ADDRESS || '9qzmG8vPymc2CAMchZgq26qiU
 const network = (process.env.X402_NETWORK || 'solana-devnet') as Network
 
 // Facilitator configuration
-// For testnet: https://x402.org/facilitator
-// For mainnet with CDP: use facilitator from '@coinbase/x402'
-const facilitatorUrl = (process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator') as Resource
+// Use CDP facilitator if credentials are available, otherwise use x402.org
+let facilitatorUrl: Resource
+let facilitatorOptions: any = undefined
+
+if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
+  // Use CDP facilitator with authentication
+  console.log('🔐 Using Coinbase CDP facilitator with authentication')
+  const { createFacilitatorConfig } = require('@coinbase/x402')
+  const cdpConfig = createFacilitatorConfig(
+    process.env.CDP_API_KEY_ID,
+    process.env.CDP_API_KEY_SECRET
+  )
+  facilitatorUrl = cdpConfig.url
+  facilitatorOptions = cdpConfig
+} else {
+  // Use public x402.org facilitator for testnet
+  console.log('🌐 Using public x402.org facilitator (testnet)')
+  facilitatorUrl = (process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator') as Resource
+}
 
 // CDP Client Key for better wallet UI
 const cdpClientKey = process.env.NEXT_PUBLIC_CDP_CLIENT_KEY || ''
@@ -182,7 +198,7 @@ const x402PaymentMiddleware = paymentMiddleware(
       network,
     },
   },
-  {
+  facilitatorOptions || {
     url: facilitatorUrl,
   },
   cdpClientKey ? {

@@ -82,12 +82,16 @@ export class X402PaymentClient {
       const keypair = Keypair.fromSecretKey(secretKey)
 
       // Create a wallet client compatible with x402-fetch SVM requirements
-      // Must match Solana Wallet Adapter interface
+      // Must match Solana Wallet Standard and Wallet Adapter interface
       this.account = {
         // publicKey as PublicKey object (required by x402-fetch for SVM)
         publicKey: keypair.publicKey,
 
-        // signTransaction - signs a transaction
+        // Wallet metadata (helps x402-fetch identify this as a valid Solana wallet)
+        connected: true,
+        autoApprove: true,
+
+        // signTransaction - signs a transaction (required)
         signTransaction: async (transaction: Transaction | VersionedTransaction) => {
           if (transaction instanceof VersionedTransaction) {
             transaction.sign([keypair])
@@ -97,7 +101,7 @@ export class X402PaymentClient {
           return transaction
         },
 
-        // signAllTransactions - signs multiple transactions
+        // signAllTransactions - signs multiple transactions (required)
         signAllTransactions: async (transactions: (Transaction | VersionedTransaction)[]) => {
           return transactions.map(tx => {
             if (tx instanceof VersionedTransaction) {
@@ -114,10 +118,21 @@ export class X402PaymentClient {
           const nacl = await import('tweetnacl')
           return nacl.sign.detached(message, keypair.secretKey)
         },
+
+        // signAndSendTransaction - alternative method some wallets use
+        signAndSendTransaction: async (transaction: Transaction | VersionedTransaction) => {
+          if (transaction instanceof VersionedTransaction) {
+            transaction.sign([keypair])
+          } else {
+            transaction.partialSign(keypair)
+          }
+          return transaction
+        },
       }
 
       if (this.config.enableLogging) {
         console.log(`🔑 Wallet initialized: ${keypair.publicKey.toBase58()}`)
+        console.log(`   Type: Solana (SVM) autonomous agent wallet`)
       }
 
       // Initialize x402-fetch wrapper
@@ -140,16 +155,28 @@ export class X402PaymentClient {
       // Dynamic import of x402-fetch
       const { wrapFetchWithPayment } = await import('x402-fetch')
 
-      this.fetchWithPayment = wrapFetchWithPayment(fetch, this.account)
+      // Configure x402-fetch with network and options
+      const options = {
+        network: this.config.network,
+        maxPaymentAmount: this.config.maxPaymentAmount,
+      }
 
       if (this.config.enableLogging) {
-        console.log('✅ x402 Payment client initialized')
+        console.log('🔧 Initializing x402-fetch with:')
         console.log(`   Network: ${this.config.network}`)
+        console.log(`   Wallet: ${this.account.publicKey.toBase58()}`)
         console.log(`   Max payment: $${this.config.maxPaymentAmount}`)
+      }
+
+      // Wrap fetch with payment handling
+      this.fetchWithPayment = wrapFetchWithPayment(fetch, this.account, options)
+
+      if (this.config.enableLogging) {
+        console.log('✅ x402 Payment client initialized successfully')
       }
     } catch (error) {
       console.error('Failed to initialize x402-fetch:', error)
-      throw new Error('x402-fetch initialization failed')
+      throw new Error(`x402-fetch initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
