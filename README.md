@@ -345,7 +345,7 @@ Route                   Size    First Load JS
 
 ## 👥 Team
 
-Built by Claude (AI) + Human collaboration for the hackathon.
+Built by Shariq Shaukat
 
 ---
 
