@@ -46,68 +46,55 @@ export default function AIInferencePage() {
     setError(null)
 
     try {
-      // Create Parallax client
-      const client = createParallaxClient('http://localhost:3001')
-
       const startTime = Date.now()
 
-      // Make REAL Parallax API call
-      const response = await client.inference({
-        messages: [
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: input },
-        ],
-        max_tokens: 512,
-        temperature: 0.7,
+      // Call PROTECTED API endpoint (x402 payment required!)
+      // This endpoint is protected by middleware and requires payment
+      const response = await fetch('/api/inference/paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: input },
+          ],
+          max_tokens: 512,
+        }),
       })
 
-      console.log('Parallax response:', response)
+      // Check if payment required
+      if (response.status === 402) {
+        const paymentInfo = await response.json()
+        setError('💳 Payment Required! This endpoint requires x402 payment. Please use a wallet with USDC or check DEV_MODE in .env.local')
+        console.error('Payment required:', paymentInfo)
+        setIsLoading(false)
+        return
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Request failed')
+      }
+
+      // Get response data
+      const data = await response.json()
+      console.log('Inference response:', data)
 
       const latency = Date.now() - startTime
-      const tokens = response.usage?.total_tokens || 0
-      const cost = client.estimateCost(tokens)
+      const tokens = data.tokens || 0
+      const cost = data.cost || 0
 
-      // Handle response safely - Parallax uses different formats
-      let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        // Try standard OpenAI format
-        content = choice.message?.content || ''
-        // Try Parallax format (uses "messages" plural)
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
-        }
-        // Try text format
-        if (!content && choice.text) {
-          content = choice.text
-        }
-      } else if ((response as any).content) {
-        content = (response as any).content
-      } else if ((response as any).text) {
-        content = (response as any).text
-      }
-
-      // Clean up <think> tags if present (Parallax includes reasoning process)
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          // Found closing tag - remove reasoning, keep answer
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          // No closing tag (response truncated) - keep the reasoning but remove tag
-          // This happens when the model runs out of tokens while still thinking
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-          if (content) {
-            content = '💭 AI Reasoning (response was truncated, here\'s the thinking process):\n\n' + content
-          } else {
-            content = '⚠️ Response was empty. The model may need more tokens or a simpler prompt.'
-          }
-        }
-      }
+      // Extract content from API response
+      const content = data.response || data.result || ''
 
       if (!content) {
-        throw new Error('No content in response. Response: ' + JSON.stringify(response))
+        throw new Error('No content in response from API')
       }
+
+      // Extract transaction hash if present
+      const txHash = data.txHash || null
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -120,6 +107,28 @@ export default function AIInferencePage() {
 
       setMessages((prev) => [...prev, assistantMessage])
       setParallaxStatus('online')
+
+      // Store transaction in localStorage for history page
+      if (txHash) {
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: `inference_${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'inference',
+            provider: data.provider || 'Local Parallax Node',
+            tokens,
+            cost,
+            txHash,
+            status: 'success',
+            network: 'solana-devnet',
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        } catch (e) {
+          console.warn('Failed to store transaction:', e)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get response')
       setParallaxStatus('offline')
