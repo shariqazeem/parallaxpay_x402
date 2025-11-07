@@ -24,6 +24,11 @@ export default function AIInferencePage() {
   const [error, setError] = useState<string | null>(null)
   const [parallaxStatus, setParallaxStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
+  // Token controls - users can specify how many tokens they want to pay for
+  const [maxTokens, setMaxTokens] = useState(512)
+  const pricePerToken = 0.000001 // $0.001 per 1K tokens
+  const estimatedCost = maxTokens * pricePerToken
+
   // Wallet connection
   const { publicKey } = useWallet()
   const { fetchWithPayment, isWalletConnected } = useX402Payment()
@@ -73,7 +78,7 @@ export default function AIInferencePage() {
             ...messages.map((m) => ({ role: m.role, content: m.content })),
             { role: 'user', content: input },
           ],
-          max_tokens: 512,
+          max_tokens: maxTokens, // User-specified token limit
         }),
       })
 
@@ -290,6 +295,62 @@ export default function AIInferencePage() {
           )}
         </div>
 
+        {/* Token Control & Cost Estimator */}
+        <div className="glass p-4 rounded-xl border border-border mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-sm font-heading font-bold text-white mb-1">
+                Max Tokens: {maxTokens.toLocaleString()}
+              </div>
+              <div className="text-xs text-text-muted">
+                More tokens = longer responses, higher cost
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-black text-status-success">
+                ${estimatedCost.toFixed(4)}
+              </div>
+              <div className="text-xs text-text-muted">
+                Estimated cost
+              </div>
+            </div>
+          </div>
+
+          {/* Token Slider */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-text-secondary font-mono">100</span>
+            <input
+              type="range"
+              min="100"
+              max="2000"
+              step="100"
+              value={maxTokens}
+              onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+              disabled={!isWalletConnected}
+              className="flex-1 h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-primary"
+              style={{
+                background: isWalletConnected
+                  ? `linear-gradient(to right, #9945FF 0%, #14F195 ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a 100%)`
+                  : '#1a1a1a'
+              }}
+            />
+            <span className="text-xs text-text-secondary font-mono">2000</span>
+          </div>
+
+          {/* Pricing Info */}
+          <div className="mt-3 pt-3 border-t border-border-hover flex items-center justify-between text-xs">
+            <span className="text-text-muted">
+              💡 Pricing: <span className="font-mono font-bold text-accent-secondary">$0.001</span> per 1,000 tokens
+            </span>
+            <span className="text-text-muted">
+              {maxTokens >= 1500 && '🚀 High quality response'}
+              {maxTokens >= 1000 && maxTokens < 1500 && '✨ Detailed response'}
+              {maxTokens >= 500 && maxTokens < 1000 && '📝 Standard response'}
+              {maxTokens < 500 && '⚡ Quick response'}
+            </span>
+          </div>
+        </div>
+
         {/* Input */}
         <div className="glass p-4 rounded-xl border border-border">
           <div className="flex gap-3">
@@ -298,7 +359,7 @@ export default function AIInferencePage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
-              placeholder={!isWalletConnected ? "Connect wallet to start..." : "Ask anything... (e.g., 'Explain quantum computing')"}
+              placeholder={!isWalletConnected ? "Connect wallet to start..." : "Ask anything... (e.g., 'Write 500 lines of HTML code')"}
               className="flex-1 bg-background-tertiary px-4 py-3 rounded-lg text-white placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary"
               disabled={isLoading || parallaxStatus === 'offline' || !isWalletConnected}
             />
@@ -312,7 +373,7 @@ export default function AIInferencePage() {
               ) : !isWalletConnected ? (
                 <span className="text-text-muted">Connect Wallet</span>
               ) : (
-                <span className="text-gradient">Send</span>
+                <span className="text-gradient">Pay ${estimatedCost.toFixed(4)}</span>
               )}
             </button>
           </div>
