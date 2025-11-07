@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { createParallaxClient } from '@/lib/parallax-client'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -21,6 +24,10 @@ export default function AIInferencePage() {
   const [error, setError] = useState<string | null>(null)
   const [parallaxStatus, setParallaxStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
+  // Wallet connection
+  const { publicKey } = useWallet()
+  const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
   // Check Parallax status on mount
   useState(() => {
     const checkStatus = async () => {
@@ -33,6 +40,12 @@ export default function AIInferencePage() {
 
   const handleSendMessage = async () => {
     if (!input.trim()) return
+
+    // Check wallet connection
+    if (!isWalletConnected) {
+      setError('💳 Please connect your wallet to make paid requests')
+      return
+    }
 
     const userMessage: Message = {
       role: 'user',
@@ -48,9 +61,9 @@ export default function AIInferencePage() {
     try {
       const startTime = Date.now()
 
-      // Call PROTECTED API endpoint (x402 payment required!)
-      // This endpoint is protected by middleware and requires payment
-      const response = await fetch('/api/inference/paid', {
+      // Call PROTECTED API endpoint with x402 payment using user's wallet
+      // This will automatically handle 402 responses and make payment
+      const response = await fetchWithPayment('/api/inference/paid', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,15 +76,6 @@ export default function AIInferencePage() {
           max_tokens: 512,
         }),
       })
-
-      // Check if payment required
-      if (response.status === 402) {
-        const paymentInfo = await response.json()
-        setError('💳 Payment Required! This endpoint requires x402 payment. Please use a wallet with USDC or check DEV_MODE in .env.local')
-        console.error('Payment required:', paymentInfo)
-        setIsLoading(false)
-        return
-      }
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -156,24 +160,30 @@ export default function AIInferencePage() {
               </h2>
             </div>
 
-            {/* Status Indicator */}
-            <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  parallaxStatus === 'online'
-                    ? 'bg-status-success animate-pulse'
+            {/* Wallet & Status */}
+            <div className="flex items-center gap-3">
+              {/* Wallet Connect Button */}
+              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+
+              {/* Status Indicator */}
+              <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    parallaxStatus === 'online'
+                      ? 'bg-status-success animate-pulse'
+                      : parallaxStatus === 'offline'
+                      ? 'bg-status-error'
+                      : 'bg-text-muted animate-pulse'
+                  }`}
+                />
+                <span className="text-sm font-semibold">
+                  {parallaxStatus === 'online'
+                    ? 'Parallax Online'
                     : parallaxStatus === 'offline'
-                    ? 'bg-status-error'
-                    : 'bg-text-muted animate-pulse'
-                }`}
-              />
-              <span className="text-sm font-semibold">
-                {parallaxStatus === 'online'
-                  ? 'Parallax Online'
-                  : parallaxStatus === 'offline'
-                  ? 'Parallax Offline'
-                  : 'Checking...'}
-              </span>
+                    ? 'Parallax Offline'
+                    : 'Checking...'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -181,6 +191,26 @@ export default function AIInferencePage() {
 
       {/* Main Chat Interface */}
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Wallet Not Connected Warning */}
+        {!isWalletConnected && (
+          <div className="mb-6 glass-hover p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/10">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">💳</div>
+              <div>
+                <div className="font-heading font-bold text-white mb-1">
+                  Wallet Not Connected
+                </div>
+                <div className="text-sm text-text-secondary mb-2">
+                  Connect your Solana wallet (Phantom, Solflare) to make paid inference requests using x402 micropayments.
+                </div>
+                <div className="text-xs text-text-muted">
+                  Each inference request costs approximately $0.001 - $0.01 depending on token usage.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {parallaxStatus === 'offline' && (
           <div className="mb-6 glass-hover p-4 rounded-xl border border-status-error/30 bg-status-error/10">
             <div className="flex items-start gap-3">
@@ -268,17 +298,19 @@ export default function AIInferencePage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
-              placeholder="Ask anything... (e.g., 'Explain quantum computing')"
+              placeholder={!isWalletConnected ? "Connect wallet to start..." : "Ask anything... (e.g., 'Explain quantum computing')"}
               className="flex-1 bg-background-tertiary px-4 py-3 rounded-lg text-white placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary"
-              disabled={isLoading || parallaxStatus === 'offline'}
+              disabled={isLoading || parallaxStatus === 'offline' || !isWalletConnected}
             />
             <button
               onClick={handleSendMessage}
-              disabled={isLoading || !input.trim() || parallaxStatus === 'offline'}
+              disabled={isLoading || !input.trim() || parallaxStatus === 'offline' || !isWalletConnected}
               className="glass-hover neon-border px-6 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
                 <span className="text-text-muted">Sending...</span>
+              ) : !isWalletConnected ? (
+                <span className="text-text-muted">Connect Wallet</span>
               ) : (
                 <span className="text-gradient">Send</span>
               )}

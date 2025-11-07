@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createFaremeterFetch } from '@/lib/faremeter-client'
+import { createFaremeterFetch, getLastTxSignature, clearLastTxSignature } from '@/lib/faremeter-client'
 
 export interface RunAgentRequest {
   agentId: string
@@ -60,6 +60,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`💳 [${body.agentName}] Making x402 payment via Faremeter...`)
 
+    // Clear any previous transaction signature
+    clearLastTxSignature()
+
     // Make paid request to inference API
     const response = await fetchWithPayment(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/inference/paid`, {
       method: 'POST',
@@ -79,14 +82,25 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json()
 
-    // Extract transaction hash from headers
-    const txHash = response.headers.get('x-payment-tx') ||
-                   response.headers.get('x-transaction-hash') ||
-                   data.txHash ||
-                   'pending'
+    // Extract transaction signature captured during signing
+    let txHash = getLastTxSignature()
 
+    // Fallback to checking response headers or body
+    if (!txHash) {
+      txHash = response.headers.get('x-payment-tx') ||
+               response.headers.get('x-transaction-hash') ||
+               data.txHash ||
+               null
+    }
+
+    // Log with Solana Explorer link if we have a signature
     console.log(`✅ [${body.agentName}] Payment successful!`)
-    console.log(`   TX Hash: ${txHash}`)
+    if (txHash) {
+      console.log(`   TX Signature: ${txHash}`)
+      console.log(`   Solana Explorer: https://explorer.solana.com/tx/${txHash}?cluster=devnet`)
+    } else {
+      console.log(`   TX Signature: pending (signature capture may have failed)`)
+    }
     console.log(`   Cost: $${data.cost || '0.001000'}`)
 
     return NextResponse.json({

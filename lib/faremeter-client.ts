@@ -25,6 +25,23 @@ export interface PaymentResult<T = any> {
   txHash?: string
 }
 
+// Store last transaction signature globally (per client instance)
+let lastTxSignature: string | null = null
+
+/**
+ * Get the last transaction signature from the most recent payment
+ */
+export function getLastTxSignature(): string | null {
+  return lastTxSignature
+}
+
+/**
+ * Clear the stored transaction signature
+ */
+export function clearLastTxSignature(): void {
+  lastTxSignature = null
+}
+
 /**
  * Creates a fetch function with Faremeter payment handling
  */
@@ -60,12 +77,25 @@ export async function createFaremeterFetch(config: FaremeterPaymentConfig): Prom
       console.log(`   Asset: ${asset}`)
     }
 
-    // Create wallet interface for Faremeter
+    // Create wallet interface for Faremeter with signature capture
     const wallet = {
       network,
       publicKey: keypair.publicKey,
       updateTransaction: async (tx: VersionedTransaction) => {
+        // Sign the transaction
         tx.sign([keypair])
+
+        // Capture the signature immediately after signing
+        // Solana signatures are 64-byte arrays that need to be base58 encoded
+        if (tx.signatures && tx.signatures.length > 0) {
+          const signature = base58.encode(tx.signatures[0])
+          lastTxSignature = signature
+
+          if (enableLogging) {
+            console.log(`🔏 Transaction signed: ${signature.substring(0, 20)}...`)
+          }
+        }
+
         return tx
       },
     }
