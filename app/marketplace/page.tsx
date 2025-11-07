@@ -85,9 +85,30 @@ function TradePanel({
         max_tokens: maxTokens,
       })
 
-      setResult(response.choices[0].message.content)
+      console.log('Parallax response:', response)
+
+      // Handle response safely
+      let content = ''
+      if (response.choices && response.choices.length > 0) {
+        content = response.choices[0].message?.content || ''
+        // Fallback for non-standard response formats
+        if (!content && (response.choices[0] as any).text) {
+          content = (response.choices[0] as any).text
+        }
+      } else if ((response as any).content) {
+        content = (response as any).content
+      } else if ((response as any).text) {
+        content = (response as any).text
+      }
+
+      if (!content) {
+        throw new Error('No content in response. Check console for details.')
+      }
+
+      setResult(content)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to execute trade')
+      console.error('Trade execution error:', err)
     } finally {
       setIsExecuting(false)
     }
