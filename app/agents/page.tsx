@@ -78,49 +78,30 @@ export default function AgentDashboardPage() {
     ))
 
     try {
-      // Get private key from environment
-      const privateKey = process.env.NEXT_PUBLIC_SOLANA_PRIVATE_KEY
+      console.log(`🤖 [${agent.name}] Running agent with REAL x402 payment...`)
 
-      if (!privateKey) {
-        throw new Error(
-          'NEXT_PUBLIC_SOLANA_PRIVATE_KEY not configured!\n\n' +
-          'Add to your .env.local:\n' +
-          'NEXT_PUBLIC_SOLANA_PRIVATE_KEY=your-base58-private-key\n\n' +
-          'Then restart: npm run dev'
-        )
-      }
-
-      console.log(`🔑 Using wallet: ${privateKey.substring(0, 8)}...${privateKey.substring(privateKey.length - 8)}`)
-
-      // Import x402 payment client
-      const { createPaymentClient } = await import('@/lib/x402-payment-client')
-
-      // Create payment client with agent's wallet
-      const paymentClient = createPaymentClient({
-        privateKey,
-        network: 'solana-devnet',
-        maxPaymentAmount: 1.0,
-        enableLogging: true,
-      })
-
-      console.log(`🤖 [${agent.name}] Making REAL x402 payment...`)
-
-      // Make PAID request to inference API
-      const result = await paymentClient.request('/api/inference/paid', {
+      // Call server-side agent runner (x402-fetch works properly in Node.js)
+      const response = await fetch('/api/agents/run', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: agent.prompt }],
-          max_tokens: 300,
+          agentId: agent.id,
+          agentName: agent.name,
+          prompt: agent.prompt,
         }),
       })
 
+      const result = await response.json()
+
       if (!result.success || !result.data) {
-        throw new Error(result.error || 'Payment failed')
+        throw new Error(result.error || 'Agent execution failed')
       }
 
       console.log(`✅ [${agent.name}] Payment successful!`)
-      console.log(`   TX Hash: ${result.transaction?.txHash}`)
-      console.log(`   Cost: $${result.transaction?.amount.toFixed(6)}`)
+      console.log(`   TX Hash: ${result.data.txHash}`)
+      console.log(`   Cost: $${result.data.cost.toFixed(6)}`)
 
       // Update agent stats
       setDeployedAgents(prev => prev.map(a =>
@@ -137,13 +118,13 @@ export default function AgentDashboardPage() {
 
       // Add to trade feed with REAL transaction
       const newTrade: Trade = {
-        id: result.transaction?.id || `trade-${Date.now()}`,
+        id: `trade-${Date.now()}`,
         agentName: agent.name,
-        provider: result.data.provider || 'Local Parallax Node',
-        tokens: result.data.tokens || 0,
-        cost: result.transaction?.amount || 0,
+        provider: result.data.provider,
+        tokens: result.data.tokens,
+        cost: result.data.cost,
         timestamp: Date.now(),
-        txHash: result.transaction?.txHash || 'pending',
+        txHash: result.data.txHash,
         isReal: true,
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
@@ -175,10 +156,11 @@ export default function AgentDashboardPage() {
       alert(
         `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
         `Troubleshooting:\n` +
-        `1. Check NEXT_PUBLIC_SOLANA_PRIVATE_KEY in .env.local\n` +
-        `2. Ensure wallet has testnet USDC (get from faucet.solana.com)\n` +
+        `1. Check SOLANA_PRIVATE_KEY in .env.local (server-side)\n` +
+        `2. Ensure wallet has testnet USDC (faucet.solana.com)\n` +
         `3. Verify Parallax is running on localhost:3001\n` +
-        `4. Check console for detailed error logs`
+        `4. Restart dev server: npm run dev\n` +
+        `5. Check server console for detailed error logs`
       )
 
       // Reset status on error
