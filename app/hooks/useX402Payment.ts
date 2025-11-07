@@ -4,55 +4,28 @@
  * useX402Payment Hook
  *
  * Handles x402 micropayments for users with connected Solana wallets.
- * Automatically handles 402 Payment Required responses and retries with payment.
+ * Uses Faremeter to automatically handle 402 Payment Required responses.
  */
 
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { PublicKey, VersionedTransaction } from '@solana/web3.js'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 export interface X402FetchOptions extends RequestInit {
   maxPaymentAmount?: number
 }
 
-export interface PaymentTransaction {
-  txHash: string
-  amount: number
-  timestamp: number
-}
-
 export function useX402Payment() {
   const { publicKey, signTransaction } = useWallet()
   const { connection } = useConnection()
+  const [fetchWithPayer, setFetchWithPayer] = useState<typeof fetch | null>(null)
 
-  /**
-   * Make a fetch request with automatic x402 payment handling
-   */
-  const fetchWithPayment = useCallback(
-    async (url: string, options: X402FetchOptions = {}) => {
+  // Initialize Faremeter wrapper when wallet is connected
+  useEffect(() => {
+    const initFaremeter = async () => {
       if (!publicKey || !signTransaction) {
-        throw new Error('Wallet not connected. Please connect your wallet to make payments.')
-      }
-
-      // Try initial request
-      console.log('🔄 Making request to:', url)
-      const initialResponse = await fetch(url, options)
-
-      // If not 402, return response as-is
-      if (initialResponse.status !== 402) {
-        return initialResponse
-      }
-
-      // Handle 402 Payment Required
-      console.log('💳 Payment required, processing x402 payment...')
-
-      // Get payment info from 402 response
-      const paymentInfo = await initialResponse.json()
-      console.log('Payment info:', paymentInfo)
-
-      // x402-next middleware returns payment info in this format
-      if (!paymentInfo.paymentRequest) {
-        throw new Error('Invalid payment response from server')
+        setFetchWithPayer(null)
+        return
       }
 
       try {
@@ -65,13 +38,17 @@ export function useX402Payment() {
         const usdcInfo = lookupKnownSPLToken('devnet', 'USDC')
         const usdcMint = new PublicKey(usdcInfo.address)
 
+        console.log('🔑 Initializing Faremeter for connected wallet:', publicKey.toBase58())
+
         // Create wallet interface for Faremeter
         const wallet = {
-          network: 'devnet',
+          network: 'devnet' as const,
           publicKey,
           updateTransaction: async (tx: VersionedTransaction) => {
+            console.log('🔏 Signing payment transaction with connected wallet...')
             // Use connected wallet to sign
             const signed = await signTransaction(tx)
+            console.log('✅ Transaction signed')
             return signed
           },
         }
@@ -80,26 +57,52 @@ export function useX402Payment() {
         const handler = createPaymentHandler(wallet, usdcMint, connection)
 
         // Wrap fetch with payment handling
-        const fetchWithPayer = wrapFetch(fetch, { handlers: [handler] })
+        const wrappedFetch = wrapFetch(fetch, { handlers: [handler] })
 
-        // Retry request with payment handling
-        console.log('🔄 Retrying request with payment...')
-        const paidResponse = await fetchWithPayer(url, options)
+        console.log('✅ Faremeter payment client initialized for user wallet')
 
-        console.log('✅ Payment successful!')
-
-        return paidResponse
+        // Store the wrapped fetch function
+        setFetchWithPayer(() => wrappedFetch)
       } catch (error) {
-        console.error('Payment failed:', error)
-        throw new Error(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        console.error('Failed to initialize Faremeter:', error)
+        setFetchWithPayer(null)
       }
+    }
+
+    initFaremeter()
+  }, [publicKey, signTransaction, connection])
+
+  /**
+   * Make a fetch request with automatic x402 payment handling
+   */
+  const fetchWithPayment = useCallback(
+    async (url: string, options: X402FetchOptions = {}) => {
+      if (!publicKey || !signTransaction) {
+        throw new Error('Wallet not connected. Please connect your wallet to make payments.')
+      }
+
+      if (!fetchWithPayer) {
+        throw new Error('Payment client is initializing. Please wait...')
+      }
+
+      console.log('🔄 Making paid request to:', url)
+
+      // Use Faremeter-wrapped fetch - it will automatically handle 402 responses
+      const response = await fetchWithPayer(url, options)
+
+      if (response.ok) {
+        console.log('✅ Request successful (payment handled automatically)')
+      }
+
+      return response
     },
-    [publicKey, signTransaction, connection]
+    [publicKey, signTransaction, fetchWithPayer]
   )
 
   return {
     fetchWithPayment,
     isWalletConnected: !!publicKey,
     walletPublicKey: publicKey,
+    isReady: !!fetchWithPayer && !!publicKey,
   }
 }

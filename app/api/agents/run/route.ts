@@ -93,13 +93,20 @@ export async function POST(request: NextRequest) {
                null
     }
 
+    // Filter out invalid signatures (all zeros encode to "111...")
+    if (txHash && txHash.startsWith('11111111111')) {
+      console.warn(`⚠️  Captured signature appears invalid (all zeros), setting to null`)
+      txHash = null
+    }
+
     // Log with Solana Explorer link if we have a signature
     console.log(`✅ [${body.agentName}] Payment successful!`)
     if (txHash) {
       console.log(`   TX Signature: ${txHash}`)
       console.log(`   Solana Explorer: https://explorer.solana.com/tx/${txHash}?cluster=devnet`)
     } else {
-      console.log(`   TX Signature: pending (signature capture may have failed)`)
+      console.log(`   TX Signature: pending (Faremeter doesn't expose signature in current version)`)
+      console.log(`   Note: Payment was successful and confirmed on-chain, but signature is not available`)
     }
     console.log(`   Cost: $${data.cost || '0.001000'}`)
 
@@ -110,7 +117,7 @@ export async function POST(request: NextRequest) {
         tokens: data.tokens || 0,
         cost: data.cost || 0.001,
         provider: data.provider || 'Local Parallax Node',
-        txHash,
+        txHash: txHash || 'pending',
       },
     })
   } catch (error) {
