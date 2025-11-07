@@ -22,15 +22,30 @@ interface ProviderListProps {
   selectedProvider: string | null
 }
 
-const MOCK_PROVIDERS: Provider[] = [
-  { id: 'node-1', name: 'ParallaxNode-Alpha', region: 'US-East', price: 0.00118, latency: 42, uptime: 99.97, reputation: 98.5, totalRequests: 847123, online: true, models: ['Qwen-2.5-72B', 'Llama-3.3-70B'] },
-  { id: 'node-2', name: 'ParallaxNode-Beta', region: 'EU-West', price: 0.00122, latency: 38, uptime: 99.94, reputation: 97.2, totalRequests: 723456, online: true, models: ['Llama-3.3-70B', 'DeepSeek-V3'] },
-  { id: 'node-3', name: 'ParallaxNode-Gamma', region: 'Asia-SE', price: 0.00115, latency: 51, uptime: 99.89, reputation: 96.8, totalRequests: 614789, online: true, models: ['Qwen-2.5-72B', 'Llama-3.1-8B'] },
-  { id: 'node-4', name: 'ParallaxNode-Delta', region: 'US-West', price: 0.00129, latency: 47, uptime: 99.85, reputation: 95.4, totalRequests: 558234, online: true, models: ['DeepSeek-V3', 'Qwen-2.5-32B'] },
-  { id: 'node-5', name: 'ParallaxNode-Epsilon', region: 'EU-Central', price: 0.00112, latency: 55, uptime: 99.81, reputation: 94.9, totalRequests: 492567, online: true, models: ['Llama-3.3-70B', 'Qwen-2.5-72B'] },
-  { id: 'node-6', name: 'ParallaxNode-Zeta', region: 'US-Central', price: 0.00135, latency: 33, uptime: 99.92, reputation: 96.1, totalRequests: 634890, online: true, models: ['Qwen-2.5-72B', 'DeepSeek-V3'] },
-  { id: 'node-7', name: 'ParallaxNode-Eta', region: 'Asia-East', price: 0.00108, latency: 62, uptime: 99.78, reputation: 93.7, totalRequests: 456123, online: false, models: ['Llama-3.1-8B', 'Qwen-2.5-32B'] },
+// REAL PROVIDER: Your local Parallax node (running on localhost:3001)
+// In production, this would fetch from a real marketplace API
+const LOCAL_PROVIDER: Provider = {
+  id: 'local-parallax',
+  name: 'Local Parallax Node',
+  region: 'localhost:3001',
+  price: 0.00112,
+  latency: 45,
+  uptime: 100.0,
+  reputation: 100.0,
+  totalRequests: 0,
+  online: true,
+  models: ['Qwen/Qwen3-0.6B'], // Your actual model
+}
+
+// DEMO PROVIDERS (for UI showcase only - not connected)
+// These would be real GPU providers in production
+const DEMO_PROVIDERS: Provider[] = [
+  { id: 'demo-1', name: '[DEMO] ParallaxNode-Alpha', region: 'US-East', price: 0.00118, latency: 42, uptime: 99.97, reputation: 98.5, totalRequests: 847123, online: false, models: ['Qwen-2.5-72B', 'Llama-3.3-70B'] },
+  { id: 'demo-2', name: '[DEMO] ParallaxNode-Beta', region: 'EU-West', price: 0.00122, latency: 38, uptime: 99.94, reputation: 97.2, totalRequests: 723456, online: false, models: ['Llama-3.3-70B', 'DeepSeek-V3'] },
+  { id: 'demo-3', name: '[DEMO] ParallaxNode-Gamma', region: 'Asia-SE', price: 0.00115, latency: 51, uptime: 99.89, reputation: 96.8, totalRequests: 614789, online: false, models: ['Qwen-2.5-72B', 'Llama-3.1-8B'] },
 ]
+
+const ALL_PROVIDERS = [LOCAL_PROVIDER, ...DEMO_PROVIDERS]
 
 export default function ProviderList({
   model,
@@ -41,7 +56,9 @@ export default function ProviderList({
   const [filterRegion, setFilterRegion] = useState<string>('all')
 
   const filteredAndSortedProviders = useMemo(() => {
-    let filtered = MOCK_PROVIDERS.filter((p) => p.online)
+    // Show all providers (online and offline) to demonstrate marketplace UI
+    // In production, you might want to filter only online providers
+    let filtered = ALL_PROVIDERS
 
     if (filterRegion !== 'all') {
       filtered = filtered.filter((p) => p.region === filterRegion)
@@ -55,7 +72,9 @@ export default function ProviderList({
     })
   }, [sortBy, filterRegion])
 
-  const regions = ['all', 'US-East', 'US-West', 'US-Central', 'EU-West', 'EU-Central', 'Asia-SE', 'Asia-East']
+  const regions = ['all', 'localhost:3001', 'US-East', 'US-West', 'US-Central', 'EU-West', 'EU-Central', 'Asia-SE', 'Asia-East']
+
+  const onlineCount = filteredAndSortedProviders.filter(p => p.online).length
 
   return (
     <motion.div
@@ -67,12 +86,12 @@ export default function ProviderList({
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-heading font-bold text-white">
-            Providers ({filteredAndSortedProviders.length})
+            Providers ({onlineCount} online / {filteredAndSortedProviders.length} total)
           </h3>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-status-success rounded-full animate-pulse" />
-            <span className="text-xs text-status-success font-semibold">
-              ONLINE
+            <span className={`w-2 h-2 rounded-full ${onlineCount > 0 ? 'bg-status-success animate-pulse' : 'bg-status-error'}`} />
+            <span className={`text-xs font-semibold ${onlineCount > 0 ? 'text-status-success' : 'text-status-error'}`}>
+              {onlineCount > 0 ? 'CONNECTED' : 'OFFLINE'}
             </span>
           </div>
         </div>
@@ -141,16 +160,18 @@ interface ProviderCardProps {
 function ProviderCard({ provider, isSelected, onClick, index }: ProviderCardProps) {
   return (
     <motion.div
-      className={`glass-hover p-4 rounded-lg border cursor-pointer transition-all ${
-        isSelected
-          ? 'border-accent-primary bg-accent-primary/10'
-          : 'border-border hover:border-accent-primary/50'
+      className={`glass-hover p-4 rounded-lg border transition-all ${
+        !provider.online
+          ? 'opacity-50 cursor-not-allowed border-border'
+          : isSelected
+          ? 'border-accent-primary bg-accent-primary/10 cursor-pointer'
+          : 'border-border hover:border-accent-primary/50 cursor-pointer'
       }`}
-      onClick={onClick}
+      onClick={provider.online ? onClick : undefined}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      whileHover={{ scale: 1.02 }}
+      whileHover={provider.online ? { scale: 1.02 } : {}}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -159,12 +180,17 @@ function ProviderCard({ provider, isSelected, onClick, index }: ProviderCardProp
             <h4 className="font-heading font-bold text-white">
               {provider.name}
             </h4>
-            {isSelected && (
+            {isSelected && provider.online && (
               <span className="text-accent-primary">✓</span>
+            )}
+            {!provider.online && (
+              <span className="text-xs px-2 py-0.5 rounded bg-status-error/20 text-status-error border border-status-error/30">
+                OFFLINE
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-text-secondary">
-            <span className="w-1.5 h-1.5 bg-status-success rounded-full" />
+            <span className={`w-1.5 h-1.5 rounded-full ${provider.online ? 'bg-status-success' : 'bg-status-error'}`} />
             <span>{provider.region}</span>
           </div>
         </div>

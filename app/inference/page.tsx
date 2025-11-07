@@ -87,12 +87,18 @@ export default function AIInferencePage() {
         content = (response as any).text
       }
 
-      // Clean up <think> tags if present
+      // Clean up <think> tags if present (Parallax includes reasoning process)
       if (content.includes('<think>')) {
-        // Remove thinking process, just show the final answer
         const thinkEnd = content.indexOf('</think>')
         if (thinkEnd !== -1) {
+          // Found closing tag - remove everything including tags
           content = content.substring(thinkEnd + 8).trim()
+        } else {
+          // No closing tag (response truncated) - remove from start
+          content = content.replace(/<think>[\s\S]*$/, '').trim()
+          if (!content) {
+            content = '⚠️ Response truncated during AI reasoning. Try a shorter prompt or the model will provide a more complete response on retry.'
+          }
         }
       }
 
