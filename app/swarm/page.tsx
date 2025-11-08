@@ -19,6 +19,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { getDemoSimulator } from '@/lib/demo-provider-simulator'
+import { getRealSwarm } from '@/lib/real-swarm'
+import { getRealProviderManager } from '@/lib/real-provider-manager'
 import dynamic from 'next/dynamic'
 
 // Dynamically import 3D component (client-side only to avoid SSR issues with Three.js)
@@ -147,86 +149,74 @@ export default function SwarmPage() {
       }
     }, 1500)
 
-    // Run demo optimization
+    // Run REAL swarm optimization! 🔥
     try {
-      const simulator = getDemoSimulator()
+      console.log('🚀 Running REAL swarm optimization...')
 
-      // Simulate benchmarking
+      // Step 1: Discover real providers
+      const providerManager = getRealProviderManager()
+      await providerManager.discoverProviders()
+
       await new Promise(resolve => setTimeout(resolve, 1000))
-      const benchmarks = await simulator.benchmarkAll()
 
       setInsights(prev => [{
         id: `insight-${Date.now()}-1`,
         type: 'optimization',
-        message: `Swarm benchmarked ${benchmarks.length} providers in parallel`,
+        message: `Swarm discovered ${providerManager.getAllProviders().length} real Parallax providers`,
         confidence: 0.95,
         impact: 'medium',
         timestamp: Date.now(),
         agentId: 'Swarm Coordinator',
       }, ...prev].slice(0, 15))
 
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Step 2: Run real swarm optimization
+      const swarm = getRealSwarm()
+      const result = await swarm.runSwarmOptimization()
 
-      // Simulate discovery
-      const bestBenchmark = benchmarks.filter(b => b.success).reduce((best, current) =>
-        current.actualLatency < best.actualLatency ? current : best
-      )
+      await new Promise(resolve => setTimeout(resolve, 500))
 
-      const provider = simulator.getProvider(bestBenchmark.providerId)
+      // Step 3: Update UI with real results
+      const realInsights = swarm.generateInsights()
 
-      setInsights(prev => [{
-        id: `insight-${Date.now()}-2`,
-        type: 'discovery',
-        message: `💰 Cost Hunter discovered ${provider?.name} with ${bestBenchmark.actualLatency}ms latency!`,
-        confidence: 0.92,
-        impact: 'high',
-        timestamp: Date.now(),
-        agentId: '💰 Cost Hunter',
-      }, ...prev].slice(0, 15))
+      setInsights(prev => [
+        ...realInsights,
+        ...prev
+      ].slice(0, 15))
 
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Update real stats
+      const swarmStats = swarm.getStats()
+      setStats({
+        totalMembers: swarmStats.totalMembers,
+        avgReputation: swarmStats.avgReputation,
+        totalContributions: swarmStats.totalContributions,
+        totalInsights: swarmStats.totalDiscoveries,
+        highImpactInsights: swarmStats.highImpactDiscoveries,
+        activeVotes: result.consensus.votesFor,
+      })
 
-      // Simulate consensus
-      setInsights(prev => [{
-        id: `insight-${Date.now()}-3`,
-        type: 'consensus',
-        message: `🗳️ Swarm consensus reached: ${provider?.name} optimal (87% agreement)`,
-        confidence: 0.87,
-        impact: 'high',
-        timestamp: Date.now(),
-        agentId: 'Swarm Coordinator',
-      }, ...prev].slice(0, 15))
+      // Update real performance gain
+      setPerformanceGain(result.performanceGain)
 
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Update stats
-      setStats(prev => ({
-        ...prev,
-        totalContributions: prev.totalContributions + 5,
-        totalInsights: prev.totalInsights + 3,
-        highImpactInsights: prev.highImpactInsights + 2,
-        activeVotes: 1,
-      }))
-
-      // Increase agent reputations
-      setAgents(prev => prev.map(agent => ({
-        ...agent,
-        reputation: Math.min(100, agent.reputation + Math.floor(Math.random() * 3)),
-        contributions: agent.contributions + 1,
+      // Update real agents
+      const realMembers = swarm.getMembers()
+      setAgents(realMembers.map(m => ({
+        id: m.id,
+        name: m.name,
+        strategy: m.strategy.type,
+        reputation: m.reputation,
+        contributions: m.contributions,
+        status: 'idle',
+        lastActivity: m.lastActivity,
       })))
 
-      // Improve swarm health
-      setSwarmHealth(prev => Math.min(100, prev + 3))
-
-      // Improve performance gain
-      setPerformanceGain(prev => Math.min(60, prev + (Math.random() * 2)))
-
-      // Set recommendation
-      setRecommendation({
-        provider: provider?.name || 'Unknown',
-        confidence: 87,
-        reason: `Swarm consensus: ${bestBenchmark.actualLatency}ms latency, optimal cost/performance ratio`,
-      })
+      // Set real recommendation
+      if (result.consensus.agreedProvider) {
+        setRecommendation({
+          provider: result.consensus.agreedProvider.name,
+          confidence: Math.round(result.consensus.confidence * 100),
+          reason: result.consensus.reason,
+        })
+      }
 
     } catch (error) {
       console.error('Optimization error:', error)
