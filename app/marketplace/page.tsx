@@ -10,10 +10,14 @@ import AgentPanel from '../components/marketplace/AgentPanel'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import { useProvider } from '@/app/contexts/ProviderContext'
+import Link from 'next/link'
 
 export default function MarketplacePage() {
   const [selectedModel, setSelectedModel] = useState('Qwen-2.5-72B')
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+
+  // Global provider state
+  const { selectedProvider, selectProvider, providers } = useProvider()
 
   // Wallet connection for user payments
   const { publicKey } = useWallet()
@@ -33,20 +37,81 @@ export default function MarketplacePage() {
             <AgentPanel />
           </div>
 
-          {/* Middle Column - Chart & Provider List */}
+          {/* Middle Column - Provider Selection */}
           <div className="col-span-12 lg:col-span-6 space-y-6">
-            <TradingChart model={selectedModel} />
-            <ProviderList
-              model={selectedModel}
-              onSelectProvider={setSelectedProvider}
-              selectedProvider={selectedProvider}
-            />
+            {/* Provider Selection */}
+            <div className="glass p-6 rounded-xl">
+              <h3 className="text-xl font-heading font-bold mb-4 text-white">
+                🏪 Browse Providers
+              </h3>
+              <div className="space-y-3">
+                {providers.map((provider) => (
+                  <motion.div
+                    key={provider.id}
+                    className={`p-4 rounded-lg cursor-pointer transition-all ${
+                      selectedProvider?.id === provider.id
+                        ? 'glass-hover neon-border'
+                        : 'glass border border-border hover:border-accent-primary'
+                    }`}
+                    onClick={() => selectProvider(provider)}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
+                        <div className="font-heading font-bold text-white">
+                          {provider.name}
+                        </div>
+                      </div>
+                      {selectedProvider?.id === provider.id && (
+                        <div className="text-xs bg-accent-primary/20 text-accent-primary px-2 py-1 rounded">
+                          ✓ Selected
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-text-muted mb-3">
+                      {provider.description}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <div className="text-text-muted">Latency</div>
+                        <div className="font-mono text-white">{provider.latency}ms</div>
+                      </div>
+                      <div>
+                        <div className="text-text-muted">Uptime</div>
+                        <div className="font-mono text-status-success">{provider.uptime}%</div>
+                      </div>
+                      <div>
+                        <div className="text-text-muted">Model</div>
+                        <div className="font-mono text-white text-[10px]">{provider.model.split('/')[1]}</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Use Provider Buttons */}
+              {selectedProvider && (
+                <div className="mt-6 pt-4 border-t border-border space-y-2">
+                  <Link href="/inference">
+                    <button className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105">
+                      <span className="text-gradient">💬 Use in Inference Chat</span>
+                    </button>
+                  </Link>
+                  <Link href="/agents">
+                    <button className="w-full glass-hover border border-border px-4 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105 text-white">
+                      🤖 Deploy Agent with Provider
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Right Column - Trade Panel & Info */}
+          {/* Right Column - Quick Test Panel */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             <TradePanel
-              selectedProvider={selectedProvider}
+              selectedProvider={selectedProvider?.name || null}
               model={selectedModel}
               isWalletConnected={isWalletConnected}
               fetchWithPayment={fetchWithPayment}
