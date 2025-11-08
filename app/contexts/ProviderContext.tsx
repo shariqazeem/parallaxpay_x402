@@ -3,11 +3,14 @@
 /**
  * Provider Context - Global state for selected AI provider
  *
+ * NOW WITH REAL PROVIDERS! 🔥
+ *
  * This connects marketplace → inference → agents
- * User selects provider in marketplace, uses it everywhere
+ * Discovers ACTUAL Parallax nodes and shows REAL data
  */
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { getRealProviderManager, type RealProvider } from '@/lib/real-provider-manager'
 
 export interface Provider {
   id: string
@@ -19,6 +22,7 @@ export interface Provider {
   uptime: number // percentage
   description: string
   featured?: boolean
+  online?: boolean // NEW: Real status
 }
 
 interface ProviderContextType {
@@ -26,70 +30,88 @@ interface ProviderContextType {
   selectProvider: (provider: Provider) => void
   clearProvider: () => void
   providers: Provider[]
+  discoverProviders: () => Promise<void>
+  isDiscovering: boolean
 }
 
 const ProviderContext = createContext<ProviderContextType | undefined>(undefined)
 
-// Demo providers (in real app, fetch from API)
-const DEMO_PROVIDERS: Provider[] = [
-  {
-    id: 'parallax-local',
-    name: 'Parallax Local',
-    endpoint: 'http://localhost:3001',
-    model: 'Qwen/Qwen3-0.6B',
-    pricePerToken: 0.001,
-    latency: 50,
-    uptime: 99.9,
-    description: 'Your local Parallax node - Fast and private',
-    featured: true,
-  },
-  {
-    id: 'parallax-cloud-1',
-    name: 'Parallax Cloud US-East',
-    endpoint: 'https://api.parallax.xyz/us-east',
-    model: 'Qwen/Qwen2.5-72B',
-    pricePerToken: 0.0015,
-    latency: 30,
-    uptime: 99.99,
-    description: 'High-performance cloud inference',
-    featured: true,
-  },
-  {
-    id: 'parallax-cloud-2',
-    name: 'Parallax Cloud EU',
-    endpoint: 'https://api.parallax.xyz/eu',
-    model: 'Qwen/Qwen2.5-72B',
-    pricePerToken: 0.0012,
-    latency: 45,
-    uptime: 99.95,
-    description: 'European cloud inference',
-  },
-  {
-    id: 'community-node-1',
-    name: 'Community Node - Fast',
-    endpoint: 'https://node1.parallax.community',
-    model: 'Qwen/Qwen3-0.6B',
-    pricePerToken: 0.0008,
-    latency: 80,
-    uptime: 98.5,
-    description: 'Community-run node - Budget friendly',
-  },
-]
+/**
+ * Convert RealProvider to Provider format
+ */
+function convertRealProvider(realProvider: RealProvider): Provider {
+  return {
+    id: realProvider.id,
+    name: realProvider.name,
+    endpoint: realProvider.url,
+    model: realProvider.model,
+    pricePerToken: realProvider.price,
+    latency: realProvider.latency,
+    uptime: realProvider.uptime,
+    description: `${realProvider.region} - ${realProvider.online ? 'Online' : 'Offline'}`,
+    featured: realProvider.online && realProvider.latency < 100,
+    online: realProvider.online,
+  }
+}
 
 export function ProviderContextProvider({ children }: { children: ReactNode }) {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+  const [providers, setProviders] = useState<Provider[]>([])
+  const [isDiscovering, setIsDiscovering] = useState(false)
 
-  // Load saved provider from localStorage on mount
+  /**
+   * Discover REAL providers from Parallax nodes
+   */
+  const discoverProviders = async () => {
+    console.log('🔍 Discovering REAL Parallax providers...')
+    setIsDiscovering(true)
+
+    try {
+      const providerManager = getRealProviderManager()
+      const realProviders = await providerManager.discoverProviders()
+
+      const convertedProviders = realProviders.map(convertRealProvider)
+      setProviders(convertedProviders)
+
+      console.log(`✅ Discovered ${convertedProviders.length} real providers`)
+
+      // Auto-select best provider if none selected
+      if (!selectedProvider && convertedProviders.length > 0) {
+        const onlineProviders = convertedProviders.filter(p => p.online)
+        if (onlineProviders.length > 0) {
+          const best = onlineProviders.reduce((a, b) =>
+            a.latency < b.latency ? a : b
+          )
+          setSelectedProvider(best)
+          localStorage.setItem('parallaxpay_selected_provider', best.id)
+          console.log('✅ Auto-selected best provider:', best.name)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to discover providers:', error)
+    } finally {
+      setIsDiscovering(false)
+    }
+  }
+
+  // Discover providers on mount
   useEffect(() => {
+    discoverProviders()
+
+    // Load saved provider from localStorage
     const savedProviderId = localStorage.getItem('parallaxpay_selected_provider')
     if (savedProviderId) {
-      const provider = DEMO_PROVIDERS.find(p => p.id === savedProviderId)
-      if (provider) {
-        setSelectedProvider(provider)
-      }
-    } else {
-      // Default to local Parallax
-      setSelectedProvider(DEMO_PROVIDERS[0])
+      // Wait for providers to be discovered, then select saved one
+      const checkInterval = setInterval(() => {
+        const provider = providers.find(p => p.id === savedProviderId)
+        if (provider) {
+          setSelectedProvider(provider)
+          clearInterval(checkInterval)
+        }
+      }, 100)
+
+      // Clear interval after 5 seconds
+      setTimeout(() => clearInterval(checkInterval), 5000)
     }
   }, [])
 
@@ -110,7 +132,9 @@ export function ProviderContextProvider({ children }: { children: ReactNode }) {
         selectedProvider,
         selectProvider,
         clearProvider,
-        providers: DEMO_PROVIDERS,
+        providers,
+        discoverProviders,
+        isDiscovering,
       }}
     >
       {children}

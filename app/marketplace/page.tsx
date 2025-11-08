@@ -17,8 +17,8 @@ import Link from 'next/link'
 export default function MarketplacePage() {
   const [selectedModel, setSelectedModel] = useState('Qwen-2.5-72B')
 
-  // Global provider state
-  const { selectedProvider, selectProvider, providers } = useProvider()
+  // Global provider state with REAL discovery
+  const { selectedProvider, selectProvider, providers, discoverProviders, isDiscovering } = useProvider()
 
   // Wallet connection for user payments
   const { publicKey } = useWallet()
@@ -47,34 +47,62 @@ export default function MarketplacePage() {
           <div className="col-span-12 lg:col-span-6 space-y-6">
             {/* Provider Selection */}
             <div className="glass p-6 rounded-xl">
-              <h3 className="text-xl font-heading font-bold mb-4 text-white">
-                🏪 Browse Providers
-              </h3>
-              <div className="space-y-3">
-                {providers.map((provider) => (
-                  <motion.div
-                    key={provider.id}
-                    className={`p-4 rounded-lg cursor-pointer transition-all ${
-                      selectedProvider?.id === provider.id
-                        ? 'glass-hover neon-border'
-                        : 'glass border border-border hover:border-accent-primary'
-                    }`}
-                    onClick={() => selectProvider(provider)}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
-                        <div className="font-heading font-bold text-white">
-                          {provider.name}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-heading font-bold text-white">
+                  🏪 Browse Providers
+                </h3>
+                <button
+                  onClick={discoverProviders}
+                  disabled={isDiscovering}
+                  className="px-3 py-1.5 text-xs font-heading font-bold glass-hover border border-accent-primary rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDiscovering ? (
+                    <span className="text-text-muted">🔄 Discovering...</span>
+                  ) : (
+                    <span className="text-gradient">🔍 Discover</span>
+                  )}
+                </button>
+              </div>
+
+              {providers.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <p className="text-text-secondary text-sm mb-2">
+                    No providers discovered yet
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Make sure Parallax nodes are running on ports 3001-3003
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {providers.map((provider) => (
+                    <motion.div
+                      key={provider.id}
+                      className={`p-4 rounded-lg cursor-pointer transition-all ${
+                        selectedProvider?.id === provider.id
+                          ? 'glass-hover neon-border'
+                          : 'glass border border-border hover:border-accent-primary'
+                      }`}
+                      onClick={() => selectProvider(provider)}
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
+                          <div className="font-heading font-bold text-white">
+                            {provider.name}
+                          </div>
+                          {provider.online !== undefined && (
+                            <div className={`w-2 h-2 rounded-full ${provider.online ? 'bg-status-success' : 'bg-status-error'}`} />
+                          )}
                         </div>
+                        {selectedProvider?.id === provider.id && (
+                          <div className="text-xs bg-accent-primary/20 text-accent-primary px-2 py-1 rounded">
+                            ✓ Selected
+                          </div>
+                        )}
                       </div>
-                      {selectedProvider?.id === provider.id && (
-                        <div className="text-xs bg-accent-primary/20 text-accent-primary px-2 py-1 rounded">
-                          ✓ Selected
-                        </div>
-                      )}
-                    </div>
                     <div className="text-xs text-text-muted mb-3">
                       {provider.description}
                     </div>
@@ -91,10 +119,11 @@ export default function MarketplacePage() {
                         <div className="text-text-muted">Model</div>
                         <div className="font-mono text-white text-[10px]">{provider.model.split('/')[1]}</div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
 
               {/* Use Provider Buttons */}
               {selectedProvider && (
