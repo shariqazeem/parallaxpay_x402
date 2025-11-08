@@ -12,7 +12,7 @@
  * - Interactive camera controls
  */
 
-import { useRef, useMemo, useEffect, useState } from 'react'
+import { useRef, useMemo, useEffect, useState, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Sphere, Line, Text } from '@react-three/drei'
 import * as THREE from 'three'
@@ -98,58 +98,64 @@ export default function Swarm3D({
   }, [externalAgents])
 
   return (
-    <div className="w-full h-[600px] rounded-xl overflow-hidden bg-background-tertiary border border-border">
-      <Canvas camera={{ position: [0, 0, 12], fov: 50 }}>
-        {/* Lighting */}
-        <ambientLight intensity={0.3} />
-        <pointLight position={[10, 10, 10]} intensity={0.8} />
-        <pointLight position={[-10, -10, -10]} intensity={0.3} color="#9945FF" />
+    <div className="relative w-full h-[600px] rounded-xl overflow-hidden bg-background-tertiary border border-border">
+      <Canvas
+        camera={{ position: [0, 0, 12], fov: 50 }}
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 2]}
+      >
+        <Suspense fallback={null}>
+          {/* Lighting */}
+          <ambientLight intensity={0.3} />
+          <pointLight position={[10, 10, 10]} intensity={0.8} />
+          <pointLight position={[-10, -10, -10]} intensity={0.3} color="#9945FF" />
 
-        {/* Background */}
-        <mesh position={[0, 0, -10]}>
-          <planeGeometry args={[50, 50]} />
-          <meshBasicMaterial color="#0a0a0a" />
-        </mesh>
+          {/* Background */}
+          <mesh position={[0, 0, -10]}>
+            <planeGeometry args={[50, 50]} />
+            <meshBasicMaterial color="#0a0a0a" />
+          </mesh>
 
-        {/* Agents */}
-        {internalAgents.map((agent, index) => (
-          <AgentSphere
-            key={agent.id}
-            agent={agent}
-            agents={internalAgents}
-            setAgents={setInternalAgents}
-            enablePhysics={enablePhysics}
+          {/* Agents */}
+          {internalAgents.map((agent, index) => (
+            <AgentSphere
+              key={agent.id}
+              agent={agent}
+              agents={internalAgents}
+              setAgents={setInternalAgents}
+              enablePhysics={enablePhysics}
+            />
+          ))}
+
+          {/* Connections */}
+          {showConnections && internalAgents.map((agent) =>
+            agent.connections.map((targetId) => {
+              const target = internalAgents.find(a => a.id === targetId)
+              if (!target) return null
+
+              return (
+                <ConnectionLine
+                  key={`${agent.id}-${targetId}`}
+                  start={agent.position}
+                  end={target.position}
+                  color={agent.color}
+                />
+              )
+            })
+          )}
+
+          {/* Grid */}
+          <gridHelper args={[20, 20, '#222222', '#111111']} />
+
+          {/* Camera controls */}
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            maxDistance={20}
+            minDistance={5}
           />
-        ))}
-
-        {/* Connections */}
-        {showConnections && internalAgents.map((agent) =>
-          agent.connections.map((targetId) => {
-            const target = internalAgents.find(a => a.id === targetId)
-            if (!target) return null
-
-            return (
-              <ConnectionLine
-                key={`${agent.id}-${targetId}`}
-                start={agent.position}
-                end={target.position}
-                color={agent.color}
-              />
-            )
-          })
-        )}
-
-        {/* Grid */}
-        <gridHelper args={[20, 20, '#222222', '#111111']} />
-
-        {/* Camera controls */}
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          maxDistance={20}
-          minDistance={5}
-        />
+        </Suspense>
       </Canvas>
 
       {/* Legend */}
@@ -204,69 +210,16 @@ function AgentSphere({
   const [hovered, setHovered] = useState(false)
   const [clicked, setClicked] = useState(false)
 
-  // Animate agent movement (simple physics simulation)
+  // Simple rotation animation (lighter than full physics)
   useFrame((state, delta) => {
-    if (!meshRef.current || !enablePhysics) return
+    if (!meshRef.current) return
 
-    // Get current agent data
-    const currentAgent = agents.find(a => a.id === agent.id)
-    if (!currentAgent) return
-
-    // Apply gentle forces to move agents
-    const forces: [number, number, number] = [0, 0, 0]
-
-    // Attraction to center (weak)
-    const centerDist = Math.sqrt(
-      currentAgent.position[0] ** 2 +
-      currentAgent.position[1] ** 2 +
-      currentAgent.position[2] ** 2
-    )
-    if (centerDist > 0) {
-      forces[0] -= (currentAgent.position[0] / centerDist) * 0.01
-      forces[1] -= (currentAgent.position[1] / centerDist) * 0.01
-      forces[2] -= (currentAgent.position[2] / centerDist) * 0.01
+    // Gentle bobbing motion
+    if (enablePhysics) {
+      const time = state.clock.getElapsedTime()
+      const offset = agent.position[0] + agent.position[1] + agent.position[2]
+      meshRef.current.position.y = agent.position[1] + Math.sin(time + offset) * 0.1
     }
-
-    // Repulsion from other agents
-    agents.forEach(other => {
-      if (other.id === agent.id) return
-
-      const dx = currentAgent.position[0] - other.position[0]
-      const dy = currentAgent.position[1] - other.position[1]
-      const dz = currentAgent.position[2] - other.position[2]
-      const dist = Math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
-
-      if (dist > 0 && dist < 3) {
-        const force = (3 - dist) * 0.05
-        forces[0] += (dx / dist) * force
-        forces[1] += (dy / dist) * force
-        forces[2] += (dz / dist) * force
-      }
-    })
-
-    // Update velocity
-    const newVelocity: [number, number, number] = [
-      currentAgent.velocity[0] * 0.95 + forces[0],
-      currentAgent.velocity[1] * 0.95 + forces[1],
-      currentAgent.velocity[2] * 0.95 + forces[2],
-    ]
-
-    // Update position
-    const newPosition: [number, number, number] = [
-      currentAgent.position[0] + newVelocity[0],
-      currentAgent.position[1] + newVelocity[1],
-      currentAgent.position[2] + newVelocity[2],
-    ]
-
-    // Update mesh position
-    meshRef.current.position.set(...newPosition)
-
-    // Update agent data
-    setAgents(agents.map(a =>
-      a.id === agent.id
-        ? { ...a, position: newPosition, velocity: newVelocity }
-        : a
-    ))
   })
 
   // Pulsing animation based on status

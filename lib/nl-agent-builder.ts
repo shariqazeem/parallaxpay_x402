@@ -242,7 +242,7 @@ Respond in JSON format:
       return {
         shouldTrade: true,
         targetProvider: best.provider.id,
-        reason: \`Initial selection: \${best.provider.id} (score: \${best.score.toFixed(1)})\`
+        reason: 'Initial selection: ' + best.provider.id + ' (score: ' + best.score.toFixed(1) + ')'
       }
     }
 
@@ -268,14 +268,14 @@ Respond in JSON format:
       return {
         shouldTrade: true,
         targetProvider: best.provider.id,
-        reason: \`Better option found: \${costImprovement.toFixed(1)}% cost savings, \${best.provider.latency}ms latency\`
+        reason: 'Better option found: ' + costImprovement.toFixed(1) + '% cost savings, ' + best.provider.latency + 'ms latency'
       }
     }
 
     return {
       shouldTrade: false,
       targetProvider: null,
-      reason: \`Current provider acceptable (improvement only \${costImprovement.toFixed(1)}%)\`
+      reason: 'Current provider acceptable (improvement only ' + costImprovement.toFixed(1) + '%)'
     }
 
   } catch (error) {
@@ -283,7 +283,7 @@ Respond in JSON format:
     return {
       shouldTrade: false,
       targetProvider: null,
-      reason: \`Error: \${error instanceof Error ? error.message : 'Unknown error'}\`
+      reason: 'Error: ' + (error instanceof Error ? error.message : 'Unknown error')
     }
   }
 }`
@@ -390,22 +390,14 @@ Respond in JSON format:
   async saveStrategy(strategy: GeneratedStrategy, filename: string): Promise<boolean> {
     try {
       // In browser, download as file
-      if (typeof window !== 'undefined') {
-        const blob = new Blob([strategy.code], { type: 'text/typescript' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${filename}.ts`
-        a.click()
-        URL.revokeObjectURL(url)
-        return true
-      }
-
-      // In Node.js, write to file
-      const fs = require('fs')
-      fs.writeFileSync(`${filename}.ts`, strategy.code)
+      const blob = new Blob([strategy.code], { type: 'text/typescript' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${filename}.ts`
+      a.click()
+      URL.revokeObjectURL(url)
       return true
-
     } catch (error) {
       console.error('Failed to save strategy:', error)
       return false

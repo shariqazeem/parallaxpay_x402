@@ -388,7 +388,7 @@ export default function SwarmPage() {
           <p className="text-sm text-text-secondary mb-4">
             Interactive 3D view of swarm agents with real-time communication patterns. Drag to rotate, scroll to zoom!
           </p>
-          <Swarm3D showConnections={true} enablePhysics={true} />
+          <Swarm3D showConnections={true} enablePhysics={false} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
