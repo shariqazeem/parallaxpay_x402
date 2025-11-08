@@ -65,6 +65,42 @@ export default function AgentDashboardPage() {
   // Global provider state from marketplace
   const { selectedProvider } = useProvider()
 
+  // Check for pending agent deployment from agent builder
+  useEffect(() => {
+    const checkPendingDeploy = () => {
+      try {
+        const pendingData = localStorage.getItem('pendingAgentDeploy')
+        if (!pendingData) return
+
+        const agentData = JSON.parse(pendingData)
+
+        // Create new agent from builder data
+        const newAgent: DeployedAgent = {
+          id: `agent-${Date.now()}`,
+          name: agentData.name || 'Generated Agent',
+          type: 'optimizer', // Default type for AI-generated agents
+          prompt: agentData.prompt || agentData.description,
+          deployed: Date.now(),
+          totalRuns: 0,
+          status: 'idle',
+        }
+
+        // Add to deployed agents
+        setDeployedAgents(prev => [...prev, newAgent])
+
+        // Clear the pending deployment
+        localStorage.removeItem('pendingAgentDeploy')
+
+        // Show success message
+        console.log('✅ Agent deployed successfully:', newAgent.name)
+      } catch (error) {
+        console.error('Failed to deploy pending agent:', error)
+      }
+    }
+
+    checkPendingDeploy()
+  }, []) // Run once on mount
+
   // Convert deployed agents to AgentStats for display
   const allAgents: AgentStats[] = deployedAgents.map((da) => ({
     id: da.id,
