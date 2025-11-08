@@ -39,11 +39,13 @@ export class RealProviderManager {
   private providers: Map<string, RealProvider> = new Map()
   private healthCheckInterval: NodeJS.Timeout | null = null
 
-  // Support multiple Parallax instances
+  // Support Parallax instances (configure based on your setup)
+  // For single node setup (Mac Air M1), just use one endpoint
   private readonly PARALLAX_ENDPOINTS = [
-    { url: 'http://localhost:3001', region: 'Local-1', model: 'Qwen/Qwen-0.6B' },
-    { url: 'http://localhost:3002', region: 'Local-2', model: 'Qwen/Qwen-1.7B' },
-    { url: 'http://localhost:3003', region: 'Local-3', model: 'Qwen/Qwen-2.5B' },
+    { url: 'http://localhost:3001', region: 'Local', model: 'Qwen/Qwen3-0.6B' },
+    // Uncomment below if you want to run multiple nodes (requires more resources):
+    // { url: 'http://localhost:3002', region: 'Local-2', model: 'Qwen/Qwen2.5-1.5B' },
+    // { url: 'http://localhost:3003', region: 'Local-3', model: 'Qwen/Qwen2.5-3B' },
   ]
 
   constructor() {
