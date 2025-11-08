@@ -41,11 +41,36 @@ Your app now has **REAL agent execution** with actual swarm intelligence! Here's
 
 ## 🚀 SETUP INSTRUCTIONS
 
-### Step 1: Start 3 Independent Parallax Backend Instances
+### Step 1: Start Parallax Backend
 
-According to the [Parallax README](https://github.com/GradientHQ/parallax), you need to run the backend directly (bypassing the scheduler) to create multiple independent providers on different ports.
+According to the [Parallax README](https://github.com/GradientHQ/parallax), you need to run the backend directly (bypassing the scheduler).
 
-Open **3 separate terminal windows** and run:
+**For Mac Air M1 / Limited Resources (RECOMMENDED):**
+
+Just run **ONE** Parallax node. Open a terminal and run:
+
+```bash
+python3 -m parallax.launch \
+  --model-path Qwen/Qwen3-0.6B \
+  --port 3001 \
+  --max-batch-size 8
+```
+
+**Alternative (if installed from source):**
+```bash
+python3 ./parallax/src/parallax/launch.py \
+  --model-path Qwen/Qwen3-0.6B \
+  --port 3001 \
+  --max-batch-size 8
+```
+
+Wait for the backend to say "Ready to serve traffic" or start accepting requests.
+
+---
+
+**For Powerful Machines (Optional - Better Demo):**
+
+If you have a powerful machine and want to run **3 providers** for a more impressive demo:
 
 **Terminal 1:**
 ```bash
@@ -71,22 +96,12 @@ python3 -m parallax.launch \
   --max-batch-size 8
 ```
 
-**Alternative (if installed from source):**
-If you installed Parallax from the git repo, use:
-```bash
-python3 ./parallax/src/parallax/launch.py \
-  --model-path Qwen/Qwen2.5-0.5B \
-  --port 3001 \
-  --max-batch-size 8
-```
-
-**Note:** You can use any Qwen models from the supported list. Smaller models start faster for demos.
-
-Wait for all backends to say "Ready to serve traffic" or start accepting requests.
+Then uncomment the extra endpoints in `lib/real-provider-manager.ts`
 
 ### Step 2: Start Your App
 
-**Terminal 4:**
+Open a **new terminal** and run:
+
 ```bash
 npm run dev
 ```
@@ -98,18 +113,16 @@ npm run dev
 3. Watch the console output - you'll see:
    ```
    🔍 Discovering REAL Parallax providers...
-   ✅ Found provider: Parallax Local-1 (45ms)
-   ✅ Found provider: Parallax Local-2 (52ms)
-   ✅ Found provider: Parallax Local-3 (48ms)
-   ✅ Discovered 3 real providers
-   ✅ Auto-selected best provider: Parallax Local-1
+   ✅ Found provider: Parallax Local (45ms)
+   ✅ Discovered 1 real provider
+   ✅ Auto-selected best provider: Parallax Local
    ```
 
-4. See REAL providers:
-   - Live online/offline status (green/red dot)
-   - Actual latency measurements
-   - Real dynamic pricing
-   - Featured providers (online + low latency)
+4. See REAL provider:
+   - Live online/offline status (green dot = online)
+   - Actual latency measurement from health check
+   - Real dynamic pricing based on performance
+   - Featured provider badge (online + low latency)
 
 ### Step 4: Test Real Swarm Intelligence
 
@@ -119,21 +132,18 @@ npm run dev
    ```
    🚀 Running REAL swarm optimization...
    🔍 Discovering real Parallax providers...
-   ✅ Found provider: Parallax Local-1 (45ms)
-   ✅ Found provider: Parallax Local-2 (52ms)
-   ✅ Found provider: Parallax Local-3 (48ms)
+   ✅ Found provider: Parallax Local (45ms)
    📡 Step 1: Parallel provider discovery
    🗣️ Step 2: Sharing discoveries via gossip
-   🗳️ Step 3: Voting on best provider
-   📊 Step 4: Calculating performance gain
-   ✅ Swarm optimization complete: 23.5% gain
+   🗳️ Step 3: Agents reaching consensus
+   ✅ Swarm optimization complete
    ```
 
 4. See REAL results:
-   - Actual provider discoveries from benchmarks
-   - Real voting consensus
-   - Calculated performance gain
+   - Actual provider discovery from benchmarks
+   - Real agent execution with actual API calls
    - Live insights from swarm activity
+   - Performance metrics from real measurements
 
 ---
 
@@ -205,15 +215,15 @@ When you demo this:
 ## 🐛 Troubleshooting
 
 ### "No providers available"
-- Make sure all 3 Parallax backend instances are running
-- Check ports 3001, 3002, 3003 are free: `lsof -i :3001,3002,3003`
-- Look for startup messages in each terminal
-- Verify the models are downloading correctly
+- Make sure Parallax backend is running on port 3001
+- Check if port is free: `lsof -i :3001`
+- Look for startup messages in terminal
+- Verify the model is downloading correctly (first run takes time)
 
 ### "All providers failed benchmark"
-- Parallax backends might still be starting up
-- First run downloads models (can take several minutes)
-- Wait 10-30 seconds and try "Discover" again
+- Parallax backend might still be starting up
+- First run downloads the model (can take several minutes)
+- Wait 10-30 seconds and click "Discover" again
 - Check terminal logs for errors
 
 ### "Module 'parallax.launch' not found"
@@ -221,14 +231,17 @@ When you demo this:
 - Try: `pip install parallax` or reinstall from source
 - Use alternative command: `python3 ./parallax/src/parallax/launch.py`
 
-### Swarm shows 0% performance gain
-- Only 1 provider is online
-- Need at least 2 providers for comparison
-- Make sure different models are running on different ports
+### Port 3001 already in use
+- Kill existing process: `lsof -ti:3001 | xargs kill -9`
+- Or use a different port:
+  1. Update `--port` in the launch command
+  2. Update the port in `lib/real-provider-manager.ts`
 
-### Ports already in use
-- Kill existing processes: `lsof -ti:3001 | xargs kill -9`
-- Or use different ports and update `lib/real-provider-manager.ts`
+### Mac runs slow with Parallax
+- This is normal for Mac Air M1 with larger models
+- Use smaller model: `Qwen/Qwen3-0.6B` (recommended)
+- Close other heavy applications
+- The first inference request is slowest (model loading)
 
 ---
 
@@ -244,7 +257,7 @@ Here's what to say to judges:
 >
 > *Click "🔍 Discover" button*
 >
-> "You can see it's connecting to 3 actual Parallax instances - real health checks, real latency measurements, real pricing. Green dots mean online, see the actual millisecond latencies."
+> "You can see it's connecting to an actual Parallax instance - real health check, real latency measurement, real pricing. Green dot means online, see the actual millisecond latency from the benchmark."
 
 **1:00-1:30 - Show The Code**
 > "Here's our real swarm system. Each agent has a different strategy - speed, cost, balanced. They discover providers in parallel, share findings via gossip, and vote on the best option."
@@ -256,7 +269,7 @@ Here's what to say to judges:
 >
 > *Click button, show console output*
 >
-> "You can see 5 agents discovering 3 providers in parallel, sharing results, and reaching consensus. The swarm achieves 23% better performance than individual agents."
+> "You can see 5 agents discovering the provider, benchmarking it with actual API calls, sharing results via gossip protocol, and reaching consensus. All based on REAL latency measurements."
 
 **2:30-3:00 - The Proof**
 > "Every number you see is from actual Parallax API calls. Real latencies, real costs, real voting. No simulations."
@@ -267,19 +280,31 @@ Here's what to say to judges:
 
 ## 💪 What Makes This WIN
 
-1. **Actually Real** - Not simulated, uses real Parallax nodes
-2. **Measurable Results** - Real performance gains you can prove
-3. **Distributed Intelligence** - Actual swarm collaboration
+1. **Actually Real** - Not simulated, uses real Parallax API calls
+2. **Measurable Results** - Real latency and performance metrics
+3. **Distributed Intelligence** - Actual swarm collaboration with gossip protocol
 4. **Production Ready** - Real error handling and failover
 5. **Impressive Visuals** - Beautiful UI showing real data
+6. **Works on Limited Hardware** - Runs perfectly on Mac Air M1!
 
 The judges will spend 5 minutes on your project. In those 5 minutes, you'll show them:
 - ✅ Real agents making real decisions
-- ✅ Real swarm reaching real consensus
-- ✅ Real performance improvements with math
+- ✅ Real provider discovery with actual benchmarks
+- ✅ Real swarm consensus with voting
 - ✅ Real x402 payments on Solana
 
 **This is what wins hackathons.** 🏆
+
+### Note on Single Provider Setup
+
+Running with **just 1 Parallax node** is perfectly fine for the demo! The key is that:
+- ✅ Discovery is REAL (actual health check)
+- ✅ Benchmarks are REAL (actual API calls)
+- ✅ Latency is REAL (measured from responses)
+- ✅ Pricing is REAL (calculated from performance)
+- ✅ Swarm is REAL (agents collaborate even with 1 provider)
+
+The judges care about **REAL execution**, not the number of providers. Your Mac Air M1 can absolutely win this hackathon!
 
 ---
 
@@ -289,10 +314,10 @@ If you have more time:
 
 1. **Sound Effects** - Add audio cues when consensus reached
 2. **3D Visualization** - Already built! Show agents as glowing spheres
-3. **Real Order Book** - Connect agent trades to marketplace
+3. **Real Order Book** - Already implemented!
 4. **Export Reports** - Generate PDF with swarm performance
-5. **Multi-Region** - Support remote Parallax nodes
+5. **Multi-Provider** - If you get a powerful machine, run 3 nodes for comparison
 
 But honestly? **What you have is already killer.** 🔥
 
-Just make sure those 3 Parallax nodes are running for your demo!
+Just make sure your Parallax node is running on port 3001 for your demo!
