@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 interface AgentStats {
   id: string
@@ -48,6 +51,14 @@ export default function AgentDashboardPage() {
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
 
+  // Token controls for agent runs
+  const [maxTokens, setMaxTokens] = useState(300)
+  const fixedCost = 0.001 // Fixed $0.001 per request
+
+  // Wallet connection for user payments
+  const { publicKey } = useWallet()
+  const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
   // Convert deployed agents to AgentStats for display
   const allAgents: AgentStats[] = deployedAgents.map((da) => ({
     id: da.id,
@@ -67,10 +78,16 @@ export default function AgentDashboardPage() {
     isReal: true,
   }))
 
-  // Run an agent's task
+  // Run an agent's task with REAL x402 PAYMENT using USER WALLET
   const runAgent = async (agentId: string) => {
     const agent = deployedAgents.find(a => a.id === agentId)
     if (!agent) return
+
+    // Check wallet connection
+    if (!isWalletConnected) {
+      alert('💳 Please connect your wallet to run agents with paid inference')
+      return
+    }
 
     // Update status to running
     setDeployedAgents(prev => prev.map(a =>
@@ -78,33 +95,31 @@ export default function AgentDashboardPage() {
     ))
 
     try {
-      const { createParallaxClient } = await import('@/lib/parallax-client')
-      const client = createParallaxClient('http://localhost:3001')
+      console.log(`🤖 [${agent.name}] Running agent with YOUR wallet payment...`)
+      console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
 
-      const response = await client.inference({
-        messages: [{ role: 'user', content: agent.prompt }],
-        max_tokens: 300,
+      // Call PROTECTED API endpoint with x402 payment using user's wallet
+      const response = await fetchWithPayment('/api/inference/paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: agent.prompt }],
+          max_tokens: maxTokens, // User-specified token limit
+        }),
       })
 
-      // Parse response
-      let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        content = choice.message?.content || ''
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
-        }
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Request failed')
       }
 
-      // Clean up <think> tags
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-        }
-      }
+      const data = await response.json()
+
+      console.log(`✅ [${agent.name}] Payment successful!`)
+      console.log(`   TX Hash: ${data.txHash || 'pending'}`)
+      console.log(`   Cost: $${data.cost?.toFixed(6) || '0.001000'}`)
 
       // Update agent stats
       setDeployedAgents(prev => prev.map(a =>
@@ -114,26 +129,57 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: content.substring(0, 200)
+              lastResult: data.response?.substring(0, 200) || 'Success'
             }
           : a
       ))
 
-      // Add to trade feed
+      // Add to trade feed with REAL transaction
       const newTrade: Trade = {
         id: `trade-${Date.now()}`,
         agentName: agent.name,
-        provider: 'Local Parallax Node',
-        tokens: response.usage?.total_tokens || 0,
-        cost: 0.00112 * ((response.usage?.total_tokens || 0) / 1000),
+        provider: data.provider || 'Local Parallax Node',
+        tokens: data.tokens || 0,
+        cost: data.cost || 0.001,
         timestamp: Date.now(),
-        txHash: `0x${Math.random().toString(36).substr(2, 9)}...`,
+        txHash: data.txHash || 'pending',
         isReal: true,
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
 
+      // Store in localStorage for transaction history
+      try {
+        const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+        const transactions = JSON.parse(stored)
+        transactions.push({
+          id: newTrade.id,
+          timestamp: newTrade.timestamp,
+          type: 'agent',
+          provider: newTrade.provider,
+          tokens: newTrade.tokens,
+          cost: newTrade.cost,
+          txHash: newTrade.txHash,
+          status: 'success',
+          network: 'solana-devnet',
+        })
+        localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+      } catch (e) {
+        console.warn('Failed to store transaction:', e)
+      }
+
     } catch (err) {
       console.error('Agent execution error:', err)
+
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      alert(
+        `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
+        `Troubleshooting:\n` +
+        `1. Ensure wallet is connected (Phantom/Solflare)\n` +
+        `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
+        `3. Verify Parallax is running on localhost:3001\n` +
+        `4. Check browser console for detailed error logs`
+      )
+
       // Reset status on error
       setDeployedAgents(prev => prev.map(a =>
         a.id === agentId ? { ...a, status: 'idle' as const } : a
@@ -181,6 +227,9 @@ export default function AgentDashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Wallet Connect Button */}
+              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+
               <Link href="/marketplace">
                 <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
                   Marketplace

@@ -1,0 +1,24 @@
+{
+  "name": "parallaxpay-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for ParallaxPay - AI agents can discover and pay for AI inference services",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@solana/web3.js": "^1.95.0",
+    "@scure/base": "^2.0.0",
+    "x402-fetch": "^0.7.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.0.0"
+  }
+}
