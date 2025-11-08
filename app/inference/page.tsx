@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { createParallaxClient } from '@/lib/parallax-client'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -21,6 +24,14 @@ export default function AIInferencePage() {
   const [error, setError] = useState<string | null>(null)
   const [parallaxStatus, setParallaxStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
+  // Token controls - users can specify how many tokens they want
+  const [maxTokens, setMaxTokens] = useState(512)
+  const fixedCost = 0.001 // Fixed $0.001 per request (x402 middleware price)
+
+  // Wallet connection
+  const { publicKey } = useWallet()
+  const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
   // Check Parallax status on mount
   useState(() => {
     const checkStatus = async () => {
@@ -34,6 +45,12 @@ export default function AIInferencePage() {
   const handleSendMessage = async () => {
     if (!input.trim()) return
 
+    // Check wallet connection
+    if (!isWalletConnected) {
+      setError('💳 Please connect your wallet to make paid requests')
+      return
+    }
+
     const userMessage: Message = {
       role: 'user',
       content: input,
@@ -46,68 +63,46 @@ export default function AIInferencePage() {
     setError(null)
 
     try {
-      // Create Parallax client
-      const client = createParallaxClient('http://localhost:3001')
-
       const startTime = Date.now()
 
-      // Make REAL Parallax API call
-      const response = await client.inference({
-        messages: [
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: input },
-        ],
-        max_tokens: 512,
-        temperature: 0.7,
+      // Call PROTECTED API endpoint with x402 payment using user's wallet
+      // This will automatically handle 402 responses and make payment
+      const response = await fetchWithPayment('/api/inference/paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: input },
+          ],
+          max_tokens: maxTokens, // User-specified token limit
+        }),
       })
 
-      console.log('Parallax response:', response)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Request failed')
+      }
+
+      // Get response data
+      const data = await response.json()
+      console.log('Inference response:', data)
 
       const latency = Date.now() - startTime
-      const tokens = response.usage?.total_tokens || 0
-      const cost = client.estimateCost(tokens)
+      const tokens = data.tokens || 0
+      const cost = data.cost || 0
 
-      // Handle response safely - Parallax uses different formats
-      let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        // Try standard OpenAI format
-        content = choice.message?.content || ''
-        // Try Parallax format (uses "messages" plural)
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
-        }
-        // Try text format
-        if (!content && choice.text) {
-          content = choice.text
-        }
-      } else if ((response as any).content) {
-        content = (response as any).content
-      } else if ((response as any).text) {
-        content = (response as any).text
-      }
-
-      // Clean up <think> tags if present (Parallax includes reasoning process)
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          // Found closing tag - remove reasoning, keep answer
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          // No closing tag (response truncated) - keep the reasoning but remove tag
-          // This happens when the model runs out of tokens while still thinking
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-          if (content) {
-            content = '💭 AI Reasoning (response was truncated, here\'s the thinking process):\n\n' + content
-          } else {
-            content = '⚠️ Response was empty. The model may need more tokens or a simpler prompt.'
-          }
-        }
-      }
+      // Extract content from API response
+      const content = data.response || data.result || ''
 
       if (!content) {
-        throw new Error('No content in response. Response: ' + JSON.stringify(response))
+        throw new Error('No content in response from API')
       }
+
+      // Extract transaction hash if present
+      const txHash = data.txHash || null
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -120,6 +115,28 @@ export default function AIInferencePage() {
 
       setMessages((prev) => [...prev, assistantMessage])
       setParallaxStatus('online')
+
+      // Store transaction in localStorage for history page
+      if (txHash) {
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: `inference_${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'inference',
+            provider: data.provider || 'Local Parallax Node',
+            tokens,
+            cost,
+            txHash,
+            status: 'success',
+            network: 'solana-devnet',
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        } catch (e) {
+          console.warn('Failed to store transaction:', e)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get response')
       setParallaxStatus('offline')
@@ -147,24 +164,30 @@ export default function AIInferencePage() {
               </h2>
             </div>
 
-            {/* Status Indicator */}
-            <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  parallaxStatus === 'online'
-                    ? 'bg-status-success animate-pulse'
+            {/* Wallet & Status */}
+            <div className="flex items-center gap-3">
+              {/* Wallet Connect Button */}
+              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+
+              {/* Status Indicator */}
+              <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    parallaxStatus === 'online'
+                      ? 'bg-status-success animate-pulse'
+                      : parallaxStatus === 'offline'
+                      ? 'bg-status-error'
+                      : 'bg-text-muted animate-pulse'
+                  }`}
+                />
+                <span className="text-sm font-semibold">
+                  {parallaxStatus === 'online'
+                    ? 'Parallax Online'
                     : parallaxStatus === 'offline'
-                    ? 'bg-status-error'
-                    : 'bg-text-muted animate-pulse'
-                }`}
-              />
-              <span className="text-sm font-semibold">
-                {parallaxStatus === 'online'
-                  ? 'Parallax Online'
-                  : parallaxStatus === 'offline'
-                  ? 'Parallax Offline'
-                  : 'Checking...'}
-              </span>
+                    ? 'Parallax Offline'
+                    : 'Checking...'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -172,6 +195,26 @@ export default function AIInferencePage() {
 
       {/* Main Chat Interface */}
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Wallet Not Connected Warning */}
+        {!isWalletConnected && (
+          <div className="mb-6 glass-hover p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/10">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">💳</div>
+              <div>
+                <div className="font-heading font-bold text-white mb-1">
+                  Wallet Not Connected
+                </div>
+                <div className="text-sm text-text-secondary mb-2">
+                  Connect your Solana wallet (Phantom, Solflare) to make paid inference requests using x402 micropayments.
+                </div>
+                <div className="text-xs text-text-muted">
+                  Each inference request costs approximately $0.001 - $0.01 depending on token usage.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {parallaxStatus === 'offline' && (
           <div className="mb-6 glass-hover p-4 rounded-xl border border-status-error/30 bg-status-error/10">
             <div className="flex items-start gap-3">
@@ -251,6 +294,62 @@ export default function AIInferencePage() {
           )}
         </div>
 
+        {/* Token Control & Pricing */}
+        <div className="glass p-4 rounded-xl border border-border mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-sm font-heading font-bold text-white mb-1">
+                Response Length: {maxTokens.toLocaleString()} tokens
+              </div>
+              <div className="text-xs text-text-muted">
+                Control how long the AI response will be
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-black text-status-success">
+                $0.001
+              </div>
+              <div className="text-xs text-text-muted">
+                Fixed price
+              </div>
+            </div>
+          </div>
+
+          {/* Token Slider */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-text-secondary font-mono">100</span>
+            <input
+              type="range"
+              min="100"
+              max="2000"
+              step="100"
+              value={maxTokens}
+              onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+              disabled={!isWalletConnected}
+              className="flex-1 h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-primary"
+              style={{
+                background: isWalletConnected
+                  ? `linear-gradient(to right, #9945FF 0%, #14F195 ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a 100%)`
+                  : '#1a1a1a'
+              }}
+            />
+            <span className="text-xs text-text-secondary font-mono">2000</span>
+          </div>
+
+          {/* Pricing Info */}
+          <div className="mt-3 pt-3 border-t border-border-hover flex items-center justify-between text-xs">
+            <span className="text-text-muted">
+              💡 <span className="font-mono font-bold text-accent-secondary">$0.001</span> per request (any length up to 2000 tokens)
+            </span>
+            <span className="text-text-muted">
+              {maxTokens >= 1500 && '🚀 Very long response'}
+              {maxTokens >= 1000 && maxTokens < 1500 && '✨ Long response'}
+              {maxTokens >= 500 && maxTokens < 1000 && '📝 Medium response'}
+              {maxTokens < 500 && '⚡ Short response'}
+            </span>
+          </div>
+        </div>
+
         {/* Input */}
         <div className="glass p-4 rounded-xl border border-border">
           <div className="flex gap-3">
@@ -259,19 +358,21 @@ export default function AIInferencePage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
-              placeholder="Ask anything... (e.g., 'Explain quantum computing')"
+              placeholder={!isWalletConnected ? "Connect wallet to start..." : "Ask anything... (e.g., 'Write 500 lines of HTML code')"}
               className="flex-1 bg-background-tertiary px-4 py-3 rounded-lg text-white placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary"
-              disabled={isLoading || parallaxStatus === 'offline'}
+              disabled={isLoading || parallaxStatus === 'offline' || !isWalletConnected}
             />
             <button
               onClick={handleSendMessage}
-              disabled={isLoading || !input.trim() || parallaxStatus === 'offline'}
+              disabled={isLoading || !input.trim() || parallaxStatus === 'offline' || !isWalletConnected}
               className="glass-hover neon-border px-6 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
                 <span className="text-text-muted">Sending...</span>
+              ) : !isWalletConnected ? (
+                <span className="text-text-muted">Connect Wallet</span>
               ) : (
-                <span className="text-gradient">Send</span>
+                <span className="text-gradient">Pay $0.001</span>
               )}
             </button>
           </div>

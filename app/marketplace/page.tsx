@@ -7,10 +7,17 @@ import ProviderList from '../components/marketplace/ProviderList'
 import TradingChart from '../components/marketplace/TradingChart'
 import MarketHeader from '../components/marketplace/MarketHeader'
 import AgentPanel from '../components/marketplace/AgentPanel'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 export default function MarketplacePage() {
   const [selectedModel, setSelectedModel] = useState('Qwen-2.5-72B')
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+
+  // Wallet connection for user payments
+  const { publicKey } = useWallet()
+  const { fetchWithPayment, isWalletConnected } = useX402Payment()
 
   return (
     <div className="min-h-screen bg-background-primary">
@@ -41,6 +48,8 @@ export default function MarketplacePage() {
             <TradePanel
               selectedProvider={selectedProvider}
               model={selectedModel}
+              isWalletConnected={isWalletConnected}
+              fetchWithPayment={fetchWithPayment}
             />
             <RecentTrades />
           </div>
@@ -50,25 +59,34 @@ export default function MarketplacePage() {
   )
 }
 
-// Trade Panel Component
+// Buy Inference Panel Component (formerly "Trade Panel")
 function TradePanel({
   selectedProvider,
-  model
+  model,
+  isWalletConnected,
+  fetchWithPayment
 }: {
   selectedProvider: string | null
   model: string
+  isWalletConnected: boolean
+  fetchWithPayment: (url: string, options?: RequestInit) => Promise<Response>
 }) {
   const [prompt, setPrompt] = useState('')
-  const [maxTokens, setMaxTokens] = useState(100)
+  const [maxTokens, setMaxTokens] = useState(500)
   const [isExecuting, setIsExecuting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const estimatedCost = (maxTokens / 1000) * 0.0012 // $0.0012 per 1K tokens
+  const fixedCost = 0.001 // Fixed $0.001 per request
 
   const handleExecuteTrade = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt')
+      return
+    }
+
+    if (!isWalletConnected) {
+      setError('Please connect your wallet to buy AI inference')
       return
     }
 
@@ -77,62 +95,60 @@ function TradePanel({
     setResult(null)
 
     try {
-      const { createParallaxClient } = await import('@/lib/parallax-client')
-      const client = createParallaxClient('http://localhost:3001')
-
-      const response = await client.inference({
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: maxTokens,
+      // Call PROTECTED API endpoint with x402 payment using user's wallet
+      const response = await fetchWithPayment('/api/inference/paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
+          provider: selectedProvider,
+        }),
       })
 
-      console.log('Parallax response:', response)
-
-      // Handle response safely - Parallax uses different formats
-      let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        // Try standard OpenAI format
-        content = choice.message?.content || ''
-        // Try Parallax format (uses "messages" plural)
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
-        }
-        // Try text format
-        if (!content && choice.text) {
-          content = choice.text
-        }
-      } else if ((response as any).content) {
-        content = (response as any).content
-      } else if ((response as any).text) {
-        content = (response as any).text
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Request failed')
       }
 
-      // Clean up <think> tags if present (Parallax includes reasoning process)
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          // Found closing tag - remove reasoning, keep answer
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          // No closing tag (response truncated) - keep the reasoning but remove tag
-          // This happens when max_tokens is too small
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-          if (content) {
-            content = '💭 AI Reasoning (increase max tokens for full answer):\n\n' + content
-          } else {
-            content = '⚠️ Response was empty. Increase max tokens to 300+.'
-          }
-        }
-      }
+      const data = await response.json()
+      console.log('Inference response:', data)
+
+      // Extract content from API response
+      const content = data.response || data.result || ''
 
       if (!content) {
-        throw new Error('No content in response. Response: ' + JSON.stringify(response))
+        throw new Error('No content in response from API')
       }
 
       setResult(content)
+
+      // Store transaction in localStorage if we have a txHash
+      if (data.txHash) {
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: `marketplace_${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'marketplace',
+            provider: selectedProvider || data.provider || 'Local Parallax Node',
+            tokens: data.tokens || maxTokens,
+            cost: data.cost || estimatedCost,
+            txHash: data.txHash,
+            status: 'success',
+            network: 'solana-devnet',
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        } catch (e) {
+          console.warn('Failed to store transaction:', e)
+        }
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to execute trade')
-      console.error('Trade execution error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to complete inference request')
+      console.error('Inference request error:', err)
     } finally {
       setIsExecuting(false)
     }
@@ -144,60 +160,99 @@ function TradePanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
     >
-      <h3 className="text-xl font-heading font-bold mb-4 text-white">
-        Execute Trade
-      </h3>
+      <div className="mb-4">
+        <h3 className="text-xl font-heading font-bold text-white mb-1">
+          💰 Buy AI Inference
+        </h3>
+        <p className="text-xs text-text-muted">
+          Pay per token with x402 micropayments
+        </p>
+      </div>
 
-      {!selectedProvider ? (
+      {!isWalletConnected ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">💳</div>
+          <p className="text-text-secondary text-sm mb-2">
+            Connect your wallet to buy AI inference
+          </p>
+          <p className="text-xs text-text-muted">
+            No subscriptions • Pay only for what you use
+          </p>
+        </div>
+      ) : !selectedProvider ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">👈</div>
           <p className="text-text-secondary text-sm">
-            Select a provider from the list to start trading
+            Select a provider to start
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
-              Prompt
+              Your Prompt
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter your AI inference prompt..."
+              placeholder="What do you want the AI to do? (e.g., 'Explain quantum computing')"
               className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
               rows={4}
             />
           </div>
 
-          <div>
-            <label className="text-sm text-text-secondary mb-2 block">
-              Max Tokens: {maxTokens}
-            </label>
-            <input
-              type="range"
-              min="10"
-              max="1000"
-              value={maxTokens}
-              onChange={(e) => setMaxTokens(Number(e.target.value))}
-              className="w-full"
-            />
+          {/* Token Control Slider - matching inference page style */}
+          <div className="glass-hover p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-sm font-heading font-bold text-white">
+                  Response Length: {maxTokens.toLocaleString()} tokens
+                </div>
+                <div className="text-xs text-text-muted">
+                  Control how long the response will be
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-black text-status-success">
+                  $0.001
+                </div>
+                <div className="text-xs text-text-muted">
+                  Fixed price
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-xs text-text-secondary font-mono">100</span>
+              <input
+                type="range"
+                min="100"
+                max="2000"
+                step="100"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(Number(e.target.value))}
+                className="flex-1 h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-primary"
+                style={{
+                  background: `linear-gradient(to right, #9945FF 0%, #14F195 ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a 100%)`
+                }}
+              />
+              <span className="text-xs text-text-secondary font-mono">2000</span>
+            </div>
+
+            <div className="text-xs text-text-muted">
+              💡 $0.001 per request (any length)
+            </div>
           </div>
 
-          <div className="glass-hover p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-text-secondary text-sm">Provider</span>
-              <span className="text-white font-mono text-sm">{selectedProvider}</span>
+          {/* Provider Info */}
+          <div className="glass-hover p-3 rounded-lg space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-text-secondary">Provider</span>
+              <span className="text-white font-mono">{selectedProvider || 'None'}</span>
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-text-secondary text-sm">Model</span>
-              <span className="text-white font-mono text-sm">{model}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-text-secondary text-sm">Est. Cost</span>
-              <span className="text-accent-secondary font-bold">
-                ${estimatedCost.toFixed(4)}
-              </span>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-text-secondary">Model</span>
+              <span className="text-white font-mono">{model}</span>
             </div>
           </div>
 
@@ -207,9 +262,9 @@ function TradePanel({
             className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isExecuting ? (
-              <span className="text-text-muted">⚡ Running Inference...</span>
+              <span className="text-text-muted">⚡ Processing Payment...</span>
             ) : (
-              <span className="text-gradient">Execute with x402</span>
+              <span className="text-gradient">Buy Inference • $0.001</span>
             )}
           </button>
 
