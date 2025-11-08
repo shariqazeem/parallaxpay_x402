@@ -41,26 +41,48 @@ Your app now has **REAL agent execution** with actual swarm intelligence! Here's
 
 ## 🚀 SETUP INSTRUCTIONS
 
-### Step 1: Start 3 Parallax Nodes
+### Step 1: Start 3 Independent Parallax Backend Instances
+
+According to the [Parallax README](https://github.com/GradientHQ/parallax), you need to run the backend directly (bypassing the scheduler) to create multiple independent providers on different ports.
 
 Open **3 separate terminal windows** and run:
 
 **Terminal 1:**
 ```bash
-parallax run -m Qwen/Qwen-0.6B -n 1 --port 3001
+python3 -m parallax.launch \
+  --model-path Qwen/Qwen2.5-0.5B \
+  --port 3001 \
+  --max-batch-size 8
 ```
 
 **Terminal 2:**
 ```bash
-parallax run -m Qwen/Qwen-1.7B -n 1 --port 3002
+python3 -m parallax.launch \
+  --model-path Qwen/Qwen2.5-1.5B \
+  --port 3002 \
+  --max-batch-size 8
 ```
 
 **Terminal 3:**
 ```bash
-parallax run -m Qwen/Qwen-2.5B -n 1 --port 3003
+python3 -m parallax.launch \
+  --model-path Qwen/Qwen2.5-3B \
+  --port 3003 \
+  --max-batch-size 8
 ```
 
-Wait for all nodes to say "Ready to serve traffic"
+**Alternative (if installed from source):**
+If you installed Parallax from the git repo, use:
+```bash
+python3 ./parallax/src/parallax/launch.py \
+  --model-path Qwen/Qwen2.5-0.5B \
+  --port 3001 \
+  --max-batch-size 8
+```
+
+**Note:** You can use any Qwen models from the supported list. Smaller models start faster for demos.
+
+Wait for all backends to say "Ready to serve traffic" or start accepting requests.
 
 ### Step 2: Start Your App
 
@@ -183,19 +205,30 @@ When you demo this:
 ## 🐛 Troubleshooting
 
 ### "No providers available"
-- Make sure all 3 Parallax nodes are running
-- Check ports 3001, 3002, 3003 are free
-- Look for "Ready to serve traffic" in terminal
+- Make sure all 3 Parallax backend instances are running
+- Check ports 3001, 3002, 3003 are free: `lsof -i :3001,3002,3003`
+- Look for startup messages in each terminal
+- Verify the models are downloading correctly
 
 ### "All providers failed benchmark"
-- Parallax nodes might be starting up
-- Wait 10 seconds and try again
-- Check node logs for errors
+- Parallax backends might still be starting up
+- First run downloads models (can take several minutes)
+- Wait 10-30 seconds and try "Discover" again
+- Check terminal logs for errors
+
+### "Module 'parallax.launch' not found"
+- Parallax might not be installed correctly
+- Try: `pip install parallax` or reinstall from source
+- Use alternative command: `python3 ./parallax/src/parallax/launch.py`
 
 ### Swarm shows 0% performance gain
 - Only 1 provider is online
 - Need at least 2 providers for comparison
-- Start more Parallax nodes
+- Make sure different models are running on different ports
+
+### Ports already in use
+- Kill existing processes: `lsof -ti:3001 | xargs kill -9`
+- Or use different ports and update `lib/real-provider-manager.ts`
 
 ---
 
