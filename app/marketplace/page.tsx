@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import LiveOrderBook from '../components/marketplace/LiveOrderBook'
 import ProviderHeatMap from '../components/marketplace/ProviderHeatMap'
@@ -393,13 +393,47 @@ function TradePanel({
   )
 }
 
-// Recent Trades Component
+// Recent Trades Component - NOW WITH REAL TRADES! 🔥
 function RecentTrades() {
-  const trades = [
-    { time: '14:32:01', model: 'Qwen-2.5-72B', tokens: 247, cost: 0.0030, status: 'success' },
-    { time: '14:31:45', model: 'Llama-3.3-70B', tokens: 512, cost: 0.0077, status: 'success' },
-    { time: '14:31:22', model: 'DeepSeek-V3', tokens: 128, cost: 0.0012, status: 'pending' },
-  ]
+  const [trades, setTrades] = useState<Array<{
+    time: string
+    providerId: string
+    agentId: string
+    tokens: number
+    cost: number
+    status: string
+  }>>([])
+
+  useEffect(() => {
+    const updateRealTrades = () => {
+      try {
+        const { getRealOrderBook } = require('@/lib/real-order-book')
+        const orderBook = getRealOrderBook()
+        const recentTrades = orderBook.getRecentTrades(3)
+
+        const displayTrades = recentTrades.map(trade => ({
+          time: new Date(trade.timestamp).toLocaleTimeString(),
+          providerId: trade.providerId,
+          agentId: trade.agentId,
+          tokens: trade.amount,
+          cost: trade.price * trade.amount,
+          status: 'success',
+        }))
+
+        setTrades(displayTrades)
+      } catch (error) {
+        console.error('Failed to load trades:', error)
+      }
+    }
+
+    // Update immediately
+    updateRealTrades()
+
+    // Then update every 5 seconds
+    const interval = setInterval(updateRealTrades, 5000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <motion.div
@@ -412,34 +446,44 @@ function RecentTrades() {
         Recent Trades
       </h3>
 
-      <div className="space-y-3">
-        {trades.map((trade, i) => (
-          <div
-            key={i}
-            className="glass-hover p-3 rounded-lg border border-border-hover"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-mono text-text-secondary">
-                {trade.time}
-              </span>
-              <span className={`text-xs font-semibold ${
-                trade.status === 'success' ? 'text-status-success' : 'text-status-warning'
-              }`}>
-                {trade.status === 'success' ? '✓' : '⏳'}
-              </span>
+      {trades.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">📊</div>
+          <p className="text-text-secondary text-sm">
+            No trades yet
+          </p>
+          <p className="text-xs text-text-muted">
+            Trades will appear when agents execute
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {trades.map((trade, i) => (
+            <div
+              key={i}
+              className="glass-hover p-3 rounded-lg border border-border-hover"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-text-secondary">
+                  {trade.time}
+                </span>
+                <span className="text-xs font-semibold text-status-success">
+                  ✓
+                </span>
+              </div>
+              <div className="text-sm text-white font-medium mb-1">
+                {trade.agentId} → {trade.providerId}
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-text-secondary">{trade.tokens.toLocaleString()} tokens</span>
+                <span className="text-accent-secondary font-bold">
+                  ${trade.cost.toFixed(4)}
+                </span>
+              </div>
             </div>
-            <div className="text-sm text-white font-medium mb-1">
-              {trade.model}
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-text-secondary">{trade.tokens} tokens</span>
-              <span className="text-accent-secondary font-bold">
-                ${trade.cost.toFixed(4)}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <button className="w-full mt-4 glass-hover px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-white transition-colors">
         View All Transactions →
