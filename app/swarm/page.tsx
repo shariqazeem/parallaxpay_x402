@@ -19,6 +19,20 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { getDemoSimulator } from '@/lib/demo-provider-simulator'
+import dynamic from 'next/dynamic'
+
+// Dynamically import 3D component (client-side only to avoid SSR issues with Three.js)
+const Swarm3D = dynamic(() => import('@/app/components/Swarm3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[600px] flex items-center justify-center glass rounded-xl border border-border">
+      <div className="text-center">
+        <div className="text-4xl mb-3 animate-pulse">🌀</div>
+        <div className="text-text-secondary">Loading 3D Visualization...</div>
+      </div>
+    </div>
+  ),
+})
 
 interface Agent {
   id: string
@@ -359,6 +373,22 @@ export default function SwarmPage() {
           <StatCard label="Contributions" value={stats.totalContributions} icon="🤝" color="info" />
           <StatCard label="High Impact" value={stats.highImpactInsights} icon="🎯" color="success" />
           <StatCard label="Performance" value={`+${performanceGain.toFixed(0)}%`} icon="📈" color="primary" />
+        </div>
+
+        {/* 3D Swarm Visualization */}
+        <div className="glass rounded-xl p-6 border border-border">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-heading font-bold flex items-center gap-2">
+              <span>🌀</span> 3D Swarm Visualization
+            </h3>
+            <div className="text-xs px-3 py-1 rounded bg-accent-primary/20 text-accent-primary font-bold">
+              LIVE 3D
+            </div>
+          </div>
+          <p className="text-sm text-text-secondary mb-4">
+            Interactive 3D view of swarm agents with real-time communication patterns. Drag to rotate, scroll to zoom!
+          </p>
+          <Swarm3D showConnections={true} enablePhysics={true} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
