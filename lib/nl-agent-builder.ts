@@ -171,22 +171,25 @@ Respond in JSON format:
     // Generate strategy name
     const strategyName = analysis.intent.substring(0, 60).replace(/[^a-zA-Z0-9\s]/g, '')
 
+    // Escape values for comments (remove newlines and special chars that could break JS)
+    const safeIntent = analysis.intent.replace(/[\r\n]/g, ' ').replace(/[`'"]/g, '')
+    const safeStrategy = analysis.strategy
+    const safeConstraints = analysis.constraints.join(', ').replace(/[\r\n]/g, ' ')
+
     const code = `async function ${this.toCamelCase(strategyName)}Strategy(
-  providers: Array<{ id: string; pricing: number; latency: number; uptime: number }>,
-  currentProvider: { id: string; pricing: number } | null,
-  history: Array<{ timestamp: number; pricing: number; latency: number }>
-): Promise<{ shouldTrade: boolean; targetProvider: string | null; reason: string }> {
-  // Generated strategy: ${analysis.intent}
-  // Strategy type: ${analysis.strategy}
-  // Constraints: ${analysis.constraints.join(', ')}
+  providers, currentProvider, history
+) {
+  // Generated strategy: ${safeIntent}
+  // Strategy type: ${safeStrategy}
+  // Constraints: ${safeConstraints}
 
   try {
     // === STEP 1: Filter providers based on requirements ===
     const eligibleProviders = providers.filter(p => {
       // Health checks
       if (p.uptime < ${uptimeThreshold}) return false // Minimum uptime
-      ${hasLatencyConstraint ? `if (p.latency > ${latencyThreshold}) return false // Maximum latency` : ''}
-      ${hasCostConstraint ? `if (p.pricing > ${(costMultiplier * 0.001).toFixed(6)}) return false // Maximum cost` : ''}
+      ${hasLatencyConstraint ? 'if (p.latency > ' + latencyThreshold + ') return false // Maximum latency' : ''}
+      ${hasCostConstraint ? 'if (p.pricing > ' + (costMultiplier * 0.001).toFixed(6) + ') return false // Maximum cost' : ''}
 
       return true
     })
@@ -257,9 +260,7 @@ Respond in JSON format:
 
     // Calculate improvement
     const costImprovement = ((currentProvider.pricing - best.provider.pricing) / currentProvider.pricing) * 100
-    ${hasLatencyConstraint ? `
-    const latencyImprovement = best.provider.latency < ${latencyThreshold}
-    ` : ''}
+    ${hasLatencyConstraint ? 'const latencyImprovement = best.provider.latency < ' + latencyThreshold : ''}
 
     // Trade if improvement is significant
     const shouldSwitch = ${hasCostConstraint ? 'costImprovement > 10' : hasLatencyConstraint ? 'latencyImprovement' : 'costImprovement > 5'}
@@ -346,12 +347,27 @@ Respond in JSON format:
         { timestamp: Date.now() - 5000, pricing: 0.0009, latency: 52 },
       ]
 
+      // Extract function name from the generated code
+      const functionNameMatch = strategy.code.match(/async function (\w+)\(/);
+      if (!functionNameMatch) {
+        throw new Error('Could not extract function name from generated code')
+      }
+      const functionName = functionNameMatch[1]
+
+      // Create a wrapped version that's easier to execute
+      const wrappedCode = `
+        ${strategy.code}
+
+        // Return the result
+        return ${functionName}(providers, currentProvider, history);
+      `
+
       // Execute the strategy
       const strategyFn = new Function(
         'providers',
         'currentProvider',
         'history',
-        `${strategy.code}\nreturn customStrategy(providers, currentProvider, history);`
+        wrappedCode
       )
 
       const result = await strategyFn(providers, currentProvider, history)
