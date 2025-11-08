@@ -767,14 +767,14 @@ function DeployAgentModal({
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-start justify-center p-6 pt-24 overflow-y-auto"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-start justify-center p-6 pt-[280px] overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="glass rounded-xl border border-accent-primary/50 p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="glass rounded-xl border border-accent-primary/50 p-6 max-w-lg w-full max-h-[calc(100vh-320px)] overflow-y-auto"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
