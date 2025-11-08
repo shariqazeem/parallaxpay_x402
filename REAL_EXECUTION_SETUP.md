@@ -30,6 +30,13 @@ Your app now has **REAL agent execution** with actual swarm intelligence! Here's
 - Auto-selects best provider based on performance
 - "Discover Providers" button for manual refresh
 
+### ✅ Real Order Book (NEW!)
+- **Real provider asks** from actual Parallax nodes
+- Asks show real compute offers at real prices
+- **Real market depth** based on provider availability
+- Live bid/ask spread from actual orders
+- **Recent trades** tracking from agent executions
+
 ---
 
 ## 🚀 SETUP INSTRUCTIONS
@@ -136,6 +143,16 @@ const result = await swarm.runSwarmOptimization()
 // → Share discoveries via gossip protocol
 // → Vote and reach consensus
 // → Calculate real performance gain
+```
+
+### Real Order Book
+```typescript
+const orderBook = getRealOrderBook()
+await orderBook.updateProviderAsks()
+// → Creates asks from real Parallax providers
+// → Prices from real benchmarks
+// → Market depth from provider availability
+// → Real bid/ask spread calculation
 ```
 
 ---

@@ -3,11 +3,19 @@
 /**
  * Live Order Book Component
  *
- * Bloomberg Terminal-style order book showing bid/ask spreads
+ * NOW WITH REAL ORDERS! 🔥
+ *
+ * Shows ACTUAL:
+ * - Provider asks (real compute offers)
+ * - Agent bids (real buy orders)
+ * - Real market depth
+ * - Real spread from actual orders
  */
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { getRealOrderBook, type RealOrder } from '@/lib/real-order-book'
+import { getRealProviderManager } from '@/lib/real-provider-manager'
 
 export interface Order {
   price: number
@@ -26,54 +34,57 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
   const [spread, setSpread] = useState(0)
   const [spreadPercent, setSpreadPercent] = useState(0)
 
-  // Generate realistic order book data
+  // Update with REAL order book data
   useEffect(() => {
-    const generateOrders = () => {
-      const midPrice = 0.001 + (Math.random() * 0.0002 - 0.0001)
+    const updateRealOrderBook = async () => {
+      try {
+        const orderBook = getRealOrderBook()
+        const providerManager = getRealProviderManager()
 
-      // Generate bids (below mid price)
-      const newBids: Order[] = []
-      for (let i = 0; i < 10; i++) {
-        const price = midPrice - (i + 1) * 0.00001 - Math.random() * 0.00001
-        const amount = Math.floor(1000 + Math.random() * 9000)
-        newBids.push({
-          price,
-          amount,
-          total: price * amount,
-          side: 'bid',
-        })
-      }
+        // Update provider asks (real offers)
+        await orderBook.updateProviderAsks()
 
-      // Generate asks (above mid price)
-      const newAsks: Order[] = []
-      for (let i = 0; i < 10; i++) {
-        const price = midPrice + (i + 1) * 0.00001 + Math.random() * 0.00001
-        const amount = Math.floor(1000 + Math.random() * 9000)
-        newAsks.push({
-          price,
-          amount,
-          total: price * amount,
-          side: 'ask',
-        })
-      }
+        // Generate simulated bids for demo (agents wanting to buy)
+        orderBook.generateSimulatedBids()
 
-      setBids(newBids)
-      setAsks(newAsks)
+        // Get real orders
+        const realAsks = orderBook.getAsks()
+        const realBids = orderBook.getBids()
 
-      // Calculate spread
-      if (newBids.length > 0 && newAsks.length > 0) {
-        const bidPrice = newBids[0].price
-        const askPrice = newAsks[0].price
-        const spreadValue = askPrice - bidPrice
-        const spreadPct = (spreadValue / bidPrice) * 100
+        // Convert to display format
+        const displayAsks: Order[] = realAsks.map(ask => ({
+          price: ask.price / 1000, // Convert back to per-token price
+          amount: ask.amount,
+          total: ask.total,
+          side: 'ask' as const,
+        }))
 
-        setSpread(spreadValue)
-        setSpreadPercent(spreadPct)
+        const displayBids: Order[] = realBids.map(bid => ({
+          price: bid.price / 1000, // Convert back to per-token price
+          amount: bid.amount,
+          total: bid.total,
+          side: 'bid' as const,
+        }))
+
+        setBids(displayBids)
+        setAsks(displayAsks)
+
+        // Calculate real spread
+        const spreadData = orderBook.getSpread()
+        setSpread(spreadData.spread)
+        setSpreadPercent(spreadData.spreadPercent)
+
+        console.log(`📖 Order book updated: ${displayAsks.length} asks, ${displayBids.length} bids`)
+      } catch (error) {
+        console.error('Failed to update order book:', error)
       }
     }
 
-    generateOrders()
-    const interval = setInterval(generateOrders, 2000)
+    // Update immediately
+    updateRealOrderBook()
+
+    // Then update every 3 seconds with real data
+    const interval = setInterval(updateRealOrderBook, 3000)
 
     return () => clearInterval(interval)
   }, [])
