@@ -7,6 +7,7 @@ import { createParallaxClient } from '@/lib/parallax-client'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import { useProvider } from '@/app/contexts/ProviderContext'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -31,6 +32,9 @@ export default function AIInferencePage() {
   // Wallet connection
   const { publicKey } = useWallet()
   const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
+  // Global provider state from marketplace
+  const { selectedProvider } = useProvider()
 
   // Check Parallax status on mount
   useState(() => {
@@ -78,6 +82,7 @@ export default function AIInferencePage() {
             { role: 'user', content: input },
           ],
           max_tokens: maxTokens, // User-specified token limit
+          provider: selectedProvider?.name, // Send selected provider from marketplace
         }),
       })
 
@@ -190,6 +195,41 @@ export default function AIInferencePage() {
               </div>
             </div>
           </div>
+
+          {/* Selected Provider Banner */}
+          {selectedProvider && (
+            <div className="mt-4 glass-hover p-4 rounded-lg border border-accent-primary/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                  <div className="flex-1">
+                    <div className="font-heading font-bold text-white mb-1">
+                      Using: {selectedProvider.name}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Model:</span>
+                        <span className="text-white font-mono">{selectedProvider.model.split('/')[1]}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Latency:</span>
+                        <span className="text-status-success font-mono">{selectedProvider.latency}ms</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Uptime:</span>
+                        <span className="text-accent-secondary font-mono">{selectedProvider.uptime}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/marketplace">
+                  <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                    Change Provider
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
