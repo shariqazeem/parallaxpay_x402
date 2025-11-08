@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import OrderBook from '../components/marketplace/OrderBook'
+import LiveOrderBook from '../components/marketplace/LiveOrderBook'
+import ProviderHeatMap from '../components/marketplace/ProviderHeatMap'
 import ProviderList from '../components/marketplace/ProviderList'
 import TradingChart from '../components/marketplace/TradingChart'
 import MarketHeader from '../components/marketplace/MarketHeader'
@@ -28,12 +29,17 @@ export default function MarketplacePage() {
       {/* Market Header with Stats */}
       <MarketHeader />
 
+      {/* Provider Heat Map - Full Width */}
+      <div className="max-w-[1920px] mx-auto px-6 pb-6">
+        <ProviderHeatMap />
+      </div>
+
       {/* Main Trading Interface */}
-      <div className="max-w-[1920px] mx-auto px-6 py-8">
+      <div className="max-w-[1920px] mx-auto px-6 pb-8">
         <div className="grid grid-cols-12 gap-6">
-          {/* Left Column - Order Book & Agents */}
+          {/* Left Column - Live Order Book & Agents */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
-            <OrderBook model={selectedModel} />
+            <LiveOrderBook />
             <AgentPanel />
           </div>
 
