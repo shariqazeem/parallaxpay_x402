@@ -79,7 +79,7 @@ export default function CTA() {
 
         {/* NEW: Killer Features */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
+          className="flex flex-wrap gap-4 justify-center items-center mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -96,6 +96,13 @@ export default function CTA() {
             <button className="glass-hover border-2 border-accent-secondary px-8 py-4 rounded-xl font-heading font-bold text-lg transition-all hover:scale-105 group">
               <span className="text-white">🧠 AI Agent Builder</span>
               <span className="ml-2 text-accent-secondary text-sm">NEW!</span>
+            </button>
+          </Link>
+
+          <Link href="/leaderboard">
+            <button className="glass-hover border-2 border-status-warning px-8 py-4 rounded-xl font-heading font-bold text-lg transition-all hover:scale-105 group">
+              <span className="text-white">🏆 Leaderboard</span>
+              <span className="ml-2 text-status-warning text-sm">NEW!</span>
             </button>
           </Link>
 
