@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
@@ -761,7 +762,10 @@ function DeployAgentModal({
     }
   }
 
-  return (
+  // Use portal to render modal at document root (avoids z-index stacking issues)
+  if (typeof window === 'undefined') return null
+
+  return createPortal(
     <motion.div
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
       initial={{ opacity: 0 }}
@@ -876,6 +880,7 @@ function DeployAgentModal({
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
