@@ -88,6 +88,31 @@ export default function AgentBuilderPage() {
     URL.revokeObjectURL(url)
   }
 
+  const deployAgent = () => {
+    if (!strategy) return
+
+    // Store the generated strategy in localStorage for the agents page to pick up
+    try {
+      const agentData = {
+        name: strategy.name,
+        prompt: prompt,
+        code: strategy.code,
+        description: strategy.description,
+        confidence: strategy.confidence,
+        estimatedPerformance: strategy.estimatedPerformance,
+        timestamp: Date.now(),
+      }
+
+      localStorage.setItem('pendingAgentDeploy', JSON.stringify(agentData))
+
+      // Redirect to agents page
+      window.location.href = '/agents'
+    } catch (error) {
+      console.error('Failed to deploy agent:', error)
+      alert('Failed to deploy agent. Please try again.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background-primary text-white">
       {/* Header */}
@@ -263,6 +288,7 @@ export default function AgentBuilderPage() {
                     📥 Download Code
                   </button>
                   <button
+                    onClick={deployAgent}
                     className="glass-hover neon-border px-6 py-3 rounded-lg font-heading font-bold hover:scale-105 transition-all flex-1"
                   >
                     <span className="text-gradient">🚀 Deploy Agent</span>
