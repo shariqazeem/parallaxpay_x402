@@ -213,15 +213,15 @@ export default function ProviderHeatMap() {
       <div className="mt-4 pt-4 border-t border-border flex items-center gap-4 text-xs">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-status-success" />
-          <span className="text-text-muted">Excellent (<50ms, >99%)</span>
+          <span className="text-text-muted">Excellent {'(<50ms, >99%)'}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-accent-secondary" />
-          <span className="text-text-muted">Good (<100ms, >98%)</span>
+          <span className="text-text-muted">Good {'(<100ms, >98%)'}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-status-warning" />
-          <span className="text-text-muted">Degraded (<200ms, >95%)</span>
+          <span className="text-text-muted">Degraded {'(<200ms, >95%)'}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-status-error" />
