@@ -55,7 +55,7 @@ export default function CTA() {
         </motion.div>
 
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
+          className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -70,9 +70,38 @@ export default function CTA() {
             </button>
           </Link>
 
-          <Link href="/test-payment">
+          <Link href="/inference">
             <button className="glass px-10 py-5 rounded-xl font-heading font-semibold text-xl border border-border-hover hover:border-accent-secondary transition-all hover:scale-105">
-              Try Demo
+              Try AI Chat
+            </button>
+          </Link>
+        </motion.div>
+
+        {/* NEW: Killer Features */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <Link href="/swarm">
+            <button className="glass-hover border-2 border-accent-primary px-8 py-4 rounded-xl font-heading font-bold text-lg transition-all hover:scale-105 group">
+              <span className="text-white">🐝 Swarm Intelligence</span>
+              <span className="ml-2 text-accent-primary text-sm">NEW!</span>
+            </button>
+          </Link>
+
+          <Link href="/agent-builder">
+            <button className="glass-hover border-2 border-accent-secondary px-8 py-4 rounded-xl font-heading font-bold text-lg transition-all hover:scale-105 group">
+              <span className="text-white">🧠 AI Agent Builder</span>
+              <span className="ml-2 text-accent-secondary text-sm">NEW!</span>
+            </button>
+          </Link>
+
+          <Link href="/agents">
+            <button className="glass-hover border border-border px-8 py-4 rounded-xl font-heading font-semibold text-lg transition-all hover:scale-105">
+              🤖 My Agents
             </button>
           </Link>
         </motion.div>
