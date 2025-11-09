@@ -1374,9 +1374,9 @@ function DeployAgentModal({
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
-        {/* Centered Modal with fixed height and internal scroll */}
+        {/* Centered Modal - simpler layout with explicit heights */}
         <motion.div
-          className="glass border border-accent-primary/50 rounded-2xl z-[100000] w-full max-w-2xl h-[85vh] flex flex-col"
+          className="glass border border-accent-primary/50 rounded-2xl z-[100000] w-full max-w-2xl"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
@@ -1384,7 +1384,7 @@ function DeployAgentModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Fixed Header */}
-          <div className="flex items-start justify-between p-6 pb-4 border-b border-border flex-shrink-0">
+          <div className="flex items-start justify-between p-6 pb-4 border-b border-border">
             <div>
               <h2 className="text-2xl font-heading font-bold text-white mb-2">
                 Deploy Real Agent
@@ -1401,8 +1401,8 @@ function DeployAgentModal({
             </button>
           </div>
 
-          {/* Scrollable Content Area - ALWAYS shows scrollbar */}
-          <div className="overflow-y-scroll flex-1 min-h-0 p-6 scrollbar-custom">
+          {/* Scrollable Content Area with explicit max height */}
+          <div className="p-6 max-h-[55vh] overflow-y-scroll scrollbar-custom">
             <div className="space-y-4">
           {/* Agent Name */}
           <div>
@@ -1530,7 +1530,7 @@ function DeployAgentModal({
           </div>
 
           {/* Fixed Footer with Deploy Button */}
-          <div className="border-t border-border p-6 pt-4 flex-shrink-0">
+          <div className="border-t border-border p-6 pt-4">
             <button
               onClick={handleDeploy}
               disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
