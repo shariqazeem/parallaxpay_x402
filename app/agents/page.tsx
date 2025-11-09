@@ -1376,7 +1376,7 @@ function DeployAgentModal({
       >
         {/* Centered Modal with fixed height and internal scroll */}
         <motion.div
-          className="glass border border-accent-primary/50 rounded-2xl z-[100000] w-full max-w-2xl max-h-[85vh] flex flex-col"
+          className="glass border border-accent-primary/50 rounded-2xl z-[100000] w-full max-w-2xl h-[85vh] flex flex-col"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
