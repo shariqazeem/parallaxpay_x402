@@ -427,10 +427,10 @@ export default function AgentDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <div className="border-b border-border bg-background-secondary/50 backdrop-blur-xl sticky top-0 z-50">
+      {/* Header - Only title bar is sticky */}
+      <div className="sticky top-0 z-50 border-b border-border bg-background-secondary/50 backdrop-blur-xl">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
                 <h1 className="text-2xl font-heading font-black cursor-pointer hover:scale-105 transition-transform">
@@ -460,9 +460,14 @@ export default function AgentDashboardPage() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Stats and Provider Section - NOT sticky, scrolls away */}
+      <div className="border-b border-border bg-background-secondary/30">
+        <div className="max-w-[1920px] mx-auto px-6 py-4">
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
             <StatCard label="Deployed Agents" value={realAgentsCount} icon="🤖" color={realAgentsCount > 0 ? 'success' : 'default'} />
             <StatCard label="Total Runs" value={totalTrades.toLocaleString()} icon="⚡" />
             <StatCard label="Est. Savings" value={`$${totalProfit.toFixed(2)}`} icon="💰" color="success" />
@@ -471,7 +476,7 @@ export default function AgentDashboardPage() {
           </div>
 
           {/* Provider Banner - Always Show */}
-          <div className="mt-4">
+          <div>
             {selectedProvider ? (
               <motion.div
                 className="glass-hover neon-border p-4 rounded-xl"
@@ -541,7 +546,7 @@ export default function AgentDashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1920px] mx-auto px-6 py-8">
+      <div className="max-w-[1920px] mx-auto px-6 py-8 pt-4">
         <div className="grid grid-cols-12 gap-6">
           {/* Left - Agent Cards */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
