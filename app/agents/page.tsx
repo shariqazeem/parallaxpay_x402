@@ -11,6 +11,7 @@ import { useProvider } from '@/app/contexts/ProviderContext'
 import { getAgentIdentityManager, AgentIdentity, TrustBadge } from '@/lib/agent-identity'
 import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-agent-scheduler'
 import { useBadgeAttestation } from '@/lib/use-badge-attestation'
+import { supabase, DeployedAgentDB } from '@/lib/supabase'
 
 interface AgentStats {
   id: string
@@ -101,31 +102,134 @@ export default function AgentDashboardPage() {
     }
   }, [identityManager])
 
-  // Load deployed agents from localStorage on mount
+  // Load deployed agents from Supabase on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('parallaxpay_deployed_agents')
-      if (stored) {
-        const agents = JSON.parse(stored) as DeployedAgent[]
-        setDeployedAgents(agents)
-        console.log(`📦 Loaded ${agents.length} deployed agents from localStorage`)
+    const loadAgents = async () => {
+      try {
+        console.log('📥 Loading deployed agents from Supabase...')
+
+        // Fetch from Supabase
+        const { data, error } = await supabase
+          .from('agents')
+          .select('*')
+          .order('deployed', { ascending: false })
+
+        if (error) {
+          console.error('Supabase fetch error:', error)
+          // Fallback to localStorage if Supabase fails
+          const stored = localStorage.getItem('parallaxpay_deployed_agents')
+          if (stored) {
+            const agents = JSON.parse(stored) as DeployedAgent[]
+            setDeployedAgents(agents)
+            console.log(`📦 Loaded ${agents.length} deployed agents from localStorage (Supabase unavailable)`)
+          }
+          return
+        }
+
+        if (data && data.length > 0) {
+          // Convert DB format to app format
+          const agents: DeployedAgent[] = data.map((db: DeployedAgentDB) => ({
+            id: db.id,
+            name: db.name,
+            type: db.type as DeployedAgent['type'],
+            prompt: db.prompt,
+            deployed: db.deployed,
+            totalRuns: db.total_runs,
+            lastRun: db.last_run,
+            lastResult: db.last_result,
+            status: db.status as DeployedAgent['status'],
+            provider: db.provider,
+            identityId: db.identity_id,
+            workflow: db.workflow,
+          }))
+
+          setDeployedAgents(agents)
+          console.log(`✅ Loaded ${agents.length} deployed agents from Supabase`)
+
+          // Also save to localStorage as backup
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(agents))
+        } else {
+          // No data in Supabase, try localStorage
+          const stored = localStorage.getItem('parallaxpay_deployed_agents')
+          if (stored) {
+            const agents = JSON.parse(stored) as DeployedAgent[]
+            setDeployedAgents(agents)
+            console.log(`📦 Loaded ${agents.length} deployed agents from localStorage (Supabase empty)`)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load deployed agents from Supabase:', error)
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem('parallaxpay_deployed_agents')
+          if (stored) {
+            const agents = JSON.parse(stored) as DeployedAgent[]
+            setDeployedAgents(agents)
+            console.log(`📦 Loaded ${agents.length} deployed agents from localStorage (Supabase error)`)
+          }
+        } catch (localError) {
+          console.error('Failed to load from localStorage:', localError)
+        }
       }
-    } catch (error) {
-      console.error('Failed to load deployed agents:', error)
     }
+
+    loadAgents()
   }, [])
 
-  // Save deployed agents to localStorage whenever they change
+  // Save deployed agents to Supabase whenever they change
   useEffect(() => {
-    if (deployedAgents.length > 0) {
+    const saveAgents = async () => {
+      if (deployedAgents.length === 0) return
+
       try {
-        localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
-        console.log(`💾 Saved ${deployedAgents.length} deployed agents to localStorage`)
+        console.log(`💾 Saving ${deployedAgents.length} deployed agents to Supabase...`)
+
+        // Convert app format to DB format
+        const dbAgents: DeployedAgentDB[] = deployedAgents.map(agent => ({
+          id: agent.id,
+          name: agent.name,
+          type: agent.type,
+          prompt: agent.prompt,
+          deployed: agent.deployed,
+          total_runs: agent.totalRuns,
+          status: agent.status,
+          identity_id: agent.identityId,
+          last_run: agent.lastRun,
+          last_result: agent.lastResult,
+          provider: agent.provider,
+          wallet_address: publicKey?.toBase58(),
+          workflow: agent.workflow,
+        }))
+
+        // Upsert to Supabase (insert or update)
+        const { error } = await supabase
+          .from('agents')
+          .upsert(dbAgents, { onConflict: 'id' })
+
+        if (error) {
+          console.error('Supabase upsert error:', error)
+          // Fallback to localStorage if Supabase fails
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+          console.log(`💾 Saved ${deployedAgents.length} deployed agents to localStorage (Supabase unavailable)`)
+        } else {
+          console.log(`✅ Saved ${deployedAgents.length} deployed agents to Supabase`)
+          // Also save to localStorage as backup
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+        }
       } catch (error) {
-        console.error('Failed to save deployed agents:', error)
+        console.error('Failed to save deployed agents to Supabase:', error)
+        // Fallback to localStorage
+        try {
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+          console.log(`💾 Saved ${deployedAgents.length} deployed agents to localStorage (Supabase error)`)
+        } catch (localError) {
+          console.error('Failed to save to localStorage:', localError)
+        }
       }
     }
-  }, [deployedAgents])
+
+    saveAgents()
+  }, [deployedAgents, publicKey])
 
   // Check for pending agent deployment from agent builder
   useEffect(() => {
