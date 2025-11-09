@@ -11,7 +11,7 @@ import { useProvider } from '@/app/contexts/ProviderContext'
 import { getAgentIdentityManager, AgentIdentity, TrustBadge } from '@/lib/agent-identity'
 import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-agent-scheduler'
 import { useBadgeAttestation } from '@/lib/use-badge-attestation'
-import { supabase, DeployedAgentDB } from '@/lib/supabase'
+import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 
 interface AgentStats {
   id: string
@@ -267,6 +267,87 @@ export default function AgentDashboardPage() {
     checkPendingDeploy()
   }, []) // Run once on mount
 
+  // Load trades from Supabase on mount (PUBLIC FEED - all users' trades)
+  useEffect(() => {
+    const loadTrades = async () => {
+      try {
+        console.log('📥 Loading trades from Supabase (public feed)...')
+
+        // Fetch from Supabase - get latest 50 trades from ALL users
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(50)
+
+        if (error) {
+          console.error('Supabase fetch error (trades):', error)
+          // Fallback to localStorage if Supabase fails
+          const stored = localStorage.getItem('parallaxpay_transactions')
+          if (stored) {
+            const localTrades = JSON.parse(stored)
+            // Convert to Trade format
+            const tradesFromLocal = localTrades.slice(0, 10).map((t: any) => ({
+              id: t.id,
+              agentName: t.agentName || t.agent_name || 'Unknown Agent',
+              provider: t.provider || 'Unknown Provider',
+              tokens: t.tokens || 0,
+              cost: t.cost || t.total_cost || 0,
+              timestamp: t.timestamp,
+              txHash: t.tx_hash || t.txHash || 'pending',
+              isReal: true,
+            }))
+            setTrades(tradesFromLocal)
+            console.log(`📦 Loaded ${tradesFromLocal.length} trades from localStorage (Supabase unavailable)`)
+          }
+          return
+        }
+
+        if (data && data.length > 0) {
+          // Convert DB format to app format
+          const tradesFromDB: Trade[] = data.slice(0, 10).map((db: TransactionDB) => ({
+            id: db.id,
+            agentName: db.agent_name || 'Unknown Agent',
+            provider: db.provider || 'Unknown Provider',
+            tokens: db.tokens || 0,
+            cost: db.cost || db.total_cost || 0,
+            timestamp: db.timestamp,
+            txHash: db.tx_hash || 'pending',
+            isReal: true,
+          }))
+
+          setTrades(tradesFromDB)
+          console.log(`✅ Loaded ${tradesFromDB.length} trades from Supabase (public feed)`)
+        }
+      } catch (error) {
+        console.error('Failed to load trades from Supabase:', error)
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions')
+          if (stored) {
+            const localTrades = JSON.parse(stored)
+            const tradesFromLocal = localTrades.slice(0, 10).map((t: any) => ({
+              id: t.id,
+              agentName: t.agentName || t.agent_name || 'Unknown Agent',
+              provider: t.provider || 'Unknown Provider',
+              tokens: t.tokens || 0,
+              cost: t.cost || t.total_cost || 0,
+              timestamp: t.timestamp,
+              txHash: t.tx_hash || t.txHash || 'pending',
+              isReal: true,
+            }))
+            setTrades(tradesFromLocal)
+            console.log(`📦 Loaded ${tradesFromLocal.length} trades from localStorage (Supabase error)`)
+          }
+        } catch (localError) {
+          console.error('Failed to load from localStorage:', localError)
+        }
+      }
+    }
+
+    loadTrades()
+  }, [])
+
   // Convert deployed agents to AgentStats for display
   const allAgents: AgentStats[] = deployedAgents.map((da) => ({
     id: da.id,
@@ -379,21 +460,58 @@ export default function AgentDashboardPage() {
           setTrades(prev => [stepTrade, ...prev.slice(0, 9)])
         })
 
-        // Store composite execution in localStorage
+        // Store composite execution in Supabase (PUBLIC - visible to all users)
         try {
-          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
-          const transactions = JSON.parse(stored)
-          transactions.push({
+          const txData: TransactionDB = {
             id: `composite-${Date.now()}`,
             timestamp: Date.now(),
             type: 'composite',
-            agentName: agent.name,
+            agent_name: agent.name,
             steps: data.executionTrail.length,
-            totalCost: data.totalCost,
+            total_cost: data.totalCost,
             status: 'success',
             network: 'solana-devnet',
-          })
-          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+            wallet_address: publicKey?.toBase58(),
+          }
+
+          const { error } = await supabase
+            .from('transactions')
+            .insert([txData])
+
+          if (error) {
+            console.error('Supabase insert error (transaction):', error)
+            // Fallback to localStorage
+            const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+            const transactions = JSON.parse(stored)
+            transactions.push({
+              id: txData.id,
+              timestamp: txData.timestamp,
+              type: txData.type,
+              agentName: txData.agent_name,
+              steps: txData.steps,
+              totalCost: txData.total_cost,
+              status: txData.status,
+              network: txData.network,
+            })
+            localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+            console.log('💾 Saved transaction to localStorage (Supabase unavailable)')
+          } else {
+            console.log('✅ Saved transaction to Supabase (public feed)')
+            // Also save to localStorage as backup
+            const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+            const transactions = JSON.parse(stored)
+            transactions.push({
+              id: txData.id,
+              timestamp: txData.timestamp,
+              type: txData.type,
+              agentName: txData.agent_name,
+              steps: txData.steps,
+              totalCost: txData.total_cost,
+              status: txData.status,
+              network: txData.network,
+            })
+            localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+          }
         } catch (e) {
           console.warn('Failed to store transaction:', e)
         }
@@ -473,22 +591,64 @@ export default function AgentDashboardPage() {
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
 
-      // Store in localStorage for transaction history
+      // Store in Supabase for transaction history (PUBLIC - visible to all users)
       try {
-        const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
-        const transactions = JSON.parse(stored)
-        transactions.push({
+        const txData: TransactionDB = {
           id: newTrade.id,
           timestamp: newTrade.timestamp,
           type: 'agent',
+          agent_name: agent.name,
           provider: newTrade.provider,
           tokens: newTrade.tokens,
           cost: newTrade.cost,
-          txHash: newTrade.txHash,
+          tx_hash: newTrade.txHash,
           status: 'success',
           network: 'solana-devnet',
-        })
-        localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+          wallet_address: publicKey?.toBase58(),
+        }
+
+        const { error } = await supabase
+          .from('transactions')
+          .insert([txData])
+
+        if (error) {
+          console.error('Supabase insert error (transaction):', error)
+          // Fallback to localStorage
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: txData.id,
+            timestamp: txData.timestamp,
+            type: txData.type,
+            agentName: txData.agent_name,
+            provider: txData.provider,
+            tokens: txData.tokens,
+            cost: txData.cost,
+            txHash: txData.tx_hash,
+            status: txData.status,
+            network: txData.network,
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+          console.log('💾 Saved transaction to localStorage (Supabase unavailable)')
+        } else {
+          console.log('✅ Saved transaction to Supabase (public feed)')
+          // Also save to localStorage as backup
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: txData.id,
+            timestamp: txData.timestamp,
+            type: txData.type,
+            agentName: txData.agent_name,
+            provider: txData.provider,
+            tokens: txData.tokens,
+            cost: txData.cost,
+            txHash: txData.tx_hash,
+            status: txData.status,
+            network: txData.network,
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        }
       } catch (e) {
         console.warn('Failed to store transaction:', e)
       }

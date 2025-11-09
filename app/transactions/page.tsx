@@ -3,17 +3,20 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { supabase, TransactionDB } from '@/lib/supabase'
 
 interface Transaction {
   id: string
   timestamp: number
-  type: 'inference' | 'agent' | 'marketplace'
+  type: 'inference' | 'agent' | 'marketplace' | 'composite'
   provider: string
   tokens: number
   cost: number
   txHash: string
   status: 'success' | 'pending' | 'failed'
   network: 'solana-devnet' | 'solana'
+  agentName?: string
+  steps?: number
 }
 
 export default function TransactionsPage() {
@@ -21,24 +24,95 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<'all' | 'success' | 'pending' | 'failed'>('all')
   const [network, setNetwork] = useState<'all' | 'solana-devnet' | 'solana'>('all')
 
-  // Load transactions from localStorage
+  // Load transactions from Supabase (PUBLIC FEED - all users' transactions)
   useEffect(() => {
-    const loadTransactions = () => {
+    const loadTransactions = async () => {
       try {
-        const stored = localStorage.getItem('parallaxpay_transactions')
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          setTransactions(parsed)
+        console.log('📥 Loading transactions from Supabase (public feed)...')
+
+        // Fetch from Supabase - get ALL transactions from ALL users
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('timestamp', { ascending: false })
+
+        if (error) {
+          console.error('Supabase fetch error (transactions):', error)
+          // Fallback to localStorage
+          const stored = localStorage.getItem('parallaxpay_transactions')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            const mapped = parsed.map((tx: any) => ({
+              id: tx.id,
+              timestamp: tx.timestamp,
+              type: tx.type || 'agent',
+              provider: tx.provider || 'Unknown',
+              tokens: tx.tokens || 0,
+              cost: tx.cost || tx.total_cost || 0,
+              txHash: tx.txHash || tx.tx_hash || 'pending',
+              status: tx.status || 'success',
+              network: tx.network || 'solana-devnet',
+              agentName: tx.agentName || tx.agent_name,
+              steps: tx.steps,
+            }))
+            setTransactions(mapped)
+            console.log(`📦 Loaded ${mapped.length} transactions from localStorage (Supabase unavailable)`)
+          }
+          return
+        }
+
+        if (data) {
+          // Convert DB format to app format
+          const txs: Transaction[] = data.map((db: TransactionDB) => ({
+            id: db.id,
+            timestamp: db.timestamp,
+            type: (db.type as any) || 'agent',
+            provider: db.provider || 'Unknown',
+            tokens: db.tokens || 0,
+            cost: db.cost || db.total_cost || 0,
+            txHash: db.tx_hash || 'pending',
+            status: (db.status as any) || 'success',
+            network: (db.network as any) || 'solana-devnet',
+            agentName: db.agent_name,
+            steps: db.steps,
+          }))
+
+          setTransactions(txs)
+          console.log(`✅ Loaded ${txs.length} transactions from Supabase (public feed)`)
         }
       } catch (error) {
-        console.error('Failed to load transactions:', error)
+        console.error('Failed to load transactions from Supabase:', error)
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            const mapped = parsed.map((tx: any) => ({
+              id: tx.id,
+              timestamp: tx.timestamp,
+              type: tx.type || 'agent',
+              provider: tx.provider || 'Unknown',
+              tokens: tx.tokens || 0,
+              cost: tx.cost || tx.total_cost || 0,
+              txHash: tx.txHash || tx.tx_hash || 'pending',
+              status: tx.status || 'success',
+              network: tx.network || 'solana-devnet',
+              agentName: tx.agentName || tx.agent_name,
+              steps: tx.steps,
+            }))
+            setTransactions(mapped)
+            console.log(`📦 Loaded ${mapped.length} transactions from localStorage (Supabase error)`)
+          }
+        } catch (localError) {
+          console.error('Failed to load from localStorage:', localError)
+        }
       }
     }
 
     loadTransactions()
 
-    // Reload every 5 seconds
-    const interval = setInterval(loadTransactions, 5000)
+    // Reload every 10 seconds for live updates
+    const interval = setInterval(loadTransactions, 10000)
     return () => clearInterval(interval)
   }, [])
 
