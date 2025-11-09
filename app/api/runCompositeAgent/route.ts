@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { InferenceRequest, InferenceResponse } from '@/app/api/inference/paid/route'
+import { createParallaxClient } from '@/lib/parallax-client'
 
 export interface WorkflowStep {
   id: string
