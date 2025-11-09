@@ -6,7 +6,8 @@
     "dev": "node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check": "./scripts/check-setup.sh"
   },
   "dependencies": {
     "@coinbase/x402": "^0.7.0",
