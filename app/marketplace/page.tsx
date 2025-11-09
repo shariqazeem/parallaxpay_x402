@@ -8,6 +8,9 @@ import ProviderList from '../components/marketplace/ProviderList'
 import TradingChart from '../components/marketplace/TradingChart'
 import MarketHeader from '../components/marketplace/MarketHeader'
 import AgentPanel from '../components/marketplace/AgentPanel'
+import OrderPlacementPanel from '../components/marketplace/OrderPlacementPanel'
+import UserPositionPanel from '../components/marketplace/UserPositionPanel'
+import TradeAnimations from '../components/marketplace/TradeAnimations'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
@@ -26,6 +29,9 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-background-primary">
+      {/* Trade Animations Overlay */}
+      <TradeAnimations />
+
       {/* Market Header with Stats */}
       <MarketHeader />
 
@@ -37,10 +43,10 @@ export default function MarketplacePage() {
       {/* Main Trading Interface */}
       <div className="max-w-[1920px] mx-auto px-6 pb-8">
         <div className="grid grid-cols-12 gap-6">
-          {/* Left Column - Live Order Book & Agents */}
+          {/* Left Column - Live Order Book & Order Placement */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             <LiveOrderBook />
-            <AgentPanel />
+            <OrderPlacementPanel />
           </div>
 
           {/* Middle Column - Provider Selection */}
@@ -143,8 +149,9 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          {/* Right Column - Quick Test Panel */}
+          {/* Right Column - User Position & Quick Test */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
+            <UserPositionPanel />
             <TradePanel
               selectedProvider={selectedProvider?.name || null}
               model={selectedModel}
@@ -393,12 +400,12 @@ function TradePanel({
   )
 }
 
-// Recent Trades Component - NOW WITH REAL TRADES! 🔥
+// Recent Trades Component - NOW WITH ENHANCED REAL TRADES! 🔥
 function RecentTrades() {
   const [trades, setTrades] = useState<Array<{
     time: string
-    providerId: string
-    agentId: string
+    buyerId: string
+    sellerId: string
     tokens: number
     cost: number
     status: string
@@ -407,14 +414,14 @@ function RecentTrades() {
   useEffect(() => {
     const updateRealTrades = () => {
       try {
-        const { getRealOrderBook } = require('@/lib/real-order-book')
-        const orderBook = getRealOrderBook()
-        const recentTrades = orderBook.getRecentTrades(3)
+        const { getEnhancedOrderBook } = require('@/lib/enhanced-order-book')
+        const orderBook = getEnhancedOrderBook()
+        const recentTrades = orderBook.getRecentTrades(5)
 
         const displayTrades = recentTrades.map(trade => ({
           time: new Date(trade.timestamp).toLocaleTimeString(),
-          providerId: trade.providerId,
-          agentId: trade.agentId,
+          buyerId: trade.buyerId,
+          sellerId: trade.sellerId,
           tokens: trade.amount,
           cost: trade.price * trade.amount,
           status: 'success',
@@ -429,10 +436,18 @@ function RecentTrades() {
     // Update immediately
     updateRealTrades()
 
-    // Then update every 5 seconds
-    const interval = setInterval(updateRealTrades, 5000)
+    // Listen for trade events
+    const { getEnhancedOrderBook } = require('@/lib/enhanced-order-book')
+    const orderBook = getEnhancedOrderBook()
+    orderBook.on('tradeExecuted', updateRealTrades)
 
-    return () => clearInterval(interval)
+    // Also update every 3 seconds
+    const interval = setInterval(updateRealTrades, 3000)
+
+    return () => {
+      orderBook.off('tradeExecuted', updateRealTrades)
+      clearInterval(interval)
+    }
   }, [])
 
   return (
@@ -472,7 +487,7 @@ function RecentTrades() {
                 </span>
               </div>
               <div className="text-sm text-white font-medium mb-1">
-                {trade.agentId} → {trade.providerId}
+                {trade.buyerId.substring(0, 8)}... → {trade.sellerId.substring(0, 8)}...
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-text-secondary">{trade.tokens.toLocaleString()} tokens</span>

@@ -3,19 +3,19 @@
 /**
  * Live Order Book Component
  *
- * NOW WITH REAL ORDERS! 🔥
+ * NOW WITH ENHANCED REAL ORDERS! 🔥
  *
  * Shows ACTUAL:
  * - Provider asks (real compute offers)
- * - Agent bids (real buy orders)
+ * - User limit orders (buy & sell)
  * - Real market depth
  * - Real spread from actual orders
+ * - Real-time updates via events
  */
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { getRealOrderBook, type RealOrder } from '@/lib/real-order-book'
-import { getRealProviderManager } from '@/lib/real-provider-manager'
+import { getEnhancedOrderBook, type UserOrder } from '@/lib/enhanced-order-book'
 
 export interface Order {
   price: number
@@ -34,35 +34,27 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
   const [spread, setSpread] = useState(0)
   const [spreadPercent, setSpreadPercent] = useState(0)
 
-  // Update with REAL order book data
+  // Update with ENHANCED order book data
   useEffect(() => {
-    const updateRealOrderBook = async () => {
+    const updateOrderBook = () => {
       try {
-        const orderBook = getRealOrderBook()
-        const providerManager = getRealProviderManager()
+        const orderBook = getEnhancedOrderBook()
 
-        // Update provider asks (real offers)
-        await orderBook.updateProviderAsks()
-
-        // Generate simulated bids for demo (agents wanting to buy)
-        orderBook.generateSimulatedBids()
-
-        // Get real orders
-        const realAsks = orderBook.getAsks()
-        const realBids = orderBook.getBids()
+        // Get depth (top 10 levels)
+        const depth = orderBook.getDepth(10)
 
         // Convert to display format
-        const displayAsks: Order[] = realAsks.map(ask => ({
+        const displayAsks: Order[] = depth.asks.map(ask => ({
           price: ask.price / 1000, // Convert back to per-token price
-          amount: ask.amount,
-          total: ask.total,
+          amount: ask.remainingAmount, // Show remaining amount
+          total: (ask.price * ask.remainingAmount) / 1000,
           side: 'ask' as const,
         }))
 
-        const displayBids: Order[] = realBids.map(bid => ({
-          price: bid.price / 1000, // Convert back to per-token price
-          amount: bid.amount,
-          total: bid.total,
+        const displayBids: Order[] = depth.bids.map(bid => ({
+          price: bid.price / 1000,
+          amount: bid.remainingAmount,
+          total: (bid.price * bid.remainingAmount) / 1000,
           side: 'bid' as const,
         }))
 
@@ -73,20 +65,31 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
         const spreadData = orderBook.getSpread()
         setSpread(spreadData.spread)
         setSpreadPercent(spreadData.spreadPercent)
-
-        console.log(`📖 Order book updated: ${displayAsks.length} asks, ${displayBids.length} bids`)
       } catch (error) {
         console.error('Failed to update order book:', error)
       }
     }
 
-    // Update immediately
-    updateRealOrderBook()
+    // Initial update
+    updateOrderBook()
 
-    // Then update every 3 seconds with real data
-    const interval = setInterval(updateRealOrderBook, 3000)
+    // Listen for order book events
+    const orderBook = getEnhancedOrderBook()
+    orderBook.on('orderBookUpdated', updateOrderBook)
+    orderBook.on('orderPlaced', updateOrderBook)
+    orderBook.on('orderCancelled', updateOrderBook)
+    orderBook.on('tradeExecuted', updateOrderBook)
 
-    return () => clearInterval(interval)
+    // Also update every 2 seconds
+    const interval = setInterval(updateOrderBook, 2000)
+
+    return () => {
+      orderBook.off('orderBookUpdated', updateOrderBook)
+      orderBook.off('orderPlaced', updateOrderBook)
+      orderBook.off('orderCancelled', updateOrderBook)
+      orderBook.off('tradeExecuted', updateOrderBook)
+      clearInterval(interval)
+    }
   }, [])
 
   const maxBidAmount = Math.max(...bids.map(o => o.amount), 1)
