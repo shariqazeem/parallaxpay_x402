@@ -1368,42 +1368,46 @@ function DeployAgentModal({
     <>
       {/* Backdrop */}
       <motion.div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-      >
-        {/* Centered Modal - simpler layout with explicit heights */}
-        <motion.div
-          className="glass border border-accent-primary/50 rounded-2xl z-[100000] w-full max-w-2xl"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Fixed Header */}
-          <div className="flex items-start justify-between p-6 pb-4 border-b border-border">
-            <div>
-              <h2 className="text-2xl font-heading font-bold text-white mb-2">
-                Deploy Real Agent
-              </h2>
-              <p className="text-sm text-text-secondary">
-                This agent will run real AI inference on your Parallax cluster
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-text-secondary hover:text-white transition-colors text-2xl leading-none"
-            >
-              ✕
-            </button>
-          </div>
+      />
 
-          {/* Scrollable Content Area with explicit max height */}
-          <div className="p-6 max-h-[55vh] overflow-y-scroll scrollbar-custom">
-            <div className="space-y-4">
+      {/* Full-screen overlay modal with guaranteed scrolling */}
+      <motion.div
+        className="fixed inset-8 md:inset-16 glass border border-accent-primary/50 rounded-2xl z-[100000] overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Fixed Header */}
+        <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-6 pb-4 border-b border-border bg-background-secondary/95 backdrop-blur-xl z-10">
+          <div>
+            <h2 className="text-2xl font-heading font-bold text-white mb-2">
+              Deploy Real Agent
+            </h2>
+            <p className="text-sm text-text-secondary">
+              This agent will run real AI inference on your Parallax cluster
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-text-secondary hover:text-white transition-colors text-2xl leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Scrollable Content - positioned between header and footer */}
+        <div
+          className="absolute top-[100px] bottom-[120px] left-0 right-0 overflow-y-scroll scrollbar-custom px-6"
+          style={{ scrollbarGutter: 'stable' }}
+        >
+          <div className="space-y-4 py-4">
           {/* Agent Name */}
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
@@ -1529,28 +1533,28 @@ function DeployAgentModal({
             </div>
           </div>
 
-          {/* Fixed Footer with Deploy Button */}
-          <div className="border-t border-border p-6 pt-4">
-            <button
-              onClick={handleDeploy}
-              disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
-              className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {isDeploying ? (
-                <span className="text-text-muted">⚡ Testing agent with Parallax...</span>
-              ) : result ? (
-                <span className="text-status-success">Deploying...</span>
-              ) : (
-                <span className="text-gradient">Deploy & Test Agent</span>
-              )}
-            </button>
+        {/* Fixed Footer - absolutely positioned at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-border p-6 pt-4 bg-background-secondary/95 backdrop-blur-xl z-10">
+          <button
+            onClick={handleDeploy}
+            disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
+            className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            {isDeploying ? (
+              <span className="text-text-muted">⚡ Testing agent with Parallax...</span>
+            ) : result ? (
+              <span className="text-status-success">Deploying...</span>
+            ) : (
+              <span className="text-gradient">Deploy & Test Agent</span>
+            )}
+          </button>
 
-            <div className="text-xs text-text-muted text-center mt-3">
-              Make sure Parallax is running on localhost:3001
-            </div>
+          <div className="text-xs text-text-muted text-center mt-3">
+            Make sure Parallax is running on localhost:3001
           </div>
-        </motion.div>
+        </div>
       </motion.div>
+    </>
     </>,
     document.body
   )
