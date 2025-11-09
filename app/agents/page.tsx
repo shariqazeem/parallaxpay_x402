@@ -1353,35 +1353,36 @@ function DeployAgentModal({
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center overflow-y-auto p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="glass rounded-xl border border-accent-primary/50 p-6 max-w-lg w-full my-auto"
+        className="glass rounded-xl border border-accent-primary/50 w-full max-w-lg max-h-[90vh] overflow-y-auto"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-heading font-bold text-white mb-2">
-              Deploy Real Agent
-            </h2>
-            <p className="text-sm text-text-secondary">
-              This agent will run real AI inference on your Parallax cluster
-            </p>
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-heading font-bold text-white mb-2">
+                Deploy Real Agent
+              </h2>
+              <p className="text-sm text-text-secondary">
+                This agent will run real AI inference on your Parallax cluster
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-text-secondary hover:text-white transition-colors"
+            >
+              ✕
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-text-secondary hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
 
         <div className="space-y-4">
           {/* Agent Name */}
@@ -1525,6 +1526,7 @@ function DeployAgentModal({
           <div className="text-xs text-text-muted text-center">
             Make sure Parallax is running on localhost:3001
           </div>
+        </div>
         </div>
       </motion.div>
     </motion.div>,
