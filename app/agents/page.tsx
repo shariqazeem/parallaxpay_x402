@@ -8,6 +8,8 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
 import { useProvider } from '@/app/contexts/ProviderContext'
+import { getAgentIdentityManager, AgentIdentity, TrustBadge } from '@/lib/agent-identity'
+import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-agent-scheduler'
 
 interface AgentStats {
   id: string
@@ -39,7 +41,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale'
+  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom'
   prompt: string
   deployed: number
   totalRuns: number
@@ -47,12 +49,16 @@ interface DeployedAgent {
   lastResult?: string
   status: 'idle' | 'running'
   provider?: string  // Store which provider this agent uses
+  identityId?: string  // Link to AgentIdentity
+  schedule?: AgentSchedule  // Autonomous scheduling config
 }
 
 export default function AgentDashboardPage() {
   const [showDeployModal, setShowDeployModal] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
+  const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
@@ -64,6 +70,23 @@ export default function AgentDashboardPage() {
 
   // Global provider state from marketplace
   const { selectedProvider } = useProvider()
+
+  // Identity and scheduler managers (initialized client-side only)
+  const [identityManager, setIdentityManager] = useState<ReturnType<typeof getAgentIdentityManager> | null>(null)
+  const [scheduler, setScheduler] = useState<ReturnType<typeof getAutonomousAgentScheduler> | null>(null)
+
+  // Initialize managers on client side only
+  useEffect(() => {
+    setIdentityManager(getAgentIdentityManager())
+    setScheduler(getAutonomousAgentScheduler())
+  }, [])
+
+  // Refresh identities when manager changes
+  useEffect(() => {
+    if (identityManager) {
+      setAgentIdentities(identityManager.getAllIdentities())
+    }
+  }, [identityManager])
 
   // Check for pending agent deployment from agent builder
   useEffect(() => {
@@ -115,15 +138,15 @@ export default function AgentDashboardPage() {
       ? `Completed: "${da.lastResult.substring(0, 50)}..."`
       : `Ready to run: "${da.prompt.substring(0, 40)}..."`,
     lastActionTime: da.lastRun || da.deployed,
-    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : '🐋',
-    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : '#00D4FF',
+    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : da.type === 'whale' ? '🐋' : '🤖',
+    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : da.type === 'whale' ? '#00D4FF' : '#FF6B9D',
     isReal: true,
   }))
 
   // Run an agent's task with REAL x402 PAYMENT using USER WALLET
   const runAgent = async (agentId: string) => {
     const agent = deployedAgents.find(a => a.id === agentId)
-    if (!agent) return
+    if (!agent || !identityManager) return
 
     // Check wallet connection
     if (!isWalletConnected) {
@@ -135,6 +158,8 @@ export default function AgentDashboardPage() {
     setDeployedAgents(prev => prev.map(a =>
       a.id === agentId ? { ...a, status: 'running' as const } : a
     ))
+
+    const startTime = Date.now()
 
     try {
       console.log(`🤖 [${agent.name}] Running agent with YOUR wallet payment...`)
@@ -160,9 +185,26 @@ export default function AgentDashboardPage() {
 
       const data = await response.json()
 
+      const latency = Date.now() - startTime
+
       console.log(`✅ [${agent.name}] Payment successful!`)
       console.log(`   TX Hash: ${data.txHash || 'pending'}`)
       console.log(`   Cost: $${data.cost?.toFixed(6) || '0.001000'}`)
+      console.log(`   Latency: ${latency}ms`)
+
+      // Record execution in identity manager
+      if (agent.identityId) {
+        identityManager.recordExecution(
+          agent.identityId,
+          true, // success
+          data.cost || 0.001,
+          latency,
+          data.provider || selectedProvider?.name || 'Parallax',
+          0.0001 // Estimated savings (could calculate from baseline)
+        )
+        // Refresh identities to show updated reputation
+        setAgentIdentities(identityManager.getAllIdentities())
+      }
 
       // Update agent stats
       setDeployedAgents(prev => prev.map(a =>
@@ -172,7 +214,8 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: data.response?.substring(0, 200) || 'Success'
+              lastResult: data.response?.substring(0, 200) || 'Success',
+              provider: data.provider
             }
           : a
       ))
@@ -213,7 +256,23 @@ export default function AgentDashboardPage() {
     } catch (err) {
       console.error('Agent execution error:', err)
 
+      const latency = Date.now() - startTime
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+
+      // Record failed execution in identity manager
+      if (agent.identityId && identityManager) {
+        identityManager.recordExecution(
+          agent.identityId,
+          false, // failure
+          0.001, // Estimated cost
+          latency,
+          selectedProvider?.name || 'Parallax',
+          0
+        )
+        // Refresh identities
+        setAgentIdentities(identityManager.getAllIdentities())
+      }
+
       alert(
         `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
         `Troubleshooting:\n` +
@@ -248,7 +307,12 @@ export default function AgentDashboardPage() {
             onDeploy={(agent) => {
               setDeployedAgents(prev => [...prev, agent])
               setShowDeployModal(false)
+              // Refresh identities
+              if (identityManager) {
+                setAgentIdentities(identityManager.getAllIdentities())
+              }
             }}
+            walletAddress={publicKey?.toBase58()}
           />
         )}
       </AnimatePresence>
@@ -373,14 +437,23 @@ export default function AgentDashboardPage() {
               )}
 
               <div className="space-y-4">
-                {allAgents.map((agent, index) => (
-                  <AgentCard
-                    key={agent.id}
-                    agent={agent}
-                    index={index}
-                    onRun={() => runAgent(agent.id)}
-                  />
-                ))}
+                {allAgents.map((agent, index) => {
+                  // Find corresponding deployed agent to get identity ID
+                  const deployedAgent = deployedAgents.find(da => da.id === agent.id)
+                  const identity = deployedAgent?.identityId
+                    ? agentIdentities.find(id => id.id === deployedAgent.identityId)
+                    : undefined
+
+                  return (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      index={index}
+                      onRun={() => runAgent(agent.id)}
+                      identity={identity}
+                    />
+                  )
+                })}
               </div>
             </div>
 
@@ -391,6 +464,9 @@ export default function AgentDashboardPage() {
           {/* Right - Live Feed */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
             <LiveTradeFeed trades={trades} />
+            {agentIdentities.length > 0 && identityManager && (
+              <AgentLeaderboard identities={identityManager.getLeaderboard(5)} />
+            )}
             {allAgents.length > 0 && <AgentMetrics agents={allAgents} />}
           </div>
         </div>
@@ -435,10 +511,12 @@ function AgentCard({
   agent,
   index,
   onRun,
+  identity,
 }: {
   agent: AgentStats
   index: number
   onRun: () => void
+  identity?: AgentIdentity
 }) {
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
   const timeStr =
@@ -469,9 +547,29 @@ function AgentCard({
                     REAL
                   </span>
                 )}
+                {identity?.isVerified && (
+                  <span className="text-accent-secondary text-sm" title="Wallet Verified">
+                    ✓
+                  </span>
+                )}
               </div>
-              <div className="text-sm text-text-secondary capitalize">
-                {agent.type} Strategy
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-text-secondary capitalize">
+                  {agent.type} Strategy
+                </div>
+                {identity && (
+                  <>
+                    <span className="text-text-muted">•</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-accent-secondary">
+                        {identity.reputation.level}
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        ({identity.reputation.score})
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -488,6 +586,26 @@ function AgentCard({
             {agent.status === 'executing' ? '⚡ EXECUTING' : agent.status.toUpperCase()}
           </div>
         </div>
+
+        {/* Trust Badges */}
+        {identity && identity.badges.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {identity.badges.slice(0, 4).map(badge => (
+              <div
+                key={badge.id}
+                className="px-2 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-xs font-semibold text-accent-primary"
+                title={badge.description}
+              >
+                {badge.icon} {badge.name}
+              </div>
+            ))}
+            {identity.badges.length > 4 && (
+              <div className="px-2 py-1 rounded-lg bg-background-tertiary text-xs text-text-muted">
+                +{identity.badges.length - 4} more
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-4 mb-4">
@@ -691,16 +809,128 @@ function SDKExample() {
   )
 }
 
+function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
+  return (
+    <div className="glass rounded-xl border border-border overflow-hidden">
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-heading font-bold text-white">
+            🏆 Top Agents
+          </h3>
+          <div className="text-xs text-text-secondary">
+            by Reputation
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
+        {identities.map((identity, index) => (
+          <motion.div
+            key={identity.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="glass-hover p-3 rounded-lg border border-border-hover"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-2xl font-bold text-accent-primary">
+                #{index + 1}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="text-sm font-bold text-white">
+                    {identity.name}
+                  </div>
+                  {identity.isVerified && (
+                    <span className="text-accent-secondary text-xs">✓</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-accent-secondary">
+                    {identity.reputation.level}
+                  </span>
+                  <span className="text-xs text-text-muted">•</span>
+                  <span className="text-xs text-text-muted">
+                    {identity.reputation.score} pts
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-text-secondary">Executions</div>
+                <div className="text-sm font-bold text-white">
+                  {identity.stats.totalExecutions}
+                </div>
+              </div>
+            </div>
+
+            {/* Top Badge */}
+            {identity.badges.length > 0 && (
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-accent-primary">
+                  {identity.badges[0].icon}
+                </span>
+                <span className="text-text-muted">
+                  {identity.badges[0].name}
+                </span>
+              </div>
+            )}
+
+            {/* Reputation Breakdown */}
+            <div className="grid grid-cols-4 gap-1 mt-2">
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Perf</div>
+                <div className="text-xs font-bold text-status-success">
+                  {identity.reputation.performanceScore}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Rel</div>
+                <div className="text-xs font-bold text-accent-secondary">
+                  {identity.reputation.reliabilityScore}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Eff</div>
+                <div className="text-xs font-bold text-accent-primary">
+                  {identity.reputation.efficiencyScore}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Com</div>
+                <div className="text-xs font-bold text-text-secondary">
+                  {identity.reputation.communityScore}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {identities.length === 0 && (
+          <div className="text-center py-12 text-text-secondary">
+            <div className="text-4xl mb-3">🏆</div>
+            <div className="text-sm">No agents yet</div>
+            <div className="text-xs text-text-muted mt-1">
+              Deploy an agent to appear on the leaderboard
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Deploy Agent Modal Component
 function DeployAgentModal({
   onClose,
   onDeploy,
+  walletAddress,
 }: {
   onClose: () => void
   onDeploy: (agent: DeployedAgent) => void
+  walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale'>('arbitrage')
+  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale' | 'custom'>('custom')
   const [prompt, setPrompt] = useState('Explain quantum computing')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -776,6 +1006,14 @@ function DeployAgentModal({
 
       setResult(content)
 
+      // Create agent identity
+      const identityManager = getAgentIdentityManager()
+      const identity = identityManager.createIdentity(
+        walletAddress || 'anonymous',
+        name,
+        type
+      )
+
       // Deploy the agent
       const newAgent: DeployedAgent = {
         id: `real-${Date.now()}`,
@@ -785,7 +1023,12 @@ function DeployAgentModal({
         deployed: Date.now(),
         totalRuns: 0,
         status: 'idle',
+        identityId: identity.id,
       }
+
+      console.log('🎉 Agent deployed with identity:', identity.id)
+      console.log('   Reputation Score:', identity.reputation.score)
+      console.log('   Wallet:', identity.walletAddress)
 
       // Wait a moment to show the result
       setTimeout(() => {
@@ -860,6 +1103,7 @@ function DeployAgentModal({
               className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white focus:border-accent-primary focus:outline-none"
               disabled={isDeploying}
             >
+              <option value="custom">Custom - General purpose AI agent</option>
               <option value="arbitrage">Arbitrage - Find price differences</option>
               <option value="optimizer">Optimizer - Minimize costs</option>
               <option value="whale">Whale - Bulk purchases</option>
