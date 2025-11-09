@@ -80,7 +80,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get the X-PAYMENT header from the original request to forward to steps
+    const paymentHeader = request.headers.get('X-PAYMENT')
+    if (!paymentHeader) {
+      return NextResponse.json(
+        { error: 'X-PAYMENT header is required for composite agent execution' },
+        { status: 400 }
+      )
+    }
+
     console.log(`\n🔗 [COMPOSITE AGENT] Starting workflow with ${body.workflow.steps.length} steps`)
+    console.log(`   Payment header: ${paymentHeader.substring(0, 50)}...`)
 
     const executionTrail: StepExecutionResult[] = []
     const stepOutputs = new Map<string, string>() // Store outputs by step ID
@@ -132,6 +142,7 @@ export async function POST(request: NextRequest) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-PAYMENT': paymentHeader, // Forward payment header to each step
           },
           body: JSON.stringify(inferenceRequest),
         })
