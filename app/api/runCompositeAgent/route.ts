@@ -126,14 +126,26 @@ export async function POST(request: NextRequest) {
           temperature: 0.7,
         })
 
-        // Extract response content
+        // Extract response content (handle multiple Parallax response formats)
         let content = ''
         if (parallaxResponse.choices && parallaxResponse.choices.length > 0) {
           const choice = parallaxResponse.choices[0] as any
-          content = choice.message?.content || choice.text || ''
+          content = choice.message?.content || choice.messages?.content || choice.text || ''
+
+          // Clean up <think> tags if present
+          if (content.includes('<think>')) {
+            const thinkEnd = content.indexOf('</think>')
+            if (thinkEnd !== -1) {
+              content = content.substring(thinkEnd + 8).trim()
+            } else {
+              content = content.replace(/<think>\n?/g, '').trim()
+            }
+          }
         }
 
         if (!content) {
+          console.error(`      ❌ Empty response from Parallax`)
+          console.error(`         Full response:`, JSON.stringify(parallaxResponse, null, 2))
           throw new Error(`No response from Parallax for step ${i + 1}`)
         }
 
