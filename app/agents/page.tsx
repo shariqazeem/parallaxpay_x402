@@ -1402,7 +1402,7 @@ function DeployAgentModal({
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="overflow-y-auto flex-1 p-6">
+          <div className="overflow-y-auto flex-1 min-h-0 p-6">
             <div className="space-y-4">
           {/* Agent Name */}
           <div>
