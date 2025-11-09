@@ -80,17 +80,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the X-PAYMENT header from the original request to forward to steps
-    const paymentHeader = request.headers.get('X-PAYMENT')
-    if (!paymentHeader) {
-      return NextResponse.json(
-        { error: 'X-PAYMENT header is required for composite agent execution' },
-        { status: 400 }
-      )
-    }
-
     console.log(`\n🔗 [COMPOSITE AGENT] Starting workflow with ${body.workflow.steps.length} steps`)
-    console.log(`   Payment header: ${paymentHeader.substring(0, 50)}...`)
+    console.log(`   Payment validated by x402 middleware`)
 
     const executionTrail: StepExecutionResult[] = []
     const stepOutputs = new Map<string, string>() // Store outputs by step ID
@@ -118,41 +109,42 @@ export async function POST(request: NextRequest) {
 
       console.log(`      💬 Prompt: ${finalPrompt.substring(0, 100)}...`)
 
-      // Prepare inference request
-      const inferenceRequest: InferenceRequest = {
-        messages: [
-          {
-            role: 'user',
-            content: finalPrompt,
-          },
-        ],
-        max_tokens: 256,
-        temperature: 0.7,
-        provider: body.provider,
-      }
-
       try {
-        // Make internal API call to paid inference endpoint
-        // In production, this would include x402 payment from the composite agent's wallet
-        const inferenceUrl = new URL('/api/inference/paid', request.url).toString()
+        // Call Parallax directly for each step (bypasses middleware)
+        console.log(`      🤖 Calling Parallax inference...`)
 
-        console.log(`      💳 Making x402 payment for agent call...`)
-
-        const inferenceResponse = await fetch(inferenceUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-PAYMENT': paymentHeader, // Forward payment header to each step
-          },
-          body: JSON.stringify(inferenceRequest),
+        const parallaxClient = createParallaxClient('http://localhost:3001')
+        const parallaxResponse = await parallaxClient.inference({
+          messages: [
+            {
+              role: 'user',
+              content: finalPrompt,
+            },
+          ],
+          max_tokens: 256,
+          temperature: 0.7,
         })
 
-        if (!inferenceResponse.ok) {
-          const errorData = await inferenceResponse.json()
-          throw new Error(`Step ${i + 1} failed: ${errorData.error || 'Unknown error'}`)
+        // Extract response content
+        let content = ''
+        if (parallaxResponse.choices && parallaxResponse.choices.length > 0) {
+          const choice = parallaxResponse.choices[0] as any
+          content = choice.message?.content || choice.text || ''
         }
 
-        const result: InferenceResponse = await inferenceResponse.json()
+        if (!content) {
+          throw new Error(`No response from Parallax for step ${i + 1}`)
+        }
+
+        // Create result object matching expected format
+        const result: InferenceResponse = {
+          response: content,
+          tokens: 256, // Estimated
+          provider: body.provider || 'Parallax Local',
+          cost: 0.001, // Fixed cost per step
+          latency: 0, // Will be calculated below
+          model: 'Qwen/Qwen3-0.6B',
+        }
         const stepLatency = Date.now() - stepStartTime
 
         console.log(`      ✅ Agent response received`)

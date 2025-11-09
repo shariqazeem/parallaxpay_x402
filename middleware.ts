@@ -159,6 +159,37 @@ const x402PaymentMiddleware = paymentMiddleware(
       network,
     },
 
+    // API endpoint for composite agent execution
+    '/api/runCompositeAgent': {
+      price: '$0.003', // Fixed price per composite workflow (covers multiple steps)
+      config: {
+        description: 'Composite Agent Workflow - Fixed $0.003 per workflow',
+        mimeType: 'application/json',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            workflow: {
+              type: 'object',
+              description: 'Workflow definition with multiple agent steps',
+            },
+            initialInput: { type: 'string', description: 'Optional initial input' },
+            provider: { type: 'string', description: 'Preferred Parallax provider' },
+          },
+          required: ['workflow'],
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            finalOutput: { type: 'string' },
+            totalCost: { type: 'number' },
+            executionTrail: { type: 'array' },
+          },
+        },
+      },
+      network,
+    },
+
     // API endpoint for agent inference payments
     '/api/inference/paid': {
       price: '$0.001', // Fixed price per request (covers ~1000 tokens average)
@@ -242,5 +273,6 @@ export const config = {
     '/test',
     '/test-payment',
     '/api/inference/paid',
+    '/api/runCompositeAgent', // Protect composite agent endpoint with x402
   ],
 }
