@@ -124,13 +124,22 @@ export default function MarketplacePage() {
                       whileHover={{ scale: 1.02 }}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
                           <div className="font-heading font-bold text-white">
                             {provider.name}
                           </div>
                           {provider.online !== undefined && (
                             <div className={`w-2 h-2 rounded-full ${provider.online ? 'bg-status-success' : 'bg-status-error'}`} />
+                          )}
+                          {provider.tier && provider.tier !== 'free' && (
+                            <div className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                              provider.tier === 'premium'
+                                ? 'bg-accent-secondary/20 text-accent-secondary border border-accent-secondary/30'
+                                : 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                            }`}>
+                              {provider.tier.toUpperCase()}
+                            </div>
                           )}
                         </div>
                         {selectedProvider?.id === provider.id && (
@@ -142,7 +151,7 @@ export default function MarketplacePage() {
                     <div className="text-xs text-text-muted mb-3">
                       {provider.description}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="grid grid-cols-3 gap-2 text-xs mb-3">
                       <div>
                         <div className="text-text-muted">Latency</div>
                         <div className="font-mono text-white">{provider.latency}ms</div>
@@ -155,7 +164,20 @@ export default function MarketplacePage() {
                         <div className="text-text-muted">Model</div>
                         <div className="font-mono text-white text-[10px]">{provider.model.split('/')[1]}</div>
                       </div>
+                    </div>
+                    {provider.minReputation && provider.minReputation > 0 && (
+                      <div className="glass-hover p-2 rounded border border-accent-secondary/30 bg-accent-secondary/5">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1 text-text-secondary">
+                            <span>🏆</span>
+                            <span>Min Reputation:</span>
+                          </div>
+                          <div className="font-bold text-accent-secondary">
+                            {provider.minReputation}+
+                          </div>
+                        </div>
                       </div>
+                    )}
                     </motion.div>
                   ))}
                 </div>
