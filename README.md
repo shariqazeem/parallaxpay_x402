@@ -6,6 +6,27 @@ Built for: **Solana x402 Hackathon** + **Gradient Parallax Track**
 
 ---
 
+## 🚀 Quick Start (2 Minutes!)
+
+**Just want to run it? See [QUICKSTART.md](QUICKSTART.md)**
+
+```bash
+# Terminal 1: Start Parallax
+python3 -m parallax.launch --model-path Qwen/Qwen3-0.6B --port 3001 --max-batch-size 8
+
+# Terminal 2: Start App
+npm run dev
+
+# Terminal 3 (optional): Check setup
+npm run check
+```
+
+Then open http://localhost:3000 and click "🔍 Discover" in the marketplace!
+
+For detailed setup and demo instructions, see [REAL_EXECUTION_SETUP.md](REAL_EXECUTION_SETUP.md)
+
+---
+
 ## 🎯 What is ParallaxPay?
 
 ParallaxPay is **the world's first autonomous AI compute marketplace with real micropayments**. Think Bloomberg Terminal meets ChatGPT, powered by Solana x402 payments and Gradient Parallax distributed inference.
