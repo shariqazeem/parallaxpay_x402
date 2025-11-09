@@ -20,3 +20,20 @@ export interface DeployedAgentDB {
   wallet_address?: string
   workflow?: any
 }
+
+export interface TransactionDB {
+  id: string
+  timestamp: number
+  type: string
+  agent_name?: string
+  provider?: string
+  tokens?: number
+  cost?: number
+  tx_hash?: string
+  status: string
+  network: string
+  steps?: number
+  total_cost?: number
+  wallet_address?: string
+  created_at?: string
+}

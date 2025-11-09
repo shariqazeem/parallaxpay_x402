@@ -37,6 +37,46 @@ CREATE POLICY "Allow all operations for demo" ON agents
   USING (true)
   WITH CHECK (true);
 
+-- Create the transactions table (PUBLIC - visible to all users)
+CREATE TABLE IF NOT EXISTS transactions (
+  id TEXT PRIMARY KEY,
+  timestamp BIGINT NOT NULL,
+  type TEXT NOT NULL,
+  agent_name TEXT,
+  provider TEXT,
+  tokens INT,
+  cost NUMERIC(10, 6),
+  tx_hash TEXT,
+  status TEXT DEFAULT 'pending',
+  network TEXT DEFAULT 'solana-devnet',
+  steps INT,
+  total_cost NUMERIC(10, 6),
+  wallet_address TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create an index on timestamp for faster queries
+CREATE INDEX IF NOT EXISTS idx_transactions_timestamp ON transactions(timestamp DESC);
+
+-- Create an index on wallet_address for user filtering
+CREATE INDEX IF NOT EXISTS idx_transactions_wallet ON transactions(wallet_address);
+
+-- Create an index on type for filtering by transaction type
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all users to READ all transactions (PUBLIC FEED)
+CREATE POLICY "Allow public read access" ON transactions
+  FOR SELECT
+  USING (true);
+
+-- Create policy to allow authenticated users to INSERT their own transactions
+CREATE POLICY "Allow insert for all" ON transactions
+  FOR INSERT
+  WITH CHECK (true);
+
 -- Insert some test data (optional)
 -- DELETE FROM agents WHERE id LIKE 'test-%';
 -- INSERT INTO agents (id, name, type, prompt, deployed, total_runs, status) VALUES
