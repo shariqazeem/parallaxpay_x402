@@ -1377,14 +1377,14 @@ function DeployAgentModal({
 
       {/* Drawer/Panel sliding from right (full screen on mobile) */}
       <motion.div
-        className="fixed right-0 top-0 bottom-0 w-full md:w-[600px] lg:w-[700px] glass border-l border-accent-primary/50 z-[100000] overflow-y-auto"
+        className="fixed right-0 top-0 h-screen w-full md:w-[600px] lg:w-[700px] glass border-l border-accent-primary/50 z-[100000] overflow-y-auto"
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 md:p-8">
+        <div className="p-6 md:p-8 pb-20">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-2xl font-heading font-bold text-white mb-2">
