@@ -108,6 +108,38 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(153, 69, 255, 0.7);
 }
 
+/* Force scrollbar to always show on specific elements */
+.scrollbar-custom {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 12px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: rgba(18, 18, 26, 0.8);
+  border-radius: 10px;
+  border: 1px solid rgba(42, 42, 58, 0.5);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: rgba(153, 69, 255, 0.6);
+  border-radius: 10px;
+  border: 2px solid rgba(18, 18, 26, 0.8);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(153, 69, 255, 0.9);
+}
+
+/* Firefox scrollbar */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(153, 69, 255, 0.6) rgba(18, 18, 26, 0.8);
+}
+
 /* Text gradient */
 .text-gradient {
   background: linear-gradient(to right, var(--color-accent-primary), var(--color-accent-secondary), var(--color-accent-tertiary));

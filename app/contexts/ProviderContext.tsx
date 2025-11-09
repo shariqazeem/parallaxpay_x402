@@ -22,7 +22,9 @@ export interface Provider {
   uptime: number // percentage
   description: string
   featured?: boolean
-  online?: boolean // NEW: Real status
+  online?: boolean // Real status
+  minReputation?: number // Minimum reputation score required (0-1000)
+  tier?: 'free' | 'standard' | 'premium' // Provider tier
 }
 
 interface ProviderContextType {
@@ -40,6 +42,19 @@ const ProviderContext = createContext<ProviderContextType | undefined>(undefined
  * Convert RealProvider to Provider format
  */
 function convertRealProvider(realProvider: RealProvider): Provider {
+  // Determine tier and reputation requirement based on performance
+  let tier: 'free' | 'standard' | 'premium' = 'free'
+  let minReputation = 0
+
+  if (realProvider.latency < 100 && realProvider.uptime > 99) {
+    tier = 'premium'
+    minReputation = 400 // Elite+ required
+  } else if (realProvider.latency < 300 && realProvider.uptime > 95) {
+    tier = 'standard'
+    minReputation = 200 // Trusted+ required
+  }
+  // else tier = 'free', minReputation = 0 (anyone can use)
+
   return {
     id: realProvider.id,
     name: realProvider.name,
@@ -51,6 +66,8 @@ function convertRealProvider(realProvider: RealProvider): Provider {
     description: `${realProvider.region} - ${realProvider.online ? 'Online' : 'Offline'}`,
     featured: realProvider.online && realProvider.latency < 100,
     online: realProvider.online,
+    tier,
+    minReputation,
   }
 }
 

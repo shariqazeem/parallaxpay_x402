@@ -84,6 +84,12 @@ export interface TrustBadge {
   description: string
   earnedAt: number
   icon: string
+  // On-chain attestation
+  attestation?: {
+    signature: string // Solana transaction signature
+    explorerUrl: string
+    timestamp: number
+  }
 }
 
 export class AgentIdentityManager {
@@ -364,6 +370,45 @@ export class AgentIdentityManager {
         icon: '🐋',
       })
     }
+  }
+
+  /**
+   * Record on-chain attestation for a badge
+   */
+  recordBadgeAttestation(
+    agentId: string,
+    badgeId: string,
+    signature: string,
+    explorerUrl: string
+  ): void {
+    const identity = this.identities.get(agentId)
+    if (!identity) return
+
+    // Find the badge and add attestation
+    const badge = identity.badges.find(b => b.id === badgeId)
+    if (badge) {
+      badge.attestation = {
+        signature,
+        explorerUrl,
+        timestamp: Date.now(),
+      }
+
+      console.log(`✅ [ATTESTATION] Badge "${badge.name}" recorded on-chain`)
+      console.log(`   Signature: ${signature}`)
+      console.log(`   Explorer: ${explorerUrl}`)
+
+      this.saveToStorage()
+    }
+  }
+
+  /**
+   * Get badges that need attestation (badges without attestation signature)
+   */
+  getBadgesNeedingAttestation(agentId: string): TrustBadge[] {
+    const identity = this.identities.get(agentId)
+    if (!identity) return []
+
+    return identity.badges.filter(b => !b.attestation)
   }
 
   /**

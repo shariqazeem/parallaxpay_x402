@@ -8,6 +8,10 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
 import { useProvider } from '@/app/contexts/ProviderContext'
+import { getAgentIdentityManager, AgentIdentity, TrustBadge } from '@/lib/agent-identity'
+import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-agent-scheduler'
+import { useBadgeAttestation } from '@/lib/use-badge-attestation'
+import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 
 interface AgentStats {
   id: string
@@ -39,7 +43,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale'
+  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'
   prompt: string
   deployed: number
   totalRuns: number
@@ -47,12 +51,28 @@ interface DeployedAgent {
   lastResult?: string
   status: 'idle' | 'running'
   provider?: string  // Store which provider this agent uses
+  identityId?: string  // Link to AgentIdentity
+  schedule?: AgentSchedule  // Autonomous scheduling config
+  workflow?: CompositeWorkflow  // For composite agents
+}
+
+interface CompositeWorkflow {
+  steps: WorkflowStep[]
+}
+
+interface WorkflowStep {
+  id: string
+  agentName: string  // Name of agent to call
+  prompt: string     // Prompt to pass to that agent
+  useOutputFrom?: string  // ID of previous step to use output from
 }
 
 export default function AgentDashboardPage() {
   const [showDeployModal, setShowDeployModal] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
+  const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
@@ -64,6 +84,152 @@ export default function AgentDashboardPage() {
 
   // Global provider state from marketplace
   const { selectedProvider } = useProvider()
+
+  // Identity and scheduler managers (initialized client-side only)
+  const [identityManager, setIdentityManager] = useState<ReturnType<typeof getAgentIdentityManager> | null>(null)
+  const [scheduler, setScheduler] = useState<ReturnType<typeof getAutonomousAgentScheduler> | null>(null)
+
+  // Initialize managers on client side only
+  useEffect(() => {
+    setIdentityManager(getAgentIdentityManager())
+    setScheduler(getAutonomousAgentScheduler())
+  }, [])
+
+  // Refresh identities when manager changes
+  useEffect(() => {
+    if (identityManager) {
+      setAgentIdentities(identityManager.getAllIdentities())
+    }
+  }, [identityManager])
+
+  // Load deployed agents from Supabase on mount
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        console.log('📥 Loading deployed agents from Supabase...')
+
+        // Fetch from Supabase
+        const { data, error } = await supabase
+          .from('agents')
+          .select('*')
+          .order('deployed', { ascending: false })
+
+        if (error) {
+          console.error('Supabase fetch error:', error)
+          // Fallback to localStorage if Supabase fails
+          const stored = localStorage.getItem('parallaxpay_deployed_agents')
+          if (stored) {
+            const agents = JSON.parse(stored) as DeployedAgent[]
+            setDeployedAgents(agents)
+            console.log(`📦 Loaded ${agents.length} deployed agents from localStorage (Supabase unavailable)`)
+          }
+          return
+        }
+
+        if (data && data.length > 0) {
+          // Convert DB format to app format
+          const agents: DeployedAgent[] = data.map((db: DeployedAgentDB) => ({
+            id: db.id,
+            name: db.name,
+            type: db.type as DeployedAgent['type'],
+            prompt: db.prompt,
+            deployed: db.deployed,
+            totalRuns: db.total_runs,
+            lastRun: db.last_run,
+            lastResult: db.last_result,
+            status: db.status as DeployedAgent['status'],
+            provider: db.provider,
+            identityId: db.identity_id,
+            workflow: db.workflow,
+          }))
+
+          setDeployedAgents(agents)
+          console.log(`✅ Loaded ${agents.length} deployed agents from Supabase`)
+
+          // Also save to localStorage as backup
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(agents))
+        } else {
+          // No data in Supabase, try localStorage
+          const stored = localStorage.getItem('parallaxpay_deployed_agents')
+          if (stored) {
+            const agents = JSON.parse(stored) as DeployedAgent[]
+            setDeployedAgents(agents)
+            console.log(`📦 Loaded ${agents.length} deployed agents from localStorage (Supabase empty)`)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load deployed agents from Supabase:', error)
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem('parallaxpay_deployed_agents')
+          if (stored) {
+            const agents = JSON.parse(stored) as DeployedAgent[]
+            setDeployedAgents(agents)
+            console.log(`📦 Loaded ${agents.length} deployed agents from localStorage (Supabase error)`)
+          }
+        } catch (localError) {
+          console.error('Failed to load from localStorage:', localError)
+        }
+      }
+    }
+
+    loadAgents()
+  }, [])
+
+  // Save deployed agents to Supabase whenever they change
+  useEffect(() => {
+    const saveAgents = async () => {
+      if (deployedAgents.length === 0) return
+
+      try {
+        console.log(`💾 Saving ${deployedAgents.length} deployed agents to Supabase...`)
+
+        // Convert app format to DB format
+        const dbAgents: DeployedAgentDB[] = deployedAgents.map(agent => ({
+          id: agent.id,
+          name: agent.name,
+          type: agent.type,
+          prompt: agent.prompt,
+          deployed: agent.deployed,
+          total_runs: agent.totalRuns,
+          status: agent.status,
+          identity_id: agent.identityId,
+          last_run: agent.lastRun,
+          last_result: agent.lastResult,
+          provider: agent.provider,
+          wallet_address: publicKey?.toBase58(),
+          workflow: agent.workflow,
+        }))
+
+        // Upsert to Supabase (insert or update)
+        const { error } = await supabase
+          .from('agents')
+          .upsert(dbAgents, { onConflict: 'id' })
+
+        if (error) {
+          console.error('Supabase upsert error:', error)
+          // Fallback to localStorage if Supabase fails
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+          console.log(`💾 Saved ${deployedAgents.length} deployed agents to localStorage (Supabase unavailable)`)
+        } else {
+          console.log(`✅ Saved ${deployedAgents.length} deployed agents to Supabase`)
+          // Also save to localStorage as backup
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+        }
+      } catch (error) {
+        console.error('Failed to save deployed agents to Supabase:', error)
+        // Fallback to localStorage
+        try {
+          localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+          console.log(`💾 Saved ${deployedAgents.length} deployed agents to localStorage (Supabase error)`)
+        } catch (localError) {
+          console.error('Failed to save to localStorage:', localError)
+        }
+      }
+    }
+
+    saveAgents()
+  }, [deployedAgents, publicKey])
 
   // Check for pending agent deployment from agent builder
   useEffect(() => {
@@ -101,6 +267,87 @@ export default function AgentDashboardPage() {
     checkPendingDeploy()
   }, []) // Run once on mount
 
+  // Load trades from Supabase on mount (PUBLIC FEED - all users' trades)
+  useEffect(() => {
+    const loadTrades = async () => {
+      try {
+        console.log('📥 Loading trades from Supabase (public feed)...')
+
+        // Fetch from Supabase - get latest 50 trades from ALL users
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(50)
+
+        if (error) {
+          console.error('Supabase fetch error (trades):', error)
+          // Fallback to localStorage if Supabase fails
+          const stored = localStorage.getItem('parallaxpay_transactions')
+          if (stored) {
+            const localTrades = JSON.parse(stored)
+            // Convert to Trade format
+            const tradesFromLocal = localTrades.slice(0, 10).map((t: any) => ({
+              id: t.id,
+              agentName: t.agentName || t.agent_name || 'Unknown Agent',
+              provider: t.provider || 'Unknown Provider',
+              tokens: t.tokens || 0,
+              cost: t.cost || t.total_cost || 0,
+              timestamp: t.timestamp,
+              txHash: t.tx_hash || t.txHash || 'pending',
+              isReal: true,
+            }))
+            setTrades(tradesFromLocal)
+            console.log(`📦 Loaded ${tradesFromLocal.length} trades from localStorage (Supabase unavailable)`)
+          }
+          return
+        }
+
+        if (data && data.length > 0) {
+          // Convert DB format to app format
+          const tradesFromDB: Trade[] = data.slice(0, 10).map((db: TransactionDB) => ({
+            id: db.id,
+            agentName: db.agent_name || 'Unknown Agent',
+            provider: db.provider || 'Unknown Provider',
+            tokens: db.tokens || 0,
+            cost: db.cost || db.total_cost || 0,
+            timestamp: db.timestamp,
+            txHash: db.tx_hash || 'pending',
+            isReal: true,
+          }))
+
+          setTrades(tradesFromDB)
+          console.log(`✅ Loaded ${tradesFromDB.length} trades from Supabase (public feed)`)
+        }
+      } catch (error) {
+        console.error('Failed to load trades from Supabase:', error)
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions')
+          if (stored) {
+            const localTrades = JSON.parse(stored)
+            const tradesFromLocal = localTrades.slice(0, 10).map((t: any) => ({
+              id: t.id,
+              agentName: t.agentName || t.agent_name || 'Unknown Agent',
+              provider: t.provider || 'Unknown Provider',
+              tokens: t.tokens || 0,
+              cost: t.cost || t.total_cost || 0,
+              timestamp: t.timestamp,
+              txHash: t.tx_hash || t.txHash || 'pending',
+              isReal: true,
+            }))
+            setTrades(tradesFromLocal)
+            console.log(`📦 Loaded ${tradesFromLocal.length} trades from localStorage (Supabase error)`)
+          }
+        } catch (localError) {
+          console.error('Failed to load from localStorage:', localError)
+        }
+      }
+    }
+
+    loadTrades()
+  }, [])
+
   // Convert deployed agents to AgentStats for display
   const allAgents: AgentStats[] = deployedAgents.map((da) => ({
     id: da.id,
@@ -112,18 +359,18 @@ export default function AgentDashboardPage() {
     avgCost: 0.00112,
     successRate: 100,
     lastAction: da.lastResult
-      ? `Completed: "${da.lastResult.substring(0, 50)}..."`
-      : `Ready to run: "${da.prompt.substring(0, 40)}..."`,
+      ? `Completed: "${da.lastResult.substring(0, 200)}..."`
+      : `Ready to run: "${da.prompt.substring(0, 100)}..."`,
     lastActionTime: da.lastRun || da.deployed,
-    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : '🐋',
-    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : '#00D4FF',
+    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : da.type === 'whale' ? '🐋' : da.type === 'composite' ? '🔗' : '🤖',
+    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : da.type === 'whale' ? '#00D4FF' : da.type === 'composite' ? '#FF6B9D' : '#00B4FF',
     isReal: true,
   }))
 
   // Run an agent's task with REAL x402 PAYMENT using USER WALLET
   const runAgent = async (agentId: string) => {
     const agent = deployedAgents.find(a => a.id === agentId)
-    if (!agent) return
+    if (!agent || !identityManager) return
 
     // Check wallet connection
     if (!isWalletConnected) {
@@ -136,7 +383,143 @@ export default function AgentDashboardPage() {
       a.id === agentId ? { ...a, status: 'running' as const } : a
     ))
 
+    const startTime = Date.now()
+
     try {
+      // COMPOSITE AGENT: Orchestrate multiple agent calls
+      if (agent.type === 'composite' && agent.workflow) {
+        console.log(`🔗 [${agent.name}] Running COMPOSITE agent with workflow...`)
+        console.log(`   Steps: ${agent.workflow.steps.length}`)
+        console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
+
+        // Call composite agent endpoint with x402 payment
+        const response = await fetchWithPayment('/api/runCompositeAgent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            workflow: agent.workflow,
+            initialInput: agent.prompt,
+            provider: selectedProvider?.name,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Composite execution failed')
+        }
+
+        const data = await response.json()
+        const latency = Date.now() - startTime
+
+        console.log(`✅ [${agent.name}] Composite workflow completed!`)
+        console.log(`   Total Steps: ${data.completedSteps}/${data.totalSteps}`)
+        console.log(`   Total Cost: $${data.totalCost.toFixed(6)}`)
+        console.log(`   Total Latency: ${latency}ms`)
+
+        // Record execution in identity manager (using total cost)
+        if (agent.identityId) {
+          identityManager.recordExecution(
+            agent.identityId,
+            data.success,
+            data.totalCost,
+            latency,
+            selectedProvider?.name || 'Parallax',
+            0.0001 * data.completedSteps // Estimated savings per step
+          )
+          setAgentIdentities(identityManager.getAllIdentities())
+        }
+
+        // Update agent stats
+        setDeployedAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? {
+                ...a,
+                status: 'idle' as const,
+                totalRuns: a.totalRuns + 1,
+                lastRun: Date.now(),
+                lastResult: data.finalOutput?.substring(0, 200) || 'Workflow completed',
+                provider: selectedProvider?.name || 'Parallax'
+              }
+            : a
+        ))
+
+        // Add each step to trade feed
+        data.executionTrail.forEach((step: any, index: number) => {
+          const stepTrade: Trade = {
+            id: `trade-${Date.now()}-step-${index}`,
+            agentName: `${agent.name} → ${step.agentName}`,
+            provider: step.provider,
+            tokens: step.tokens,
+            cost: step.cost,
+            timestamp: Date.now() + index, // Offset timestamps slightly
+            txHash: step.txHash || 'pending',
+            isReal: true,
+          }
+          setTrades(prev => [stepTrade, ...prev.slice(0, 9)])
+        })
+
+        // Store composite execution in Supabase (PUBLIC - visible to all users)
+        try {
+          const txData: TransactionDB = {
+            id: `composite-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'composite',
+            agent_name: agent.name,
+            steps: data.executionTrail.length,
+            total_cost: data.totalCost,
+            status: 'success',
+            network: 'solana-devnet',
+            wallet_address: publicKey?.toBase58(),
+          }
+
+          const { error } = await supabase
+            .from('transactions')
+            .insert([txData])
+
+          if (error) {
+            console.error('Supabase insert error (transaction):', error)
+            // Fallback to localStorage
+            const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+            const transactions = JSON.parse(stored)
+            transactions.push({
+              id: txData.id,
+              timestamp: txData.timestamp,
+              type: txData.type,
+              agentName: txData.agent_name,
+              steps: txData.steps,
+              totalCost: txData.total_cost,
+              status: txData.status,
+              network: txData.network,
+            })
+            localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+            console.log('💾 Saved transaction to localStorage (Supabase unavailable)')
+          } else {
+            console.log('✅ Saved transaction to Supabase (public feed)')
+            // Also save to localStorage as backup
+            const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+            const transactions = JSON.parse(stored)
+            transactions.push({
+              id: txData.id,
+              timestamp: txData.timestamp,
+              type: txData.type,
+              agentName: txData.agent_name,
+              steps: txData.steps,
+              totalCost: txData.total_cost,
+              status: txData.status,
+              network: txData.network,
+            })
+            localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+          }
+        } catch (e) {
+          console.warn('Failed to store transaction:', e)
+        }
+
+        return
+      }
+
+      // REGULAR AGENT: Single inference call
       console.log(`🤖 [${agent.name}] Running agent with YOUR wallet payment...`)
       console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
 
@@ -160,9 +543,26 @@ export default function AgentDashboardPage() {
 
       const data = await response.json()
 
+      const latency = Date.now() - startTime
+
       console.log(`✅ [${agent.name}] Payment successful!`)
       console.log(`   TX Hash: ${data.txHash || 'pending'}`)
       console.log(`   Cost: $${data.cost?.toFixed(6) || '0.001000'}`)
+      console.log(`   Latency: ${latency}ms`)
+
+      // Record execution in identity manager
+      if (agent.identityId) {
+        identityManager.recordExecution(
+          agent.identityId,
+          true, // success
+          data.cost || 0.001,
+          latency,
+          data.provider || selectedProvider?.name || 'Parallax',
+          0.0001 // Estimated savings (could calculate from baseline)
+        )
+        // Refresh identities to show updated reputation
+        setAgentIdentities(identityManager.getAllIdentities())
+      }
 
       // Update agent stats
       setDeployedAgents(prev => prev.map(a =>
@@ -172,7 +572,8 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: data.response?.substring(0, 200) || 'Success'
+              lastResult: data.response?.substring(0, 200) || 'Success',
+              provider: data.provider
             }
           : a
       ))
@@ -190,22 +591,64 @@ export default function AgentDashboardPage() {
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
 
-      // Store in localStorage for transaction history
+      // Store in Supabase for transaction history (PUBLIC - visible to all users)
       try {
-        const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
-        const transactions = JSON.parse(stored)
-        transactions.push({
+        const txData: TransactionDB = {
           id: newTrade.id,
           timestamp: newTrade.timestamp,
           type: 'agent',
+          agent_name: agent.name,
           provider: newTrade.provider,
           tokens: newTrade.tokens,
           cost: newTrade.cost,
-          txHash: newTrade.txHash,
+          tx_hash: newTrade.txHash,
           status: 'success',
           network: 'solana-devnet',
-        })
-        localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+          wallet_address: publicKey?.toBase58(),
+        }
+
+        const { error } = await supabase
+          .from('transactions')
+          .insert([txData])
+
+        if (error) {
+          console.error('Supabase insert error (transaction):', error)
+          // Fallback to localStorage
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: txData.id,
+            timestamp: txData.timestamp,
+            type: txData.type,
+            agentName: txData.agent_name,
+            provider: txData.provider,
+            tokens: txData.tokens,
+            cost: txData.cost,
+            txHash: txData.tx_hash,
+            status: txData.status,
+            network: txData.network,
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+          console.log('💾 Saved transaction to localStorage (Supabase unavailable)')
+        } else {
+          console.log('✅ Saved transaction to Supabase (public feed)')
+          // Also save to localStorage as backup
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: txData.id,
+            timestamp: txData.timestamp,
+            type: txData.type,
+            agentName: txData.agent_name,
+            provider: txData.provider,
+            tokens: txData.tokens,
+            cost: txData.cost,
+            txHash: txData.tx_hash,
+            status: txData.status,
+            network: txData.network,
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        }
       } catch (e) {
         console.warn('Failed to store transaction:', e)
       }
@@ -213,7 +656,23 @@ export default function AgentDashboardPage() {
     } catch (err) {
       console.error('Agent execution error:', err)
 
+      const latency = Date.now() - startTime
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+
+      // Record failed execution in identity manager
+      if (agent.identityId && identityManager) {
+        identityManager.recordExecution(
+          agent.identityId,
+          false, // failure
+          0.001, // Estimated cost
+          latency,
+          selectedProvider?.name || 'Parallax',
+          0
+        )
+        // Refresh identities
+        setAgentIdentities(identityManager.getAllIdentities())
+      }
+
       alert(
         `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
         `Troubleshooting:\n` +
@@ -248,15 +707,20 @@ export default function AgentDashboardPage() {
             onDeploy={(agent) => {
               setDeployedAgents(prev => [...prev, agent])
               setShowDeployModal(false)
+              // Refresh identities
+              if (identityManager) {
+                setAgentIdentities(identityManager.getAllIdentities())
+              }
             }}
+            walletAddress={publicKey?.toBase58()}
           />
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <div className="border-b border-border bg-background-secondary/50 backdrop-blur-xl sticky top-0 z-50">
+      {/* Header - Only title bar is sticky */}
+      <div className="sticky top-0 z-50 border-b border-border bg-background-secondary/50 backdrop-blur-xl">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
                 <h1 className="text-2xl font-heading font-black cursor-pointer hover:scale-105 transition-transform">
@@ -286,9 +750,14 @@ export default function AgentDashboardPage() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Stats and Provider Section - NOT sticky, scrolls away */}
+      <div className="border-b border-border bg-background-secondary/30">
+        <div className="max-w-[1920px] mx-auto px-6 py-4">
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
             <StatCard label="Deployed Agents" value={realAgentsCount} icon="🤖" color={realAgentsCount > 0 ? 'success' : 'default'} />
             <StatCard label="Total Runs" value={totalTrades.toLocaleString()} icon="⚡" />
             <StatCard label="Est. Savings" value={`$${totalProfit.toFixed(2)}`} icon="💰" color="success" />
@@ -296,45 +765,78 @@ export default function AgentDashboardPage() {
             <StatCard label="Success Rate" value={`${avgSuccessRate.toFixed(1)}%`} icon="✓" color="success" />
           </div>
 
-          {/* Selected Provider Banner */}
-          {selectedProvider && (
-            <div className="mt-4 glass-hover p-4 rounded-lg border border-accent-primary/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
-                  <div className="flex-1">
-                    <div className="font-heading font-bold text-white mb-1">
-                      Agents will use: {selectedProvider.name}
-                    </div>
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Model:</span>
-                        <span className="text-white font-mono">{selectedProvider.model.split('/')[1]}</span>
+          {/* Provider Banner - Always Show */}
+          <div>
+            {selectedProvider ? (
+              <motion.div
+                className="glass-hover neon-border p-4 rounded-xl"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-3xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                    <div className="flex-1">
+                      <div className="font-heading font-bold text-white mb-1 text-lg">
+                        ✅ Agents using: {selectedProvider.name}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Latency:</span>
-                        <span className="text-status-success font-mono">{selectedProvider.latency}ms</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Uptime:</span>
-                        <span className="text-accent-secondary font-mono">{selectedProvider.uptime}%</span>
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="text-text-muted">Model:</span>
+                          <span className="text-accent-secondary font-mono font-bold">{selectedProvider.model.split('/')[1]}</span>
+                        </div>
+                        <span className="text-text-muted">•</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-text-muted">Latency:</span>
+                          <span className="text-status-success font-mono font-bold">{selectedProvider.latency}ms</span>
+                        </div>
+                        <span className="text-text-muted">•</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-text-muted">Uptime:</span>
+                          <span className="text-accent-primary font-mono font-bold">{selectedProvider.uptime}%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <Link href="/marketplace">
+                    <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                      Change Provider →
+                    </button>
+                  </Link>
                 </div>
-                <Link href="/marketplace">
-                  <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
-                    Change Provider
-                  </button>
-                </Link>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            ) : (
+              <motion.div
+                className="glass-hover p-4 rounded-xl border border-status-error/50 bg-status-error/5"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-3xl">⚠️</div>
+                    <div className="flex-1">
+                      <div className="font-heading font-bold text-status-error mb-1 text-lg">
+                        No Provider Selected
+                      </div>
+                      <div className="text-xs text-text-secondary">
+                        Select a Parallax provider to run your agents. Agents need a compute provider for AI inference.
+                      </div>
+                    </div>
+                  </div>
+                  <Link href="/marketplace">
+                    <button className="glass-hover neon-border px-6 py-3 rounded-lg text-sm font-heading font-bold hover:scale-105 transition-all">
+                      <span className="text-gradient">Select Provider →</span>
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1920px] mx-auto px-6 py-8">
+      <div className="max-w-[1920px] mx-auto px-6 py-8 pt-4">
         <div className="grid grid-cols-12 gap-6">
           {/* Left - Agent Cards */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
@@ -373,14 +875,23 @@ export default function AgentDashboardPage() {
               )}
 
               <div className="space-y-4">
-                {allAgents.map((agent, index) => (
-                  <AgentCard
-                    key={agent.id}
-                    agent={agent}
-                    index={index}
-                    onRun={() => runAgent(agent.id)}
-                  />
-                ))}
+                {allAgents.map((agent, index) => {
+                  // Find corresponding deployed agent to get identity ID
+                  const deployedAgent = deployedAgents.find(da => da.id === agent.id)
+                  const identity = deployedAgent?.identityId
+                    ? agentIdentities.find(id => id.id === deployedAgent.identityId)
+                    : undefined
+
+                  return (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      index={index}
+                      onRun={() => runAgent(agent.id)}
+                      identity={identity}
+                    />
+                  )
+                })}
               </div>
             </div>
 
@@ -391,6 +902,9 @@ export default function AgentDashboardPage() {
           {/* Right - Live Feed */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
             <LiveTradeFeed trades={trades} />
+            {agentIdentities.length > 0 && identityManager && (
+              <AgentLeaderboard identities={identityManager.getLeaderboard(5)} />
+            )}
             {allAgents.length > 0 && <AgentMetrics agents={allAgents} />}
           </div>
         </div>
@@ -435,14 +949,57 @@ function AgentCard({
   agent,
   index,
   onRun,
+  identity,
 }: {
   agent: AgentStats
   index: number
   onRun: () => void
+  identity?: AgentIdentity
 }) {
+  const { attestBadge, attesting } = useBadgeAttestation()
+  const [showAttestModal, setShowAttestModal] = useState(false)
+  const identityManager = getAgentIdentityManager()
+
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
   const timeStr =
     timeSince < 5 ? 'just now' : timeSince < 60 ? `${timeSince}s ago` : `${Math.floor(timeSince / 60)}m ago`
+
+  // Get badges that need attestation
+  const unAttestedBadges = identity ? identity.badges.filter(b => !b.attestation) : []
+
+  // Handle badge attestation
+  const handleAttestBadge = async (badge: TrustBadge) => {
+    if (!identity) return
+
+    const result = await attestBadge({
+      badgeType: badge.type,
+      agentId: identity.id,
+      agentName: identity.name,
+      walletAddress: identity.walletAddress,
+      reputationScore: identity.reputation.score,
+      timestamp: Date.now(),
+      metadata: {
+        badgeName: badge.name,
+        description: badge.description,
+        earnedAt: badge.earnedAt,
+      },
+    })
+
+    if (result.success && result.signature && result.explorerUrl) {
+      // Record attestation in identity manager
+      identityManager.recordBadgeAttestation(
+        identity.id,
+        badge.id,
+        result.signature,
+        result.explorerUrl
+      )
+
+      alert(`✅ Badge "${badge.name}" attested on-chain!\n\nTransaction: ${result.signature}\n\nView on explorer: ${result.explorerUrl}`)
+      setShowAttestModal(false)
+    } else {
+      alert(`❌ Attestation failed: ${result.error}`)
+    }
+  }
 
   return (
     <motion.div
@@ -469,9 +1026,29 @@ function AgentCard({
                     REAL
                   </span>
                 )}
+                {identity?.isVerified && (
+                  <span className="text-accent-secondary text-sm" title="Wallet Verified">
+                    ✓
+                  </span>
+                )}
               </div>
-              <div className="text-sm text-text-secondary capitalize">
-                {agent.type} Strategy
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-text-secondary capitalize">
+                  {agent.type} Strategy
+                </div>
+                {identity && (
+                  <>
+                    <span className="text-text-muted">•</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-accent-secondary">
+                        {identity.reputation.level}
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        ({identity.reputation.score})
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -488,6 +1065,55 @@ function AgentCard({
             {agent.status === 'executing' ? '⚡ EXECUTING' : agent.status.toUpperCase()}
           </div>
         </div>
+
+        {/* Trust Badges */}
+        {identity && identity.badges.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-text-secondary font-semibold">Trust Badges</div>
+              {identity.badges.some(b => b.attestation) && (
+                <div className="text-xs text-status-success flex items-center gap-1">
+                  <span>⛓️</span>
+                  <span>On-chain verified</span>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {identity.badges.slice(0, 4).map(badge => (
+                <div
+                  key={badge.id}
+                  className={`group relative px-2 py-1 rounded-lg text-xs font-semibold ${
+                    badge.attestation
+                      ? 'bg-status-success/10 border border-status-success/30 text-status-success'
+                      : 'bg-accent-primary/10 border border-accent-primary/30 text-accent-primary'
+                  }`}
+                  title={badge.description}
+                >
+                  <span className="flex items-center gap-1">
+                    {badge.icon} {badge.name}
+                    {badge.attestation && (
+                      <a
+                        href={badge.attestation.explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-status-success hover:text-accent-secondary ml-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View on Solana Explorer"
+                      >
+                        ⛓️
+                      </a>
+                    )}
+                  </span>
+                </div>
+              ))}
+              {identity.badges.length > 4 && (
+                <div className="px-2 py-1 rounded-lg bg-background-tertiary text-xs text-text-muted">
+                  +{identity.badges.length - 4} more
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-4 mb-4">
@@ -530,7 +1156,7 @@ function AgentCard({
           <button
             onClick={onRun}
             disabled={agent.status === 'executing'}
-            className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mb-3"
           >
             {agent.status === 'executing' ? (
               <span className="text-text-muted">⚡ Running...</span>
@@ -539,7 +1165,91 @@ function AgentCard({
             )}
           </button>
         )}
+
+        {/* Badge Attestation Button */}
+        {agent.isReal && unAttestedBadges.length > 0 && (
+          <button
+            onClick={() => setShowAttestModal(true)}
+            className="w-full glass-hover border border-status-success/30 px-4 py-2 rounded-lg font-heading text-sm font-semibold transition-all hover:scale-105 text-status-success"
+          >
+            ⛓️ Attest {unAttestedBadges.length} Badge{unAttestedBadges.length > 1 ? 's' : ''} On-Chain
+          </button>
+        )}
       </div>
+
+      {/* Badge Attestation Modal */}
+      {showAttestModal && typeof window !== 'undefined' && createPortal(
+        <motion.div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowAttestModal(false)}
+        >
+          <motion.div
+            className="glass rounded-xl border border-status-success/50 p-6 max-w-md w-full"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-white mb-2">
+                  ⛓️ Attest Badges On-Chain
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  Create permanent, verifiable records of your agent's achievements on Solana blockchain.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAttestModal(false)}
+                className="text-text-secondary hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {unAttestedBadges.map(badge => (
+                <div
+                  key={badge.id}
+                  className="glass-hover p-4 rounded-lg border border-border-hover"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{badge.icon}</span>
+                      <div>
+                        <div className="text-sm font-bold text-white">{badge.name}</div>
+                        <div className="text-xs text-text-secondary">{badge.description}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleAttestBadge(badge)}
+                    disabled={attesting}
+                    className="w-full glass-hover neon-border px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
+                  >
+                    {attesting ? (
+                      <span className="text-text-muted">⏳ Attesting...</span>
+                    ) : (
+                      <span className="text-gradient">Attest This Badge</span>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="glass-hover p-3 rounded-lg border border-accent-primary/30 bg-accent-primary/5">
+              <div className="text-xs text-text-secondary">
+                <div className="font-bold text-accent-primary mb-1">ℹ️ What is attestation?</div>
+                Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
 
       {/* Progress Bar */}
       {agent.status === 'executing' && (
@@ -691,25 +1401,165 @@ function SDKExample() {
   )
 }
 
+function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
+  return (
+    <div className="glass rounded-xl border border-border overflow-hidden">
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-heading font-bold text-white">
+            🏆 Top Agents
+          </h3>
+          <div className="text-xs text-text-secondary">
+            by Reputation
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
+        {identities.map((identity, index) => (
+          <motion.div
+            key={identity.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="glass-hover p-3 rounded-lg border border-border-hover"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-2xl font-bold text-accent-primary">
+                #{index + 1}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="text-sm font-bold text-white">
+                    {identity.name}
+                  </div>
+                  {identity.isVerified && (
+                    <span className="text-accent-secondary text-xs">✓</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-accent-secondary">
+                    {identity.reputation.level}
+                  </span>
+                  <span className="text-xs text-text-muted">•</span>
+                  <span className="text-xs text-text-muted">
+                    {identity.reputation.score} pts
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-text-secondary">Executions</div>
+                <div className="text-sm font-bold text-white">
+                  {identity.stats.totalExecutions}
+                </div>
+              </div>
+            </div>
+
+            {/* Top Badge */}
+            {identity.badges.length > 0 && (
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-accent-primary">
+                  {identity.badges[0].icon}
+                </span>
+                <span className="text-text-muted">
+                  {identity.badges[0].name}
+                </span>
+              </div>
+            )}
+
+            {/* Reputation Breakdown */}
+            <div className="grid grid-cols-4 gap-1 mt-2">
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Perf</div>
+                <div className="text-xs font-bold text-status-success">
+                  {identity.reputation.performanceScore}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Rel</div>
+                <div className="text-xs font-bold text-accent-secondary">
+                  {identity.reputation.reliabilityScore}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Eff</div>
+                <div className="text-xs font-bold text-accent-primary">
+                  {identity.reputation.efficiencyScore}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted">Com</div>
+                <div className="text-xs font-bold text-text-secondary">
+                  {identity.reputation.communityScore}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {identities.length === 0 && (
+          <div className="text-center py-12 text-text-secondary">
+            <div className="text-4xl mb-3">🏆</div>
+            <div className="text-sm">No agents yet</div>
+            <div className="text-xs text-text-muted mt-1">
+              Deploy an agent to appear on the leaderboard
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Deploy Agent Modal Component
 function DeployAgentModal({
   onClose,
   onDeploy,
+  walletAddress,
 }: {
   onClose: () => void
   onDeploy: (agent: DeployedAgent) => void
+  walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale'>('arbitrage')
+  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'>('custom')
   const [prompt, setPrompt] = useState('Explain quantum computing')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
 
+  // For composite agents
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
+    { id: 'step-1', agentName: '', prompt: '' }
+  ])
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [])
+
   const handleDeploy = async () => {
-    if (!name.trim() || !prompt.trim()) {
-      setError('Please fill in all fields')
+    // Validate based on agent type
+    if (!name.trim()) {
+      setError('Please enter an agent name')
       return
+    }
+
+    if (type === 'composite') {
+      // For composite agents, validate workflow steps
+      if (workflowSteps.length === 0 || workflowSteps.some(s => !s.agentName.trim() || !s.prompt.trim())) {
+        setError('Please fill in all workflow steps (agent name and prompt required for each)')
+        return
+      }
+    } else {
+      // For regular agents, validate prompt
+      if (!prompt.trim()) {
+        setError('Please enter a test prompt')
+        return
+      }
     }
 
     setIsDeploying(true)
@@ -717,74 +1567,100 @@ function DeployAgentModal({
     setResult(null)
 
     try {
-      // Run REAL Parallax inference to test the agent
-      const { createParallaxClient } = await import('@/lib/parallax-client')
-      const client = createParallaxClient('http://localhost:3001')
-
-      const response = await client.inference({
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 300, // Increased from 200 to avoid truncation
-      })
-
-      console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
-
-      // Parse response - handle multiple formats
       let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        console.log('Choice object:', JSON.stringify(choice, null, 2))
 
-        // Try standard OpenAI format
-        content = choice.message?.content || ''
-        // Try Parallax format (uses "messages" plural)
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
+      // For composite agents, skip the test and show workflow summary
+      if (type === 'composite') {
+        content = `Composite Workflow Ready:\n\n${workflowSteps.map((s, i) => `${i + 1}. ${s.agentName}: "${s.prompt.substring(0, 50)}..."${s.useOutputFrom ? ` (uses output from Step ${i})` : ''}`).join('\n')}\n\nReady to orchestrate ${workflowSteps.length} agents!`
+      } else {
+        // Run REAL Parallax inference to test regular agents
+        const { createParallaxClient } = await import('@/lib/parallax-client')
+        const client = createParallaxClient('http://localhost:3001')
+
+        const response = await client.inference({
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300, // Increased from 200 to avoid truncation
+        })
+
+        console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
+
+        // Parse response - handle multiple formats
+        if (response.choices && response.choices.length > 0) {
+          const choice = response.choices[0] as any
+          console.log('Choice object:', JSON.stringify(choice, null, 2))
+
+          // Try standard OpenAI format
+          content = choice.message?.content || ''
+          // Try Parallax format (uses "messages" plural)
+          if (!content && choice.messages?.content) {
+            content = choice.messages.content
+          }
+          // Try text format
+          if (!content && choice.text) {
+            content = choice.text
+          }
         }
-        // Try text format
-        if (!content && choice.text) {
-          content = choice.text
+
+        console.log('Content before <think> cleanup:', content)
+
+        // Clean up <think> tags if present
+        if (content.includes('<think>')) {
+          const thinkEnd = content.indexOf('</think>')
+          if (thinkEnd !== -1) {
+            // Found closing tag - remove reasoning, keep answer
+            content = content.substring(thinkEnd + 8).trim()
+          } else {
+            // No closing tag (response truncated) - keep the reasoning but remove tag
+            // This happens when max_tokens is too small
+            content = content.replace('<think>\n', '').replace('<think>', '').trim()
+            // Add a note that this is reasoning
+            content = '💭 AI Reasoning:\n\n' + content
+          }
         }
-      }
 
-      console.log('Content before <think> cleanup:', content)
+        console.log('Content after <think> cleanup:', content)
 
-      // Clean up <think> tags if present
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          // Found closing tag - remove reasoning, keep answer
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          // No closing tag (response truncated) - keep the reasoning but remove tag
-          // This happens when max_tokens is too small
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-          // Add a note that this is reasoning
-          content = '💭 AI Reasoning:\n\n' + content
+        if (!content) {
+          console.error('Failed to extract content. Full response:', response)
+          throw new Error(
+            'Could not extract content from Parallax response. ' +
+            'Check browser console for details. Response structure: ' +
+            JSON.stringify(response).substring(0, 200)
+          )
         }
-      }
-
-      console.log('Content after <think> cleanup:', content)
-
-      if (!content) {
-        console.error('Failed to extract content. Full response:', response)
-        throw new Error(
-          'Could not extract content from Parallax response. ' +
-          'Check browser console for details. Response structure: ' +
-          JSON.stringify(response).substring(0, 200)
-        )
       }
 
       setResult(content)
+
+      // Create agent identity
+      const identityManager = getAgentIdentityManager()
+      const identity = identityManager.createIdentity(
+        walletAddress || 'anonymous',
+        name,
+        type
+      )
 
       // Deploy the agent
       const newAgent: DeployedAgent = {
         id: `real-${Date.now()}`,
         name,
         type,
-        prompt,
+        prompt: type === 'composite'
+          ? `Workflow: ${workflowSteps.map(s => s.agentName).join(' → ')}`
+          : prompt,
         deployed: Date.now(),
         totalRuns: 0,
         status: 'idle',
+        identityId: identity.id,
+        // Include workflow for composite agents
+        ...(type === 'composite' && { workflow: { steps: workflowSteps } }),
+      }
+
+      console.log('🎉 Agent deployed with identity:', identity.id)
+      console.log('   Reputation Score:', identity.reputation.score)
+      console.log('   Wallet:', identity.walletAddress)
+      if (type === 'composite') {
+        console.log('   Workflow Steps:', workflowSteps.length)
       }
 
       // Wait a moment to show the result
@@ -803,20 +1679,26 @@ function DeployAgentModal({
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-start justify-center overflow-y-auto"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-start justify-center p-4 overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
+      {/* Centered Modal - scrolls with backdrop */}
       <motion.div
-        className="glass rounded-xl border border-accent-primary/50 p-6 max-w-lg w-full mx-6 my-6 mt-[350px]"
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
+        className="bg-background-primary border-2 border-accent-primary rounded-2xl w-full max-w-3xl my-8"
+        style={{
+          boxShadow: '0 0 50px rgba(153, 69, 255, 0.5)'
+        }}
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between mb-6">
+        {/* Header */}
+        <div className="flex items-start justify-between p-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-heading font-bold text-white mb-2">
               Deploy Real Agent
@@ -827,13 +1709,15 @@ function DeployAgentModal({
           </div>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-white transition-colors"
+            className="text-text-secondary hover:text-white transition-colors text-2xl leading-none"
           >
             ✕
           </button>
         </div>
 
-        <div className="space-y-4">
+        {/* Content */}
+        <div className="p-6">
+          <div className="space-y-4">
           {/* Agent Name */}
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
@@ -852,7 +1736,7 @@ function DeployAgentModal({
           {/* Agent Type */}
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
-              Strategy Type
+              Agent Type
             </label>
             <select
               value={type}
@@ -860,26 +1744,106 @@ function DeployAgentModal({
               className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white focus:border-accent-primary focus:outline-none"
               disabled={isDeploying}
             >
+              <option value="custom">Custom - General purpose AI agent</option>
+              <option value="composite">🔗 Composite - Orchestrates multiple agents</option>
               <option value="arbitrage">Arbitrage - Find price differences</option>
               <option value="optimizer">Optimizer - Minimize costs</option>
               <option value="whale">Whale - Bulk purchases</option>
             </select>
           </div>
 
-          {/* Test Prompt */}
-          <div>
-            <label className="text-sm text-text-secondary mb-2 block">
-              Test Prompt (will run real inference)
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter a prompt to test the agent..."
-              className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
-              rows={3}
-              disabled={isDeploying}
-            />
-          </div>
+          {/* Conditional UI based on type */}
+          {type === 'composite' ? (
+            /* Workflow Builder for Composite Agents */
+            <div>
+              <label className="text-sm text-text-secondary mb-2 block">
+                Workflow Steps (Agent-to-Agent Calls)
+              </label>
+              <div className="space-y-3">
+                {workflowSteps.map((step, index) => (
+                  <div key={step.id} className="glass-hover p-3 rounded-lg border border-border">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="px-2 py-1 bg-accent-primary/20 text-accent-primary text-xs font-bold rounded">
+                        Step {index + 1}
+                      </div>
+                      {workflowSteps.length > 1 && (
+                        <button
+                          onClick={() => setWorkflowSteps(steps => steps.filter(s => s.id !== step.id))}
+                          className="ml-auto text-status-error text-xs hover:scale-110 transition-transform"
+                        >
+                          ✕ Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      placeholder="Agent name to call (e.g., 'Research Agent')"
+                      value={step.agentName}
+                      onChange={(e) => {
+                        setWorkflowSteps(steps => steps.map(s =>
+                          s.id === step.id ? { ...s, agentName: e.target.value } : s
+                        ))
+                      }}
+                      className="w-full px-3 py-2 mb-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none"
+                    />
+                    <textarea
+                      placeholder="Prompt for this agent..."
+                      value={step.prompt}
+                      onChange={(e) => {
+                        setWorkflowSteps(steps => steps.map(s =>
+                          s.id === step.id ? { ...s, prompt: e.target.value } : s
+                        ))
+                      }}
+                      rows={2}
+                      className="w-full px-3 py-2 mb-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                    />
+
+                    {/* Use output from previous step */}
+                    {index > 0 && (
+                      <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={step.useOutputFrom === workflowSteps[index - 1]?.id}
+                          onChange={(e) => {
+                            setWorkflowSteps(steps => steps.map(s =>
+                              s.id === step.id
+                                ? { ...s, useOutputFrom: e.target.checked ? workflowSteps[index - 1]?.id : undefined }
+                                : s
+                            ))
+                          }}
+                          className="rounded border-border bg-background-secondary text-accent-primary focus:ring-accent-primary focus:ring-2"
+                        />
+                        <span>Use output from Step {index}</span>
+                      </label>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => setWorkflowSteps(steps => [...steps, { id: `step-${Date.now()}`, agentName: '', prompt: '' }])}
+                  className="w-full glass-hover border border-accent-primary/50 px-3 py-2 rounded-lg text-sm font-semibold text-accent-primary hover:scale-105 transition-all"
+                >
+                  + Add Step
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-text-muted">
+                💡 Composite agents orchestrate other agents with x402 payments
+              </div>
+            </div>
+          ) : (
+            /* Regular Prompt for Other Agent Types */
+            <div>
+              <label className="text-sm text-text-secondary mb-2 block">
+                Test Prompt (will run real inference)
+              </label>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Enter a prompt to test the agent..."
+                className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                rows={3}
+                disabled={isDeploying}
+              />
+            </div>
+          )}
 
           {/* Error */}
           {error && (
@@ -895,11 +1859,20 @@ function DeployAgentModal({
               <div className="text-sm text-white whitespace-pre-wrap">{result.substring(0, 200)}...</div>
             </div>
           )}
+          </div>
 
           {/* Deploy Button */}
           <button
             onClick={handleDeploy}
-            disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
+            disabled={
+              isDeploying ||
+              !name.trim() ||
+              (type === 'composite'
+                ? (workflowSteps.length === 0 || workflowSteps.some(s => !s.agentName.trim() || !s.prompt.trim()))
+                : !prompt.trim()
+              ) ||
+              !!result
+            }
             className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isDeploying ? (
@@ -911,7 +1884,7 @@ function DeployAgentModal({
             )}
           </button>
 
-          <div className="text-xs text-text-muted text-center">
+          <div className="text-xs text-text-muted text-center mt-3">
             Make sure Parallax is running on localhost:3001
           </div>
         </div>
