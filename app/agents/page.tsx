@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import { useProvider } from '@/app/contexts/ProviderContext'
 
 interface AgentStats {
   id: string
@@ -44,6 +46,7 @@ interface DeployedAgent {
   lastRun?: number
   lastResult?: string
   status: 'idle' | 'running'
+  provider?: string  // Store which provider this agent uses
 }
 
 export default function AgentDashboardPage() {
@@ -58,6 +61,45 @@ export default function AgentDashboardPage() {
   // Wallet connection for user payments
   const { publicKey } = useWallet()
   const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
+  // Global provider state from marketplace
+  const { selectedProvider } = useProvider()
+
+  // Check for pending agent deployment from agent builder
+  useEffect(() => {
+    const checkPendingDeploy = () => {
+      try {
+        const pendingData = localStorage.getItem('pendingAgentDeploy')
+        if (!pendingData) return
+
+        const agentData = JSON.parse(pendingData)
+
+        // Create new agent from builder data
+        const newAgent: DeployedAgent = {
+          id: `agent-${Date.now()}`,
+          name: agentData.name || 'Generated Agent',
+          type: 'optimizer', // Default type for AI-generated agents
+          prompt: agentData.prompt || agentData.description,
+          deployed: Date.now(),
+          totalRuns: 0,
+          status: 'idle',
+        }
+
+        // Add to deployed agents
+        setDeployedAgents(prev => [...prev, newAgent])
+
+        // Clear the pending deployment
+        localStorage.removeItem('pendingAgentDeploy')
+
+        // Show success message
+        console.log('✅ Agent deployed successfully:', newAgent.name)
+      } catch (error) {
+        console.error('Failed to deploy pending agent:', error)
+      }
+    }
+
+    checkPendingDeploy()
+  }, []) // Run once on mount
 
   // Convert deployed agents to AgentStats for display
   const allAgents: AgentStats[] = deployedAgents.map((da) => ({
@@ -107,6 +149,7 @@ export default function AgentDashboardPage() {
         body: JSON.stringify({
           messages: [{ role: 'user', content: agent.prompt }],
           max_tokens: maxTokens, // User-specified token limit
+          provider: selectedProvider?.name, // Send selected provider from marketplace
         }),
       })
 
@@ -252,6 +295,41 @@ export default function AgentDashboardPage() {
             <StatCard label="Total Cost" value={`$${totalVolume.toFixed(4)}`} icon="📊" />
             <StatCard label="Success Rate" value={`${avgSuccessRate.toFixed(1)}%`} icon="✓" color="success" />
           </div>
+
+          {/* Selected Provider Banner */}
+          {selectedProvider && (
+            <div className="mt-4 glass-hover p-4 rounded-lg border border-accent-primary/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                  <div className="flex-1">
+                    <div className="font-heading font-bold text-white mb-1">
+                      Agents will use: {selectedProvider.name}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Model:</span>
+                        <span className="text-white font-mono">{selectedProvider.model.split('/')[1]}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Latency:</span>
+                        <span className="text-status-success font-mono">{selectedProvider.latency}ms</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Uptime:</span>
+                        <span className="text-accent-secondary font-mono">{selectedProvider.uptime}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/marketplace">
+                  <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                    Change Provider
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -720,16 +798,19 @@ function DeployAgentModal({
     }
   }
 
-  return (
+  // Use portal to render modal at document root (avoids z-index stacking issues)
+  if (typeof window === 'undefined') return null
+
+  return createPortal(
     <motion.div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-start justify-center overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="glass rounded-xl border border-accent-primary/50 p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="glass rounded-xl border border-accent-primary/50 p-6 max-w-lg w-full mx-6 my-6 mt-[350px]"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -835,6 +916,7 @@ function DeployAgentModal({
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }

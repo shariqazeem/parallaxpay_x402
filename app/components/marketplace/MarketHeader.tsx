@@ -3,25 +3,47 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import WalletButton from '../WalletButton'
+import { getRealProviderManager } from '@/lib/real-provider-manager'
 
 export default function MarketHeader() {
   const [stats, setStats] = useState({
     marketCap: 127432,
     volume24h: 89234,
     trades24h: 2143,
-    activeProviders: 47,
-    avgLatency: 87,
+    activeProviders: 0,
+    avgLatency: 0,
     totalAgents: 143,
   })
 
-  // Simulate live stats updates
+  // Update stats with REAL data from provider manager
   useEffect(() => {
+    const updateRealStats = () => {
+      try {
+        const providerManager = getRealProviderManager()
+        const realStats = providerManager.getStats()
+
+        setStats((prev) => ({
+          ...prev,
+          activeProviders: realStats.online,
+          avgLatency: realStats.avgLatency,
+        }))
+      } catch (error) {
+        console.error('Failed to get provider stats:', error)
+      }
+    }
+
+    // Update immediately
+    updateRealStats()
+
+    // Then update every 5 seconds with real data
     const interval = setInterval(() => {
+      updateRealStats()
+
+      // Also update simulated stats
       setStats((prev) => ({
         ...prev,
         volume24h: prev.volume24h + Math.floor(Math.random() * 100),
         trades24h: prev.trades24h + Math.floor(Math.random() * 3),
-        avgLatency: 87 + Math.floor(Math.random() * 20 - 10),
       }))
     }, 5000)
 

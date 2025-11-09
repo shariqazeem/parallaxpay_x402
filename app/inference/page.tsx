@@ -7,6 +7,8 @@ import { createParallaxClient } from '@/lib/parallax-client'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import { useProvider } from '@/app/contexts/ProviderContext'
+import StreamingMessage, { CostMeter, PaymentAnimation } from '@/app/components/StreamingMessage'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -15,6 +17,7 @@ interface Message {
   tokens?: number
   latency?: number
   cost?: number
+  isStreaming?: boolean
 }
 
 export default function AIInferencePage() {
@@ -23,14 +26,23 @@ export default function AIInferencePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [parallaxStatus, setParallaxStatus] = useState<'checking' | 'online' | 'offline'>('checking')
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null)
 
   // Token controls - users can specify how many tokens they want
   const [maxTokens, setMaxTokens] = useState(512)
   const fixedCost = 0.001 // Fixed $0.001 per request (x402 middleware price)
 
+  // Session stats
+  const [sessionTokens, setSessionTokens] = useState(0)
+  const [sessionCost, setSessionCost] = useState(0)
+
   // Wallet connection
   const { publicKey } = useWallet()
   const { fetchWithPayment, isWalletConnected } = useX402Payment()
+
+  // Global provider state from marketplace
+  const { selectedProvider } = useProvider()
 
   // Check Parallax status on mount
   useState(() => {
@@ -63,6 +75,10 @@ export default function AIInferencePage() {
     setError(null)
 
     try {
+      // Show payment animation
+      setIsProcessingPayment(true)
+      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate payment processing
+
       const startTime = Date.now()
 
       // Call PROTECTED API endpoint with x402 payment using user's wallet
@@ -78,8 +94,11 @@ export default function AIInferencePage() {
             { role: 'user', content: input },
           ],
           max_tokens: maxTokens, // User-specified token limit
+          provider: selectedProvider?.name, // Send selected provider from marketplace
         }),
       })
+
+      setIsProcessingPayment(false)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -111,10 +130,17 @@ export default function AIInferencePage() {
         tokens,
         latency,
         cost,
+        isStreaming: true, // Enable streaming
       }
 
+      const messageIndex = messages.length + 1 // +1 for user message just added
+      setStreamingMessageId(messageIndex)
       setMessages((prev) => [...prev, assistantMessage])
       setParallaxStatus('online')
+
+      // Update session stats
+      setSessionTokens(prev => prev + tokens)
+      setSessionCost(prev => prev + cost)
 
       // Store transaction in localStorage for history page
       if (txHash) {
@@ -140,6 +166,7 @@ export default function AIInferencePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get response')
       setParallaxStatus('offline')
+      setIsProcessingPayment(false)
       console.error('Inference error:', err)
     } finally {
       setIsLoading(false)
@@ -190,11 +217,49 @@ export default function AIInferencePage() {
               </div>
             </div>
           </div>
+
+          {/* Selected Provider Banner */}
+          {selectedProvider && (
+            <div className="mt-4 glass-hover p-4 rounded-lg border border-accent-primary/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                  <div className="flex-1">
+                    <div className="font-heading font-bold text-white mb-1">
+                      Using: {selectedProvider.name}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Model:</span>
+                        <span className="text-white font-mono">{selectedProvider.model.split('/')[1]}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Latency:</span>
+                        <span className="text-status-success font-mono">{selectedProvider.latency}ms</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Uptime:</span>
+                        <span className="text-accent-secondary font-mono">{selectedProvider.uptime}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/marketplace">
+                  <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                    Change Provider
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Chat Interface */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      {/* Main Content - Chat + Session Stats */}
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Chat Interface */}
+          <div className="lg:col-span-2">
         {/* Wallet Not Connected Warning */}
         {!isWalletConnected && (
           <div className="mb-6 glass-hover p-4 rounded-xl border border-accent-primary/30 bg-accent-primary/10">
@@ -234,6 +299,16 @@ export default function AIInferencePage() {
           </div>
         )}
 
+        {/* Payment Animation */}
+        <AnimatePresence>
+          {isProcessingPayment && (
+            <PaymentAnimation
+              amount={fixedCost}
+              provider={selectedProvider?.name || 'Parallax'}
+            />
+          )}
+        </AnimatePresence>
+
         {/* Messages */}
         <div className="space-y-4 mb-6 min-h-[400px] max-h-[600px] overflow-y-auto">
           <AnimatePresence>
@@ -245,19 +320,51 @@ export default function AIInferencePage() {
               >
                 <div className="text-6xl mb-4">🤖</div>
                 <div className="text-2xl font-heading font-bold text-white mb-2">
-                  Real AI Inference
+                  Real AI Inference with Streaming
                 </div>
-                <div className="text-text-secondary">
-                  Powered by your local Gradient Parallax cluster
+                <div className="text-text-secondary mb-2">
+                  Powered by Gradient Parallax + x402 micropayments
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-text-muted">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-status-success" />
+                    <span>Real-time streaming</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-accent-primary" />
+                    <span>Live cost meter</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-accent-secondary" />
+                    <span>Token tracking</span>
+                  </div>
                 </div>
               </motion.div>
             )}
 
-            {messages.map((message, index) => (
-              <MessageBubble key={index} message={message} />
-            ))}
+            {messages.map((message, index) => {
+              if (message.role === 'assistant' && message.isStreaming) {
+                return (
+                  <StreamingMessage
+                    key={index}
+                    fullContent={message.content}
+                    tokens={message.tokens || 0}
+                    cost={message.cost || 0}
+                    latency={message.latency || 0}
+                    onComplete={() => {
+                      // Mark streaming as complete
+                      setStreamingMessageId(null)
+                      setMessages(prev => prev.map((m, i) =>
+                        i === index ? { ...m, isStreaming: false } : m
+                      ))
+                    }}
+                  />
+                )
+              }
+              return <MessageBubble key={index} message={message} />
+            })}
 
-            {isLoading && (
+            {isLoading && !isProcessingPayment && (
               <motion.div
                 className="flex items-center gap-3 glass p-4 rounded-xl"
                 initial={{ opacity: 0, y: 10 }}
@@ -395,6 +502,130 @@ export default function AIInferencePage() {
               {example}
             </button>
           ))}
+        </div>
+          </div>
+
+          {/* Session Stats Sidebar */}
+          <div className="space-y-6">
+            {/* Session Cost Meter */}
+            <div className="glass rounded-xl p-6 border border-border sticky top-24">
+              <h3 className="text-lg font-heading font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-2xl">📊</span>
+                Session Stats
+              </h3>
+
+              {/* Total Cost */}
+              <div className="mb-6 p-4 rounded-lg bg-background-secondary border border-border-hover">
+                <div className="text-xs text-text-muted mb-1">Total Cost</div>
+                <div className="text-3xl font-black text-status-success">
+                  ${sessionCost.toFixed(5)}
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background-secondary">
+                  <div>
+                    <div className="text-xs text-text-muted">Total Tokens</div>
+                    <div className="text-xl font-bold text-white font-mono">
+                      {sessionTokens.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-2xl">🎯</div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background-secondary">
+                  <div>
+                    <div className="text-xs text-text-muted">Messages</div>
+                    <div className="text-xl font-bold text-white font-mono">
+                      {messages.length}
+                    </div>
+                  </div>
+                  <div className="text-2xl">💬</div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background-secondary">
+                  <div>
+                    <div className="text-xs text-text-muted">Avg Cost/Msg</div>
+                    <div className="text-xl font-bold text-accent-secondary font-mono">
+                      ${messages.length > 0 ? (sessionCost / messages.length).toFixed(5) : '0.00000'}
+                    </div>
+                  </div>
+                  <div className="text-2xl">📈</div>
+                </div>
+
+                {sessionTokens > 0 && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-background-secondary">
+                    <div>
+                      <div className="text-xs text-text-muted">Cost/Token</div>
+                      <div className="text-xl font-bold text-accent-primary font-mono">
+                        ${(sessionCost / sessionTokens).toFixed(7)}
+                      </div>
+                    </div>
+                    <div className="text-2xl">💰</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Provider Info */}
+              {selectedProvider && (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <div className="text-xs text-text-muted mb-2">Current Provider</div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="text-xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                    <div className="font-heading font-bold text-white text-sm">
+                      {selectedProvider.name}
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">Latency</span>
+                      <span className="text-status-success font-mono">{selectedProvider.latency}ms</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">Uptime</span>
+                      <span className="text-accent-secondary font-mono">{selectedProvider.uptime}%</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Session Actions */}
+              <div className="mt-6 pt-6 border-t border-border space-y-2">
+                <button
+                  onClick={() => {
+                    if (confirm('Clear all messages and reset session stats?')) {
+                      setMessages([])
+                      setSessionTokens(0)
+                      setSessionCost(0)
+                    }
+                  }}
+                  className="w-full glass-hover px-4 py-2 rounded-lg text-sm font-semibold text-text-secondary hover:text-white transition-colors"
+                >
+                  🗑️ Clear Session
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="glass rounded-xl p-4 border border-border">
+              <h4 className="text-sm font-heading font-bold text-white mb-3">💡 Quick Tips</h4>
+              <div className="space-y-2 text-xs text-text-secondary">
+                <div className="flex items-start gap-2">
+                  <span className="text-accent-primary">•</span>
+                  <span>Watch costs update in real-time as AI responds</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-accent-primary">•</span>
+                  <span>Streaming shows response character-by-character</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-accent-primary">•</span>
+                  <span>All payments verified on Solana devnet</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
