@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import OrderBook from '../components/marketplace/OrderBook'
+import LiveOrderBook from '../components/marketplace/LiveOrderBook'
+import ProviderHeatMap from '../components/marketplace/ProviderHeatMap'
 import ProviderList from '../components/marketplace/ProviderList'
 import TradingChart from '../components/marketplace/TradingChart'
 import MarketHeader from '../components/marketplace/MarketHeader'
@@ -10,10 +11,14 @@ import AgentPanel from '../components/marketplace/AgentPanel'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import { useProvider } from '@/app/contexts/ProviderContext'
+import Link from 'next/link'
 
 export default function MarketplacePage() {
   const [selectedModel, setSelectedModel] = useState('Qwen-2.5-72B')
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+
+  // Global provider state with REAL discovery
+  const { selectedProvider, selectProvider, providers, discoverProviders, isDiscovering } = useProvider()
 
   // Wallet connection for user payments
   const { publicKey } = useWallet()
@@ -24,29 +29,124 @@ export default function MarketplacePage() {
       {/* Market Header with Stats */}
       <MarketHeader />
 
+      {/* Provider Heat Map - Full Width */}
+      <div className="max-w-[1920px] mx-auto px-6 pb-6">
+        <ProviderHeatMap />
+      </div>
+
       {/* Main Trading Interface */}
-      <div className="max-w-[1920px] mx-auto px-6 py-8">
+      <div className="max-w-[1920px] mx-auto px-6 pb-8">
         <div className="grid grid-cols-12 gap-6">
-          {/* Left Column - Order Book & Agents */}
+          {/* Left Column - Live Order Book & Agents */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
-            <OrderBook model={selectedModel} />
+            <LiveOrderBook />
             <AgentPanel />
           </div>
 
-          {/* Middle Column - Chart & Provider List */}
+          {/* Middle Column - Provider Selection */}
           <div className="col-span-12 lg:col-span-6 space-y-6">
-            <TradingChart model={selectedModel} />
-            <ProviderList
-              model={selectedModel}
-              onSelectProvider={setSelectedProvider}
-              selectedProvider={selectedProvider}
-            />
+            {/* Provider Selection */}
+            <div className="glass p-6 rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-heading font-bold text-white">
+                  🏪 Browse Providers
+                </h3>
+                <button
+                  onClick={discoverProviders}
+                  disabled={isDiscovering}
+                  className="px-3 py-1.5 text-xs font-heading font-bold glass-hover border border-accent-primary rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDiscovering ? (
+                    <span className="text-text-muted">🔄 Discovering...</span>
+                  ) : (
+                    <span className="text-gradient">🔍 Discover</span>
+                  )}
+                </button>
+              </div>
+
+              {providers.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <p className="text-text-secondary text-sm mb-2">
+                    No providers discovered yet
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Make sure Parallax nodes are running on ports 3001-3003
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {providers.map((provider) => (
+                    <motion.div
+                      key={provider.id}
+                      className={`p-4 rounded-lg cursor-pointer transition-all ${
+                        selectedProvider?.id === provider.id
+                          ? 'glass-hover neon-border'
+                          : 'glass border border-border hover:border-accent-primary'
+                      }`}
+                      onClick={() => selectProvider(provider)}
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
+                          <div className="font-heading font-bold text-white">
+                            {provider.name}
+                          </div>
+                          {provider.online !== undefined && (
+                            <div className={`w-2 h-2 rounded-full ${provider.online ? 'bg-status-success' : 'bg-status-error'}`} />
+                          )}
+                        </div>
+                        {selectedProvider?.id === provider.id && (
+                          <div className="text-xs bg-accent-primary/20 text-accent-primary px-2 py-1 rounded">
+                            ✓ Selected
+                          </div>
+                        )}
+                      </div>
+                    <div className="text-xs text-text-muted mb-3">
+                      {provider.description}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <div className="text-text-muted">Latency</div>
+                        <div className="font-mono text-white">{provider.latency}ms</div>
+                      </div>
+                      <div>
+                        <div className="text-text-muted">Uptime</div>
+                        <div className="font-mono text-status-success">{provider.uptime}%</div>
+                      </div>
+                      <div>
+                        <div className="text-text-muted">Model</div>
+                        <div className="font-mono text-white text-[10px]">{provider.model.split('/')[1]}</div>
+                      </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Use Provider Buttons */}
+              {selectedProvider && (
+                <div className="mt-6 pt-4 border-t border-border space-y-2">
+                  <Link href="/inference">
+                    <button className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105">
+                      <span className="text-gradient">💬 Use in Inference Chat</span>
+                    </button>
+                  </Link>
+                  <Link href="/agents">
+                    <button className="w-full glass-hover border border-border px-4 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105 text-white">
+                      🤖 Deploy Agent with Provider
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Right Column - Trade Panel & Info */}
+          {/* Right Column - Quick Test Panel */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             <TradePanel
-              selectedProvider={selectedProvider}
+              selectedProvider={selectedProvider?.name || null}
               model={selectedModel}
               isWalletConnected={isWalletConnected}
               fetchWithPayment={fetchWithPayment}
@@ -293,13 +393,47 @@ function TradePanel({
   )
 }
 
-// Recent Trades Component
+// Recent Trades Component - NOW WITH REAL TRADES! 🔥
 function RecentTrades() {
-  const trades = [
-    { time: '14:32:01', model: 'Qwen-2.5-72B', tokens: 247, cost: 0.0030, status: 'success' },
-    { time: '14:31:45', model: 'Llama-3.3-70B', tokens: 512, cost: 0.0077, status: 'success' },
-    { time: '14:31:22', model: 'DeepSeek-V3', tokens: 128, cost: 0.0012, status: 'pending' },
-  ]
+  const [trades, setTrades] = useState<Array<{
+    time: string
+    providerId: string
+    agentId: string
+    tokens: number
+    cost: number
+    status: string
+  }>>([])
+
+  useEffect(() => {
+    const updateRealTrades = () => {
+      try {
+        const { getRealOrderBook } = require('@/lib/real-order-book')
+        const orderBook = getRealOrderBook()
+        const recentTrades = orderBook.getRecentTrades(3)
+
+        const displayTrades = recentTrades.map(trade => ({
+          time: new Date(trade.timestamp).toLocaleTimeString(),
+          providerId: trade.providerId,
+          agentId: trade.agentId,
+          tokens: trade.amount,
+          cost: trade.price * trade.amount,
+          status: 'success',
+        }))
+
+        setTrades(displayTrades)
+      } catch (error) {
+        console.error('Failed to load trades:', error)
+      }
+    }
+
+    // Update immediately
+    updateRealTrades()
+
+    // Then update every 5 seconds
+    const interval = setInterval(updateRealTrades, 5000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <motion.div
@@ -312,34 +446,44 @@ function RecentTrades() {
         Recent Trades
       </h3>
 
-      <div className="space-y-3">
-        {trades.map((trade, i) => (
-          <div
-            key={i}
-            className="glass-hover p-3 rounded-lg border border-border-hover"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-mono text-text-secondary">
-                {trade.time}
-              </span>
-              <span className={`text-xs font-semibold ${
-                trade.status === 'success' ? 'text-status-success' : 'text-status-warning'
-              }`}>
-                {trade.status === 'success' ? '✓' : '⏳'}
-              </span>
+      {trades.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">📊</div>
+          <p className="text-text-secondary text-sm">
+            No trades yet
+          </p>
+          <p className="text-xs text-text-muted">
+            Trades will appear when agents execute
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {trades.map((trade, i) => (
+            <div
+              key={i}
+              className="glass-hover p-3 rounded-lg border border-border-hover"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-text-secondary">
+                  {trade.time}
+                </span>
+                <span className="text-xs font-semibold text-status-success">
+                  ✓
+                </span>
+              </div>
+              <div className="text-sm text-white font-medium mb-1">
+                {trade.agentId} → {trade.providerId}
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-text-secondary">{trade.tokens.toLocaleString()} tokens</span>
+                <span className="text-accent-secondary font-bold">
+                  ${trade.cost.toFixed(4)}
+                </span>
+              </div>
             </div>
-            <div className="text-sm text-white font-medium mb-1">
-              {trade.model}
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-text-secondary">{trade.tokens} tokens</span>
-              <span className="text-accent-secondary font-bold">
-                ${trade.cost.toFixed(4)}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <button className="w-full mt-4 glass-hover px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-white transition-colors">
         View All Transactions →

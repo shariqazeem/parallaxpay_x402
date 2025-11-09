@@ -6,7 +6,8 @@
     "dev": "node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check": "./scripts/check-setup.sh"
   },
   "dependencies": {
     "@coinbase/x402": "^0.7.0",
@@ -14,6 +15,8 @@
     "@faremeter/info": "^0.11.1",
     "@faremeter/middleware": "^0.11.1",
     "@faremeter/payment-solana": "^0.11.1",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
     "@scure/base": "^2.0.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-base": "^0.9.27",
@@ -23,6 +26,7 @@
     "@solana/web3.js": "^1.95.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@tanstack/react-query": "^5.90.7",
+    "@types/three": "^0.181.0",
     "autoprefixer": "^10.4.21",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
@@ -36,6 +40,7 @@
     "recharts": "^3.3.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.17",
+    "three": "^0.181.0",
     "viem": "^2.21.45",
     "x402-express": "^0.7.0",
     "x402-fetch": "^0.7.0",
