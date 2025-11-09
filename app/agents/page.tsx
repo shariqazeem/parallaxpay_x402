@@ -1401,8 +1401,8 @@ function DeployAgentModal({
             </button>
           </div>
 
-          {/* Scrollable Content Area */}
-          <div className="overflow-y-auto flex-1 min-h-0 p-6">
+          {/* Scrollable Content Area - ALWAYS shows scrollbar */}
+          <div className="overflow-y-scroll flex-1 min-h-0 p-6 scrollbar-custom">
             <div className="space-y-4">
           {/* Agent Name */}
           <div>
