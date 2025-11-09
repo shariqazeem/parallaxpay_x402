@@ -135,14 +135,17 @@ export class ParallaxClient {
 
   /**
    * Check if Parallax scheduler is running
+   * Note: Parallax doesn't have a /health endpoint, so we just check the base URL
    */
   async healthCheck(): Promise<boolean> {
     try {
+      // Just try to connect to the scheduler - it should respond with something
       const response = await fetch(this.config.schedulerUrl, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       })
-      return response.ok
+      // Any response (even 404) means the server is running
+      return true
     } catch (error) {
       return false
     }

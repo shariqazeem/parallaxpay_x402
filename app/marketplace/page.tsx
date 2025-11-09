@@ -35,6 +35,36 @@ export default function MarketplacePage() {
       {/* Market Header with Stats */}
       <MarketHeader />
 
+      {/* Selected Provider Banner */}
+      {selectedProvider && (
+        <div className="max-w-[1920px] mx-auto px-6 pt-6">
+          <motion.div
+            className="glass-hover neon-border p-4 rounded-xl"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                <div>
+                  <div className="font-heading font-bold text-white mb-1">
+                    ✅ Selected as Default: {selectedProvider.name}
+                  </div>
+                  <div className="text-xs text-text-secondary">
+                    All your agents will use this provider • Model: {selectedProvider.model.split('/')[1]} • Latency: {selectedProvider.latency}ms • Uptime: {selectedProvider.uptime}%
+                  </div>
+                </div>
+              </div>
+              <Link href="/agents">
+                <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                  Go to Agents →
+                </button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Provider Heat Map - Full Width */}
       <div className="max-w-[1920px] mx-auto px-6 pb-6">
         <ProviderHeatMap />
@@ -94,13 +124,22 @@ export default function MarketplacePage() {
                       whileHover={{ scale: 1.02 }}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
                           <div className="font-heading font-bold text-white">
                             {provider.name}
                           </div>
                           {provider.online !== undefined && (
                             <div className={`w-2 h-2 rounded-full ${provider.online ? 'bg-status-success' : 'bg-status-error'}`} />
+                          )}
+                          {provider.tier && provider.tier !== 'free' && (
+                            <div className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                              provider.tier === 'premium'
+                                ? 'bg-accent-secondary/20 text-accent-secondary border border-accent-secondary/30'
+                                : 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                            }`}>
+                              {provider.tier.toUpperCase()}
+                            </div>
                           )}
                         </div>
                         {selectedProvider?.id === provider.id && (
@@ -112,7 +151,7 @@ export default function MarketplacePage() {
                     <div className="text-xs text-text-muted mb-3">
                       {provider.description}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="grid grid-cols-3 gap-2 text-xs mb-3">
                       <div>
                         <div className="text-text-muted">Latency</div>
                         <div className="font-mono text-white">{provider.latency}ms</div>
@@ -125,25 +164,36 @@ export default function MarketplacePage() {
                         <div className="text-text-muted">Model</div>
                         <div className="font-mono text-white text-[10px]">{provider.model.split('/')[1]}</div>
                       </div>
+                    </div>
+                    {provider.minReputation && provider.minReputation > 0 && (
+                      <div className="glass-hover p-2 rounded border border-accent-secondary/30 bg-accent-secondary/5">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1 text-text-secondary">
+                            <span>🏆</span>
+                            <span>Min Reputation:</span>
+                          </div>
+                          <div className="font-bold text-accent-secondary">
+                            {provider.minReputation}+
+                          </div>
+                        </div>
                       </div>
+                    )}
                     </motion.div>
                   ))}
                 </div>
               )}
 
-              {/* Use Provider Buttons */}
+              {/* Use Provider Button */}
               {selectedProvider && (
-                <div className="mt-6 pt-4 border-t border-border space-y-2">
-                  <Link href="/inference">
-                    <button className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105">
-                      <span className="text-gradient">💬 Use in Inference Chat</span>
-                    </button>
-                  </Link>
+                <div className="mt-6 pt-4 border-t border-border">
                   <Link href="/agents">
-                    <button className="w-full glass-hover border border-border px-4 py-3 rounded-lg font-heading font-bold transition-all hover:scale-105 text-white">
-                      🤖 Deploy Agent with Provider
+                    <button className="w-full glass-hover neon-border px-4 py-4 rounded-lg font-heading font-bold transition-all hover:scale-105">
+                      <span className="text-gradient">🤖 Use This Provider for All Agents →</span>
                     </button>
                   </Link>
+                  <p className="text-xs text-text-muted text-center mt-2">
+                    Provider saved. All your agents will automatically use {selectedProvider.name}
+                  </p>
                 </div>
               )}
             </div>

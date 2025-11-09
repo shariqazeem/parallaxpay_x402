@@ -105,6 +105,7 @@ export class RealProviderManager {
 
   /**
    * Real health check against Parallax endpoint
+   * Note: Parallax doesn't have /health, so we just check if the server responds
    */
   async healthCheck(url: string): Promise<{ online: boolean; latency: number }> {
     const start = Date.now()
@@ -113,15 +114,17 @@ export class RealProviderManager {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 5000) // 5s timeout
 
-      const response = await fetch(`${url}/health`, {
+      // Just hit the base URL - Parallax doesn't have /health endpoint
+      const response = await fetch(url, {
         signal: controller.signal,
       })
 
       clearTimeout(timeout)
       const latency = Date.now() - start
 
+      // Any response (even 404) means the server is running
       return {
-        online: response.ok,
+        online: true,
         latency,
       }
     } catch (error) {
