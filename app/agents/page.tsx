@@ -1252,9 +1252,24 @@ function DeployAgentModal({
   }, [])
 
   const handleDeploy = async () => {
-    if (!name.trim() || !prompt.trim()) {
-      setError('Please fill in all fields')
+    // Validate based on agent type
+    if (!name.trim()) {
+      setError('Please enter an agent name')
       return
+    }
+
+    if (type === 'composite') {
+      // For composite agents, validate workflow steps
+      if (workflowSteps.length === 0 || workflowSteps.some(s => !s.agentName.trim() || !s.prompt.trim())) {
+        setError('Please fill in all workflow steps (agent name and prompt required for each)')
+        return
+      }
+    } else {
+      // For regular agents, validate prompt
+      if (!prompt.trim()) {
+        setError('Please enter a test prompt')
+        return
+      }
     }
 
     setIsDeploying(true)
@@ -1262,61 +1277,67 @@ function DeployAgentModal({
     setResult(null)
 
     try {
-      // Run REAL Parallax inference to test the agent
-      const { createParallaxClient } = await import('@/lib/parallax-client')
-      const client = createParallaxClient('http://localhost:3001')
-
-      const response = await client.inference({
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 300, // Increased from 200 to avoid truncation
-      })
-
-      console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
-
-      // Parse response - handle multiple formats
       let content = ''
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0] as any
-        console.log('Choice object:', JSON.stringify(choice, null, 2))
 
-        // Try standard OpenAI format
-        content = choice.message?.content || ''
-        // Try Parallax format (uses "messages" plural)
-        if (!content && choice.messages?.content) {
-          content = choice.messages.content
+      // For composite agents, skip the test and show workflow summary
+      if (type === 'composite') {
+        content = `Composite Workflow Ready:\n\n${workflowSteps.map((s, i) => `${i + 1}. ${s.agentName}: "${s.prompt.substring(0, 50)}..."${s.useOutputFrom ? ` (uses output from Step ${i})` : ''}`).join('\n')}\n\nReady to orchestrate ${workflowSteps.length} agents!`
+      } else {
+        // Run REAL Parallax inference to test regular agents
+        const { createParallaxClient } = await import('@/lib/parallax-client')
+        const client = createParallaxClient('http://localhost:3001')
+
+        const response = await client.inference({
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300, // Increased from 200 to avoid truncation
+        })
+
+        console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
+
+        // Parse response - handle multiple formats
+        if (response.choices && response.choices.length > 0) {
+          const choice = response.choices[0] as any
+          console.log('Choice object:', JSON.stringify(choice, null, 2))
+
+          // Try standard OpenAI format
+          content = choice.message?.content || ''
+          // Try Parallax format (uses "messages" plural)
+          if (!content && choice.messages?.content) {
+            content = choice.messages.content
+          }
+          // Try text format
+          if (!content && choice.text) {
+            content = choice.text
+          }
         }
-        // Try text format
-        if (!content && choice.text) {
-          content = choice.text
+
+        console.log('Content before <think> cleanup:', content)
+
+        // Clean up <think> tags if present
+        if (content.includes('<think>')) {
+          const thinkEnd = content.indexOf('</think>')
+          if (thinkEnd !== -1) {
+            // Found closing tag - remove reasoning, keep answer
+            content = content.substring(thinkEnd + 8).trim()
+          } else {
+            // No closing tag (response truncated) - keep the reasoning but remove tag
+            // This happens when max_tokens is too small
+            content = content.replace('<think>\n', '').replace('<think>', '').trim()
+            // Add a note that this is reasoning
+            content = '💭 AI Reasoning:\n\n' + content
+          }
         }
-      }
 
-      console.log('Content before <think> cleanup:', content)
+        console.log('Content after <think> cleanup:', content)
 
-      // Clean up <think> tags if present
-      if (content.includes('<think>')) {
-        const thinkEnd = content.indexOf('</think>')
-        if (thinkEnd !== -1) {
-          // Found closing tag - remove reasoning, keep answer
-          content = content.substring(thinkEnd + 8).trim()
-        } else {
-          // No closing tag (response truncated) - keep the reasoning but remove tag
-          // This happens when max_tokens is too small
-          content = content.replace('<think>\n', '').replace('<think>', '').trim()
-          // Add a note that this is reasoning
-          content = '💭 AI Reasoning:\n\n' + content
+        if (!content) {
+          console.error('Failed to extract content. Full response:', response)
+          throw new Error(
+            'Could not extract content from Parallax response. ' +
+            'Check browser console for details. Response structure: ' +
+            JSON.stringify(response).substring(0, 200)
+          )
         }
-      }
-
-      console.log('Content after <think> cleanup:', content)
-
-      if (!content) {
-        console.error('Failed to extract content. Full response:', response)
-        throw new Error(
-          'Could not extract content from Parallax response. ' +
-          'Check browser console for details. Response structure: ' +
-          JSON.stringify(response).substring(0, 200)
-        )
       }
 
       setResult(content)
@@ -1481,8 +1502,27 @@ function DeployAgentModal({
                         ))
                       }}
                       rows={2}
-                      className="w-full px-3 py-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                      className="w-full px-3 py-2 mb-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
                     />
+
+                    {/* Use output from previous step */}
+                    {index > 0 && (
+                      <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={step.useOutputFrom === workflowSteps[index - 1]?.id}
+                          onChange={(e) => {
+                            setWorkflowSteps(steps => steps.map(s =>
+                              s.id === step.id
+                                ? { ...s, useOutputFrom: e.target.checked ? workflowSteps[index - 1]?.id : undefined }
+                                : s
+                            ))
+                          }}
+                          className="rounded border-border bg-background-secondary text-accent-primary focus:ring-accent-primary focus:ring-2"
+                        />
+                        <span>Use output from Step {index}</span>
+                      </label>
+                    )}
                   </div>
                 ))}
                 <button
@@ -1532,7 +1572,15 @@ function DeployAgentModal({
           {/* Deploy Button */}
           <button
             onClick={handleDeploy}
-            disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
+            disabled={
+              isDeploying ||
+              !name.trim() ||
+              (type === 'composite'
+                ? (workflowSteps.length === 0 || workflowSteps.some(s => !s.agentName.trim() || !s.prompt.trim()))
+                : !prompt.trim()
+              ) ||
+              !!result
+            }
             className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isDeploying ? (
