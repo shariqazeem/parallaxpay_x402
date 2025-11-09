@@ -1368,24 +1368,23 @@ function DeployAgentModal({
     <>
       {/* Backdrop */}
       <motion.div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999]"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-      />
-
-      {/* Drawer/Panel sliding from right (full screen on mobile) */}
-      <motion.div
-        className="fixed right-0 top-0 h-screen w-full md:w-[600px] lg:w-[700px] glass border-l border-accent-primary/50 z-[100000] overflow-y-auto"
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 md:p-8 pb-20">
-          <div className="flex items-start justify-between mb-6">
+        {/* Centered Modal with fixed height and internal scroll */}
+        <motion.div
+          className="glass border border-accent-primary/50 rounded-2xl z-[100000] w-full max-w-2xl max-h-[85vh] flex flex-col"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Fixed Header */}
+          <div className="flex items-start justify-between p-6 pb-4 border-b border-border flex-shrink-0">
             <div>
               <h2 className="text-2xl font-heading font-bold text-white mb-2">
                 Deploy Real Agent
@@ -1396,13 +1395,15 @@ function DeployAgentModal({
             </div>
             <button
               onClick={onClose}
-              className="text-text-secondary hover:text-white transition-colors"
+              className="text-text-secondary hover:text-white transition-colors text-2xl leading-none"
             >
               ✕
             </button>
           </div>
 
-        <div className="space-y-4">
+          {/* Scrollable Content Area */}
+          <div className="overflow-y-auto flex-1 p-6">
+            <div className="space-y-4">
           {/* Agent Name */}
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
@@ -1525,27 +1526,30 @@ function DeployAgentModal({
               <div className="text-sm text-white whitespace-pre-wrap">{result.substring(0, 200)}...</div>
             </div>
           )}
-
-          {/* Deploy Button */}
-          <button
-            onClick={handleDeploy}
-            disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
-            className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          >
-            {isDeploying ? (
-              <span className="text-text-muted">⚡ Testing agent with Parallax...</span>
-            ) : result ? (
-              <span className="text-status-success">Deploying...</span>
-            ) : (
-              <span className="text-gradient">Deploy & Test Agent</span>
-            )}
-          </button>
-
-          <div className="text-xs text-text-muted text-center">
-            Make sure Parallax is running on localhost:3001
+            </div>
           </div>
-        </div>
-        </div>
+
+          {/* Fixed Footer with Deploy Button */}
+          <div className="border-t border-border p-6 pt-4 flex-shrink-0">
+            <button
+              onClick={handleDeploy}
+              disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
+              className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isDeploying ? (
+                <span className="text-text-muted">⚡ Testing agent with Parallax...</span>
+              ) : result ? (
+                <span className="text-status-success">Deploying...</span>
+              ) : (
+                <span className="text-gradient">Deploy & Test Agent</span>
+              )}
+            </button>
+
+            <div className="text-xs text-text-muted text-center mt-3">
+              Make sure Parallax is running on localhost:3001
+            </div>
+          </div>
+        </motion.div>
       </motion.div>
     </>,
     document.body
