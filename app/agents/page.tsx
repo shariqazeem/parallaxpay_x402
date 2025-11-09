@@ -1377,11 +1377,10 @@ function DeployAgentModal({
 
       {/* Full-screen overlay modal with guaranteed scrolling */}
       <motion.div
-        className="fixed inset-8 md:inset-16 bg-background-primary border-2 border-accent-primary/50 rounded-2xl z-[100000] overflow-hidden shadow-2xl"
+        className="fixed inset-8 md:inset-16 border-2 border-accent-primary rounded-2xl z-[100000] overflow-hidden shadow-2xl"
         style={{
-          background: 'rgba(10, 10, 15, 0.98)',
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 0 50px rgba(153, 69, 255, 0.3)'
+          background: '#0A0A0F',
+          boxShadow: '0 0 50px rgba(153, 69, 255, 0.5), 0 0 100px rgba(153, 69, 255, 0.3)'
         }}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -1409,7 +1408,7 @@ function DeployAgentModal({
 
         {/* Scrollable Content - positioned between header and footer */}
         <div
-          className="absolute top-[100px] bottom-[120px] left-0 right-0 overflow-y-scroll scrollbar-custom px-6"
+          className="absolute top-[100px] bottom-[120px] left-0 right-0 overflow-y-scroll scrollbar-custom px-6 bg-background-secondary/30"
           style={{ scrollbarGutter: 'stable' }}
         >
           <div className="space-y-4 py-4">
