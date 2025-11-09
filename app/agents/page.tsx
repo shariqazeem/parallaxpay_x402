@@ -41,7 +41,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom'
+  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'
   prompt: string
   deployed: number
   totalRuns: number
@@ -51,6 +51,18 @@ interface DeployedAgent {
   provider?: string  // Store which provider this agent uses
   identityId?: string  // Link to AgentIdentity
   schedule?: AgentSchedule  // Autonomous scheduling config
+  workflow?: CompositeWorkflow  // For composite agents
+}
+
+interface CompositeWorkflow {
+  steps: WorkflowStep[]
+}
+
+interface WorkflowStep {
+  id: string
+  agentName: string  // Name of agent to call
+  prompt: string     // Prompt to pass to that agent
+  useOutputFrom?: string  // ID of previous step to use output from
 }
 
 export default function AgentDashboardPage() {
@@ -138,8 +150,8 @@ export default function AgentDashboardPage() {
       ? `Completed: "${da.lastResult.substring(0, 50)}..."`
       : `Ready to run: "${da.prompt.substring(0, 40)}..."`,
     lastActionTime: da.lastRun || da.deployed,
-    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : da.type === 'whale' ? '🐋' : '🤖',
-    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : da.type === 'whale' ? '#00D4FF' : '#FF6B9D',
+    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : da.type === 'whale' ? '🐋' : da.type === 'composite' ? '🔗' : '🤖',
+    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : da.type === 'whale' ? '#00D4FF' : da.type === 'composite' ? '#FF6B9D' : '#00B4FF',
     isReal: true,
   }))
 
@@ -162,6 +174,103 @@ export default function AgentDashboardPage() {
     const startTime = Date.now()
 
     try {
+      // COMPOSITE AGENT: Orchestrate multiple agent calls
+      if (agent.type === 'composite' && agent.workflow) {
+        console.log(`🔗 [${agent.name}] Running COMPOSITE agent with workflow...`)
+        console.log(`   Steps: ${agent.workflow.steps.length}`)
+        console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
+
+        // Call composite agent endpoint
+        const response = await fetch('/api/runCompositeAgent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            workflow: agent.workflow,
+            initialInput: agent.prompt,
+            provider: selectedProvider?.name,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Composite execution failed')
+        }
+
+        const data = await response.json()
+        const latency = Date.now() - startTime
+
+        console.log(`✅ [${agent.name}] Composite workflow completed!`)
+        console.log(`   Total Steps: ${data.completedSteps}/${data.totalSteps}`)
+        console.log(`   Total Cost: $${data.totalCost.toFixed(6)}`)
+        console.log(`   Total Latency: ${latency}ms`)
+
+        // Record execution in identity manager (using total cost)
+        if (agent.identityId) {
+          identityManager.recordExecution(
+            agent.identityId,
+            data.success,
+            data.totalCost,
+            latency,
+            selectedProvider?.name || 'Parallax',
+            0.0001 * data.completedSteps // Estimated savings per step
+          )
+          setAgentIdentities(identityManager.getAllIdentities())
+        }
+
+        // Update agent stats
+        setDeployedAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? {
+                ...a,
+                status: 'idle' as const,
+                totalRuns: a.totalRuns + 1,
+                lastRun: Date.now(),
+                lastResult: data.finalOutput?.substring(0, 200) || 'Workflow completed',
+                provider: selectedProvider?.name || 'Parallax'
+              }
+            : a
+        ))
+
+        // Add each step to trade feed
+        data.executionTrail.forEach((step: any, index: number) => {
+          const stepTrade: Trade = {
+            id: `trade-${Date.now()}-step-${index}`,
+            agentName: `${agent.name} → ${step.agentName}`,
+            provider: step.provider,
+            tokens: step.tokens,
+            cost: step.cost,
+            timestamp: Date.now() + index, // Offset timestamps slightly
+            txHash: step.txHash || 'pending',
+            isReal: true,
+          }
+          setTrades(prev => [stepTrade, ...prev.slice(0, 9)])
+        })
+
+        // Store composite execution in localStorage
+        try {
+          const stored = localStorage.getItem('parallaxpay_transactions') || '[]'
+          const transactions = JSON.parse(stored)
+          transactions.push({
+            id: `composite-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'composite',
+            agentName: agent.name,
+            steps: data.executionTrail.length,
+            totalCost: data.totalCost,
+            status: 'success',
+            network: 'solana-devnet',
+          })
+          localStorage.setItem('parallaxpay_transactions', JSON.stringify(transactions))
+        } catch (e) {
+          console.warn('Failed to store transaction:', e)
+        }
+
+        return
+      }
+
+      // REGULAR AGENT: Single inference call
       console.log(`🤖 [${agent.name}] Running agent with YOUR wallet payment...`)
       console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
 
@@ -963,11 +1072,16 @@ function DeployAgentModal({
   walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale' | 'custom'>('custom')
+  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'>('custom')
   const [prompt, setPrompt] = useState('Explain quantum computing')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
+
+  // For composite agents
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
+    { id: 'step-1', agentName: '', prompt: '' }
+  ])
 
   const handleDeploy = async () => {
     if (!name.trim() || !prompt.trim()) {
@@ -1057,11 +1171,16 @@ function DeployAgentModal({
         totalRuns: 0,
         status: 'idle',
         identityId: identity.id,
+        // Include workflow for composite agents
+        ...(type === 'composite' && { workflow: { steps: workflowSteps } }),
       }
 
       console.log('🎉 Agent deployed with identity:', identity.id)
       console.log('   Reputation Score:', identity.reputation.score)
       console.log('   Wallet:', identity.walletAddress)
+      if (type === 'composite') {
+        console.log('   Workflow Steps:', workflowSteps.length)
+      }
 
       // Wait a moment to show the result
       setTimeout(() => {
@@ -1128,7 +1247,7 @@ function DeployAgentModal({
           {/* Agent Type */}
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
-              Strategy Type
+              Agent Type
             </label>
             <select
               value={type}
@@ -1137,26 +1256,86 @@ function DeployAgentModal({
               disabled={isDeploying}
             >
               <option value="custom">Custom - General purpose AI agent</option>
+              <option value="composite">🔗 Composite - Orchestrates multiple agents</option>
               <option value="arbitrage">Arbitrage - Find price differences</option>
               <option value="optimizer">Optimizer - Minimize costs</option>
               <option value="whale">Whale - Bulk purchases</option>
             </select>
           </div>
 
-          {/* Test Prompt */}
-          <div>
-            <label className="text-sm text-text-secondary mb-2 block">
-              Test Prompt (will run real inference)
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter a prompt to test the agent..."
-              className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
-              rows={3}
-              disabled={isDeploying}
-            />
-          </div>
+          {/* Conditional UI based on type */}
+          {type === 'composite' ? (
+            /* Workflow Builder for Composite Agents */
+            <div>
+              <label className="text-sm text-text-secondary mb-2 block">
+                Workflow Steps (Agent-to-Agent Calls)
+              </label>
+              <div className="space-y-3">
+                {workflowSteps.map((step, index) => (
+                  <div key={step.id} className="glass-hover p-3 rounded-lg border border-border">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="px-2 py-1 bg-accent-primary/20 text-accent-primary text-xs font-bold rounded">
+                        Step {index + 1}
+                      </div>
+                      {workflowSteps.length > 1 && (
+                        <button
+                          onClick={() => setWorkflowSteps(steps => steps.filter(s => s.id !== step.id))}
+                          className="ml-auto text-status-error text-xs hover:scale-110 transition-transform"
+                        >
+                          ✕ Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      placeholder="Agent name to call (e.g., 'Research Agent')"
+                      value={step.agentName}
+                      onChange={(e) => {
+                        setWorkflowSteps(steps => steps.map(s =>
+                          s.id === step.id ? { ...s, agentName: e.target.value } : s
+                        ))
+                      }}
+                      className="w-full px-3 py-2 mb-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none"
+                    />
+                    <textarea
+                      placeholder="Prompt for this agent..."
+                      value={step.prompt}
+                      onChange={(e) => {
+                        setWorkflowSteps(steps => steps.map(s =>
+                          s.id === step.id ? { ...s, prompt: e.target.value } : s
+                        ))
+                      }}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                    />
+                  </div>
+                ))}
+                <button
+                  onClick={() => setWorkflowSteps(steps => [...steps, { id: `step-${Date.now()}`, agentName: '', prompt: '' }])}
+                  className="w-full glass-hover border border-accent-primary/50 px-3 py-2 rounded-lg text-sm font-semibold text-accent-primary hover:scale-105 transition-all"
+                >
+                  + Add Step
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-text-muted">
+                💡 Composite agents orchestrate other agents with x402 payments
+              </div>
+            </div>
+          ) : (
+            /* Regular Prompt for Other Agent Types */
+            <div>
+              <label className="text-sm text-text-secondary mb-2 block">
+                Test Prompt (will run real inference)
+              </label>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Enter a prompt to test the agent..."
+                className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                rows={3}
+                disabled={isDeploying}
+              />
+            </div>
+          )}
 
           {/* Error */}
           {error && (
