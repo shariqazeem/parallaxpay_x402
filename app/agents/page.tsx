@@ -1527,7 +1527,6 @@ function DeployAgentModal({
               <div className="text-sm text-white whitespace-pre-wrap">{result.substring(0, 200)}...</div>
             </div>
           )}
-            </div>
           </div>
 
           {/* Deploy Button */}
@@ -1547,7 +1546,6 @@ function DeployAgentModal({
 
           <div className="text-xs text-text-muted text-center mt-3">
             Make sure Parallax is running on localhost:3001
-          </div>
           </div>
         </div>
       </motion.div>
