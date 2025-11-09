@@ -101,6 +101,32 @@ export default function AgentDashboardPage() {
     }
   }, [identityManager])
 
+  // Load deployed agents from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('parallaxpay_deployed_agents')
+      if (stored) {
+        const agents = JSON.parse(stored) as DeployedAgent[]
+        setDeployedAgents(agents)
+        console.log(`📦 Loaded ${agents.length} deployed agents from localStorage`)
+      }
+    } catch (error) {
+      console.error('Failed to load deployed agents:', error)
+    }
+  }, [])
+
+  // Save deployed agents to localStorage whenever they change
+  useEffect(() => {
+    if (deployedAgents.length > 0) {
+      try {
+        localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(deployedAgents))
+        console.log(`💾 Saved ${deployedAgents.length} deployed agents to localStorage`)
+      } catch (error) {
+        console.error('Failed to save deployed agents:', error)
+      }
+    }
+  }, [deployedAgents])
+
   // Check for pending agent deployment from agent builder
   useEffect(() => {
     const checkPendingDeploy = () => {
@@ -148,8 +174,8 @@ export default function AgentDashboardPage() {
     avgCost: 0.00112,
     successRate: 100,
     lastAction: da.lastResult
-      ? `Completed: "${da.lastResult.substring(0, 50)}..."`
-      : `Ready to run: "${da.prompt.substring(0, 40)}..."`,
+      ? `Completed: "${da.lastResult.substring(0, 200)}..."`
+      : `Ready to run: "${da.prompt.substring(0, 100)}..."`,
     lastActionTime: da.lastRun || da.deployed,
     avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : da.type === 'whale' ? '🐋' : da.type === 'composite' ? '🔗' : '🤖',
     color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : da.type === 'whale' ? '#00D4FF' : da.type === 'composite' ? '#FF6B9D' : '#00B4FF',
