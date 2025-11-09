@@ -1377,7 +1377,12 @@ function DeployAgentModal({
 
       {/* Full-screen overlay modal with guaranteed scrolling */}
       <motion.div
-        className="fixed inset-8 md:inset-16 glass border border-accent-primary/50 rounded-2xl z-[100000] overflow-hidden"
+        className="fixed inset-8 md:inset-16 bg-background-primary border-2 border-accent-primary/50 rounded-2xl z-[100000] overflow-hidden shadow-2xl"
+        style={{
+          background: 'rgba(10, 10, 15, 0.98)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 0 50px rgba(153, 69, 255, 0.3)'
+        }}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
