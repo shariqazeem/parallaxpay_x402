@@ -1554,7 +1554,6 @@ function DeployAgentModal({
           </div>
         </div>
       </motion.div>
-    </>
     </>,
     document.body
   )
