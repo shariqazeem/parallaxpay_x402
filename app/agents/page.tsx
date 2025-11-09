@@ -1238,6 +1238,14 @@ function DeployAgentModal({
     { id: 'step-1', agentName: '', prompt: '' }
   ])
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [])
+
   const handleDeploy = async () => {
     if (!name.trim() || !prompt.trim()) {
       setError('Please fill in all fields')
