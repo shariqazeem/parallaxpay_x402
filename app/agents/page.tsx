@@ -10,6 +10,7 @@ import { useX402Payment } from '@/app/hooks/useX402Payment'
 import { useProvider } from '@/app/contexts/ProviderContext'
 import { getAgentIdentityManager, AgentIdentity, TrustBadge } from '@/lib/agent-identity'
 import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-agent-scheduler'
+import { useBadgeAttestation } from '@/lib/use-badge-attestation'
 
 interface AgentStats {
   id: string
@@ -660,9 +661,50 @@ function AgentCard({
   onRun: () => void
   identity?: AgentIdentity
 }) {
+  const { attestBadge, attesting } = useBadgeAttestation()
+  const [showAttestModal, setShowAttestModal] = useState(false)
+  const identityManager = getAgentIdentityManager()
+
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
   const timeStr =
     timeSince < 5 ? 'just now' : timeSince < 60 ? `${timeSince}s ago` : `${Math.floor(timeSince / 60)}m ago`
+
+  // Get badges that need attestation
+  const unAttestedBadges = identity ? identity.badges.filter(b => !b.attestation) : []
+
+  // Handle badge attestation
+  const handleAttestBadge = async (badge: TrustBadge) => {
+    if (!identity) return
+
+    const result = await attestBadge({
+      badgeType: badge.type,
+      agentId: identity.id,
+      agentName: identity.name,
+      walletAddress: identity.walletAddress,
+      reputationScore: identity.reputation.score,
+      timestamp: Date.now(),
+      metadata: {
+        badgeName: badge.name,
+        description: badge.description,
+        earnedAt: badge.earnedAt,
+      },
+    })
+
+    if (result.success && result.signature && result.explorerUrl) {
+      // Record attestation in identity manager
+      identityManager.recordBadgeAttestation(
+        identity.id,
+        badge.id,
+        result.signature,
+        result.explorerUrl
+      )
+
+      alert(`✅ Badge "${badge.name}" attested on-chain!\n\nTransaction: ${result.signature}\n\nView on explorer: ${result.explorerUrl}`)
+      setShowAttestModal(false)
+    } else {
+      alert(`❌ Attestation failed: ${result.error}`)
+    }
+  }
 
   return (
     <motion.div
@@ -731,21 +773,50 @@ function AgentCard({
 
         {/* Trust Badges */}
         {identity && identity.badges.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {identity.badges.slice(0, 4).map(badge => (
-              <div
-                key={badge.id}
-                className="px-2 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-xs font-semibold text-accent-primary"
-                title={badge.description}
-              >
-                {badge.icon} {badge.name}
-              </div>
-            ))}
-            {identity.badges.length > 4 && (
-              <div className="px-2 py-1 rounded-lg bg-background-tertiary text-xs text-text-muted">
-                +{identity.badges.length - 4} more
-              </div>
-            )}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-text-secondary font-semibold">Trust Badges</div>
+              {identity.badges.some(b => b.attestation) && (
+                <div className="text-xs text-status-success flex items-center gap-1">
+                  <span>⛓️</span>
+                  <span>On-chain verified</span>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {identity.badges.slice(0, 4).map(badge => (
+                <div
+                  key={badge.id}
+                  className={`group relative px-2 py-1 rounded-lg text-xs font-semibold ${
+                    badge.attestation
+                      ? 'bg-status-success/10 border border-status-success/30 text-status-success'
+                      : 'bg-accent-primary/10 border border-accent-primary/30 text-accent-primary'
+                  }`}
+                  title={badge.description}
+                >
+                  <span className="flex items-center gap-1">
+                    {badge.icon} {badge.name}
+                    {badge.attestation && (
+                      <a
+                        href={badge.attestation.explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-status-success hover:text-accent-secondary ml-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View on Solana Explorer"
+                      >
+                        ⛓️
+                      </a>
+                    )}
+                  </span>
+                </div>
+              ))}
+              {identity.badges.length > 4 && (
+                <div className="px-2 py-1 rounded-lg bg-background-tertiary text-xs text-text-muted">
+                  +{identity.badges.length - 4} more
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -790,7 +861,7 @@ function AgentCard({
           <button
             onClick={onRun}
             disabled={agent.status === 'executing'}
-            className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mb-3"
           >
             {agent.status === 'executing' ? (
               <span className="text-text-muted">⚡ Running...</span>
@@ -799,7 +870,91 @@ function AgentCard({
             )}
           </button>
         )}
+
+        {/* Badge Attestation Button */}
+        {agent.isReal && unAttestedBadges.length > 0 && (
+          <button
+            onClick={() => setShowAttestModal(true)}
+            className="w-full glass-hover border border-status-success/30 px-4 py-2 rounded-lg font-heading text-sm font-semibold transition-all hover:scale-105 text-status-success"
+          >
+            ⛓️ Attest {unAttestedBadges.length} Badge{unAttestedBadges.length > 1 ? 's' : ''} On-Chain
+          </button>
+        )}
       </div>
+
+      {/* Badge Attestation Modal */}
+      {showAttestModal && typeof window !== 'undefined' && createPortal(
+        <motion.div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowAttestModal(false)}
+        >
+          <motion.div
+            className="glass rounded-xl border border-status-success/50 p-6 max-w-md w-full"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-white mb-2">
+                  ⛓️ Attest Badges On-Chain
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  Create permanent, verifiable records of your agent's achievements on Solana blockchain.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAttestModal(false)}
+                className="text-text-secondary hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {unAttestedBadges.map(badge => (
+                <div
+                  key={badge.id}
+                  className="glass-hover p-4 rounded-lg border border-border-hover"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{badge.icon}</span>
+                      <div>
+                        <div className="text-sm font-bold text-white">{badge.name}</div>
+                        <div className="text-xs text-text-secondary">{badge.description}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleAttestBadge(badge)}
+                    disabled={attesting}
+                    className="w-full glass-hover neon-border px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
+                  >
+                    {attesting ? (
+                      <span className="text-text-muted">⏳ Attesting...</span>
+                    ) : (
+                      <span className="text-gradient">Attest This Badge</span>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="glass-hover p-3 rounded-lg border border-accent-primary/30 bg-accent-primary/5">
+              <div className="text-xs text-text-secondary">
+                <div className="font-bold text-accent-primary mb-1">ℹ️ What is attestation?</div>
+                Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
 
       {/* Progress Bar */}
       {agent.status === 'executing' && (
