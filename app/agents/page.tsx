@@ -1365,22 +1365,18 @@ function DeployAgentModal({
   if (typeof window === 'undefined') return null
 
   return createPortal(
-    <>
-      {/* Backdrop */}
+    <motion.div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-start justify-center p-4 overflow-y-auto"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      {/* Centered Modal - scrolls with backdrop */}
       <motion.div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-
-      {/* Full-screen overlay modal with guaranteed scrolling */}
-      <motion.div
-        className="fixed inset-8 md:inset-16 border-2 border-accent-primary rounded-2xl z-[100000] overflow-hidden shadow-2xl"
+        className="bg-background-primary border-2 border-accent-primary rounded-2xl w-full max-w-3xl my-8"
         style={{
-          background: '#0A0A0F',
-          boxShadow: '0 0 50px rgba(153, 69, 255, 0.5), 0 0 100px rgba(153, 69, 255, 0.3)'
+          boxShadow: '0 0 50px rgba(153, 69, 255, 0.5)'
         }}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -1388,8 +1384,8 @@ function DeployAgentModal({
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Fixed Header */}
-        <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-6 pb-4 border-b border-border bg-background-secondary/95 backdrop-blur-xl z-10">
+        {/* Header */}
+        <div className="flex items-start justify-between p-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-heading font-bold text-white mb-2">
               Deploy Real Agent
@@ -1406,12 +1402,9 @@ function DeployAgentModal({
           </button>
         </div>
 
-        {/* Scrollable Content - positioned between header and footer */}
-        <div
-          className="absolute top-[100px] bottom-[120px] left-0 right-0 overflow-y-scroll scrollbar-custom px-6 bg-background-secondary/30"
-          style={{ scrollbarGutter: 'stable' }}
-        >
-          <div className="space-y-4 py-4">
+        {/* Content */}
+        <div className="p-6">
+          <div className="space-y-4">
           {/* Agent Name */}
           <div>
             <label className="text-sm text-text-secondary mb-2 block">
@@ -1537,8 +1530,7 @@ function DeployAgentModal({
             </div>
           </div>
 
-        {/* Fixed Footer - absolutely positioned at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-border p-6 pt-4 bg-background-secondary/95 backdrop-blur-xl z-10">
+          {/* Deploy Button */}
           <button
             onClick={handleDeploy}
             disabled={isDeploying || !name.trim() || !prompt.trim() || !!result}
@@ -1556,9 +1548,10 @@ function DeployAgentModal({
           <div className="text-xs text-text-muted text-center mt-3">
             Make sure Parallax is running on localhost:3001
           </div>
+          </div>
         </div>
       </motion.div>
-    </>,
+    </motion.div>,
     document.body
   )
 }
