@@ -1361,14 +1361,15 @@ function DeployAgentModal({
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-start justify-center p-4 overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="glass rounded-xl border border-accent-primary/50 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="glass rounded-xl border border-accent-primary/50 w-full max-w-lg my-8 overflow-y-auto"
+        style={{ maxHeight: 'calc(100vh - 4rem)' }}
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
