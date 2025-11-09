@@ -360,40 +360,73 @@ export default function AgentDashboardPage() {
             <StatCard label="Success Rate" value={`${avgSuccessRate.toFixed(1)}%`} icon="✓" color="success" />
           </div>
 
-          {/* Selected Provider Banner */}
-          {selectedProvider && (
-            <div className="mt-4 glass-hover p-4 rounded-lg border border-accent-primary/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
-                  <div className="flex-1">
-                    <div className="font-heading font-bold text-white mb-1">
-                      Agents will use: {selectedProvider.name}
-                    </div>
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Model:</span>
-                        <span className="text-white font-mono">{selectedProvider.model.split('/')[1]}</span>
+          {/* Provider Banner - Always Show */}
+          <div className="mt-4">
+            {selectedProvider ? (
+              <motion.div
+                className="glass-hover neon-border p-4 rounded-xl"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-3xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
+                    <div className="flex-1">
+                      <div className="font-heading font-bold text-white mb-1 text-lg">
+                        ✅ Agents using: {selectedProvider.name}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Latency:</span>
-                        <span className="text-status-success font-mono">{selectedProvider.latency}ms</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Uptime:</span>
-                        <span className="text-accent-secondary font-mono">{selectedProvider.uptime}%</span>
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="text-text-muted">Model:</span>
+                          <span className="text-accent-secondary font-mono font-bold">{selectedProvider.model.split('/')[1]}</span>
+                        </div>
+                        <span className="text-text-muted">•</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-text-muted">Latency:</span>
+                          <span className="text-status-success font-mono font-bold">{selectedProvider.latency}ms</span>
+                        </div>
+                        <span className="text-text-muted">•</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-text-muted">Uptime:</span>
+                          <span className="text-accent-primary font-mono font-bold">{selectedProvider.uptime}%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <Link href="/marketplace">
+                    <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                      Change Provider →
+                    </button>
+                  </Link>
                 </div>
-                <Link href="/marketplace">
-                  <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
-                    Change Provider
-                  </button>
-                </Link>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            ) : (
+              <motion.div
+                className="glass-hover p-4 rounded-xl border border-status-error/50 bg-status-error/5"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-3xl">⚠️</div>
+                    <div className="flex-1">
+                      <div className="font-heading font-bold text-status-error mb-1 text-lg">
+                        No Provider Selected
+                      </div>
+                      <div className="text-xs text-text-secondary">
+                        Select a Parallax provider to run your agents. Agents need a compute provider for AI inference.
+                      </div>
+                    </div>
+                  </div>
+                  <Link href="/marketplace">
+                    <button className="glass-hover neon-border px-6 py-3 rounded-lg text-sm font-heading font-bold hover:scale-105 transition-all">
+                      <span className="text-gradient">Select Provider →</span>
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </div>
       </div>
 

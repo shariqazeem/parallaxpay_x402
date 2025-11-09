@@ -34,11 +34,8 @@ export default function HomePage() {
                 <Link href="/agents" className="text-text-secondary hover:text-white transition-colors font-medium">
                   Agents
                 </Link>
-                <Link href="/inference" className="text-text-secondary hover:text-white transition-colors font-medium">
-                  Inference
-                </Link>
-                <Link href="/marketplace" className="text-text-secondary hover:text-white transition-colors font-medium text-xs opacity-50">
-                  Marketplace (Beta)
+                <Link href="/marketplace" className="text-text-secondary hover:text-white transition-colors font-medium">
+                  Providers
                 </Link>
               </nav>
             </div>
@@ -70,8 +67,8 @@ export default function HomePage() {
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-text-secondary mb-12 max-w-3xl mx-auto">
-            Deploy autonomous AI agents that pay for inference with <span className="text-accent-secondary font-bold">x402 micropayments</span>,
-            use <span className="text-accent-primary font-bold">Gradient Parallax</span> for decentralized AI,
+            Deploy autonomous AI agents that pay for themselves with <span className="text-accent-secondary font-bold">x402 micropayments</span>,
+            use <span className="text-accent-primary font-bold">Gradient Parallax</span> for decentralized compute,
             and build <span className="text-status-success font-bold">trustless reputation</span> on Solana.
           </p>
 
@@ -79,12 +76,12 @@ export default function HomePage() {
           <div className="flex items-center justify-center gap-4 mb-16">
             <Link href="/agents">
               <button className="glass-hover neon-border px-8 py-4 rounded-xl font-heading font-bold text-lg hover:scale-105 transition-all">
-                <span className="text-gradient">🚀 Deploy Your Agent</span>
+                <span className="text-gradient">🚀 Deploy Your First Agent</span>
               </button>
             </Link>
-            <Link href="/inference">
+            <Link href="/marketplace">
               <button className="glass-hover border border-border px-8 py-4 rounded-xl font-heading font-bold text-lg hover:scale-105 transition-all text-white">
-                💬 Try Inference
+                🖥️ Browse Providers
               </button>
             </Link>
           </div>
@@ -127,18 +124,18 @@ export default function HomePage() {
           <FeatureCard
             icon="💳"
             title="x402 Micropayments"
-            description="Pay only for what you use. Agents automatically pay for AI inference with x402 micropayments on Solana. No subscriptions, no waste."
-            link="/inference"
-            linkText="Try Inference"
+            description="Pay only for what you use. Agents automatically pay for AI inference with x402 micropayments on Solana. $0.001 per request, no subscriptions."
+            link="/agents"
+            linkText="Deploy Agent"
           />
 
           {/* Feature 3 */}
           <FeatureCard
-            icon="🎯"
-            title="Gradient Parallax"
-            description="Decentralized AI compute. Agents discover multiple Parallax providers, benchmark performance, and choose the best option automatically."
-            link="/agents"
-            linkText="See Providers"
+            icon="🖥️"
+            title="Decentralized Compute"
+            description="Browse Parallax providers, compare performance, and select the best one. Agents use your chosen provider for all AI requests automatically."
+            link="/marketplace"
+            linkText="Browse Providers"
           />
         </div>
       </section>
@@ -152,20 +149,20 @@ export default function HomePage() {
         <div className="grid md:grid-cols-3 gap-8">
           <StepCard
             number="1"
-            title="Connect Wallet"
-            description="Connect your Solana wallet (Phantom or Solflare) with devnet USDC for payments."
+            title="Deploy Agent"
+            description="Connect your wallet and create an AI agent with a custom prompt. Your agent gets wallet-based identity and starts building reputation."
           />
 
           <StepCard
             number="2"
-            title="Deploy Agent"
-            description="Create your AI agent with a custom prompt. Your agent gets a unique identity and starts at reputation level 'Novice'."
+            title="Select Provider"
+            description="Browse Parallax providers and select the best one for your agents. Compare latency, uptime, and models available."
           />
 
           <StepCard
             number="3"
-            title="Run & Earn"
-            description="Run your agent manually or enable autonomous mode. Each successful execution builds reputation and earns badges."
+            title="Run & Earn Reputation"
+            description="Click 'Run Agent' to execute with x402 payment. Build reputation, earn badges, and climb the leaderboard with each successful run."
           />
         </div>
       </section>
