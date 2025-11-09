@@ -181,8 +181,8 @@ export default function AgentDashboardPage() {
         console.log(`   Steps: ${agent.workflow.steps.length}`)
         console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
 
-        // Call composite agent endpoint
-        const response = await fetch('/api/runCompositeAgent', {
+        // Call composite agent endpoint with x402 payment
+        const response = await fetchWithPayment('/api/runCompositeAgent', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1355,7 +1355,9 @@ function DeployAgentModal({
         id: `real-${Date.now()}`,
         name,
         type,
-        prompt,
+        prompt: type === 'composite'
+          ? `Workflow: ${workflowSteps.map(s => s.agentName).join(' → ')}`
+          : prompt,
         deployed: Date.now(),
         totalRuns: 0,
         status: 'idle',
