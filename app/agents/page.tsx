@@ -1540,6 +1540,7 @@ function DeployAgentModal({
             Make sure Parallax is running on localhost:3001
           </div>
         </div>
+        </div>
       </motion.div>
     </>,
     document.body
