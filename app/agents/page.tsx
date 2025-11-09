@@ -1360,22 +1360,26 @@ function DeployAgentModal({
   if (typeof window === 'undefined') return null
 
   return createPortal(
-    <motion.div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-start justify-center p-4 pt-32 overflow-y-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
+    <>
+      {/* Backdrop */}
       <motion.div
-        className="glass rounded-xl border border-accent-primary/50 w-full max-w-lg my-8 overflow-y-auto"
-        style={{ maxHeight: 'calc(100vh - 4rem)' }}
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+
+      {/* Drawer/Panel sliding from right (full screen on mobile) */}
+      <motion.div
+        className="fixed right-0 top-0 bottom-0 w-full md:w-[600px] lg:w-[700px] glass border-l border-accent-primary/50 z-[100000] overflow-y-auto"
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6">
+        <div className="p-6 md:p-8">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-2xl font-heading font-bold text-white mb-2">
@@ -1536,9 +1540,8 @@ function DeployAgentModal({
             Make sure Parallax is running on localhost:3001
           </div>
         </div>
-        </div>
       </motion.div>
-    </motion.div>,
+    </>,
     document.body
   )
 }
