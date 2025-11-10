@@ -237,7 +237,7 @@ YOU respond with YOUR analysis:`
         const predictionMatch = aiResponse.match(/PREDICTION:\s*(UP|DOWN|NEUTRAL)/i)
         const confidenceMatch = aiResponse.match(/CONFIDENCE:\s*(\d+)/i)
         const targetMatch = aiResponse.match(/TARGET:\s*\$?(\d+\.?\d*)/i)
-        const reasoningMatch = aiResponse.match(/REASONING:\s*(.+?)(?:\n\n|$)/is)
+        const reasoningMatch = aiResponse.match(/REASONING:\s*(.+)/i)
 
         let prediction = (predictionMatch?.[1]?.toLowerCase() || 'neutral') as 'up' | 'down' | 'neutral'
         let confidence = parseInt(confidenceMatch?.[1] || '50')
@@ -409,7 +409,8 @@ YOU respond with YOUR analysis:`
     if (!prediction) return
 
     // Fetch current price
-    const newPrice = await this.fetchCurrentPrice(prediction.asset)
+    const newMarketData = await this.fetchMarketData(prediction.asset)
+    const newPrice = newMarketData.currentPrice
     const priceChange = ((newPrice - prediction.currentPrice) / prediction.currentPrice) * 100
 
     // Determine actual outcome based on timeframe
