@@ -840,56 +840,162 @@ export default function AgentDashboardPage() {
         <div className="grid grid-cols-12 gap-6">
           {/* Left - Agent Cards */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
+            {/* MY AGENTS SECTION */}
+            {publicKey && (() => {
+              const myAgents = deployedAgents.filter(a =>
+                a.wallet_address === publicKey.toBase58()
+              );
+              return myAgents.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-heading font-bold text-white">
+                      💼 My Agents
+                    </h3>
+                    <div className="text-sm text-status-success font-semibold">
+                      {myAgents.length} active
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {myAgents.map((agent, index) => {
+                      const identity = agent.identityId
+                        ? agentIdentities.find(id => id.id === agent.identityId)
+                        : undefined
+
+                      // Convert to AgentStats format for AgentCard
+                      const agentStats: AgentStats = {
+                        id: agent.id,
+                        name: agent.name,
+                        type: agent.type as any,
+                        status: agent.status === 'running' ? 'executing' : 'idle',
+                        totalTrades: agent.totalRuns,
+                        profit: 0,
+                        avgCost: 0.001,
+                        successRate: 100,
+                        lastAction: agent.lastResult || 'Ready',
+                        lastActionTime: agent.lastRun || agent.deployed,
+                        avatar: '🤖',
+                        color: 'cyan',
+                        isReal: true
+                      }
+
+                      return (
+                        <AgentCard
+                          key={agent.id}
+                          agent={agentStats}
+                          index={index}
+                          onRun={() => runAgent(agent.id)}
+                          identity={identity}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* EMPTY STATE - Show when wallet connected but no agents */}
+            {publicKey && deployedAgents.filter(a =>
+              a.wallet_address === publicKey.toBase58()
+            ).length === 0 && (
+              <div className="glass-hover p-6 rounded-xl border border-accent-primary/30 mb-4">
+                <div className="flex items-start gap-4">
+                  <div className="text-3xl">🚀</div>
+                  <div>
+                    <div className="font-heading font-bold text-white mb-2">
+                      Deploy Your First Agent
+                    </div>
+                    <div className="text-sm text-text-secondary mb-3">
+                      Create an autonomous AI agent that runs on Gradient Parallax and pays for itself with x402 micropayments.
+                    </div>
+                    <button
+                      onClick={() => setShowDeployModal(true)}
+                      className="glass-hover neon-border px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all"
+                    >
+                      <span className="text-gradient">Deploy First Agent</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PUBLIC MARKETPLACE SECTION */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-heading font-bold text-white">
-                  Your Autonomous Agents
+                  🌐 Public Marketplace
                 </h3>
-                {realAgentsCount > 0 && (
-                  <div className="text-sm text-status-success font-semibold">
-                    {realAgentsCount} deployed
+                {deployedAgents.length > 0 && (
+                  <div className="text-sm text-gray-400">
+                    {deployedAgents.length} agents available
                   </div>
                 )}
               </div>
 
-              {realAgentsCount === 0 && (
-                <div className="glass-hover p-6 rounded-xl border border-accent-primary/30 mb-4">
-                  <div className="flex items-start gap-4">
-                    <div className="text-3xl">🚀</div>
-                    <div>
-                      <div className="font-heading font-bold text-white mb-2">
-                        Deploy Your First Real Agent
+              {!publicKey && (
+                <div className="glass-hover p-4 rounded-xl border border-accent-secondary/30 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">👛</div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-white mb-1">Connect Wallet to Deploy</div>
+                      <div className="text-sm text-gray-400">
+                        Connect your Solana wallet to deploy and run agents
                       </div>
-                      <div className="text-sm text-text-secondary mb-3">
-                        Click "Deploy Agent" to create an agent that actually runs AI inference on your local Parallax cluster.
-                      </div>
-                      <button
-                        onClick={() => setShowDeployModal(true)}
-                        className="glass-hover neon-border px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all"
-                      >
-                        <span className="text-gradient">Deploy Now</span>
-                      </button>
                     </div>
+                    <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold" />
+                  </div>
+                </div>
+              )}
+
+              {deployedAgents.length === 0 && (
+                <div className="glass-hover p-6 rounded-xl border border-gray-700 text-center">
+                  <div className="text-4xl mb-3">📭</div>
+                  <div className="font-semibold text-gray-400 mb-2">No Public Agents Yet</div>
+                  <div className="text-sm text-gray-500">
+                    Be the first to deploy an agent to the marketplace!
                   </div>
                 </div>
               )}
 
               <div className="space-y-4">
-                {allAgents.map((agent, index) => {
-                  // Find corresponding deployed agent to get identity ID
-                  const deployedAgent = deployedAgents.find(da => da.id === agent.id)
-                  const identity = deployedAgent?.identityId
-                    ? agentIdentities.find(id => id.id === deployedAgent.identityId)
+                {deployedAgents.map((agent, index) => {
+                  const identity = agent.identityId
+                    ? agentIdentities.find(id => id.id === agent.identityId)
                     : undefined
 
+                  // Convert to AgentStats format
+                  const agentStats: AgentStats = {
+                    id: agent.id,
+                    name: agent.name,
+                    type: agent.type as any,
+                    status: agent.status === 'running' ? 'executing' : 'idle',
+                    totalTrades: agent.totalRuns,
+                    profit: 0,
+                    avgCost: 0.001,
+                    successRate: 100,
+                    lastAction: agent.lastResult || 'Ready',
+                    lastActionTime: agent.lastRun || agent.deployed,
+                    avatar: '🌐',
+                    color: 'purple',
+                    isReal: true
+                  }
+
+                  const isMyAgent = publicKey && agent.wallet_address === publicKey.toBase58()
+
                   return (
-                    <AgentCard
-                      key={agent.id}
-                      agent={agent}
-                      index={index}
-                      onRun={() => runAgent(agent.id)}
-                      identity={identity}
-                    />
+                    <div key={agent.id} className="relative">
+                      {isMyAgent && (
+                        <div className="absolute -top-2 -right-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          Yours
+                        </div>
+                      )}
+                      <AgentCard
+                        agent={agentStats}
+                        index={index}
+                        onRun={() => runAgent(agent.id)}
+                        identity={identity}
+                      />
+                    </div>
                   )
                 })}
               </div>
