@@ -11,6 +11,7 @@ import AgentPanel from '../components/marketplace/AgentPanel'
 import OrderPlacementPanel from '../components/marketplace/OrderPlacementPanel'
 import UserPositionPanel from '../components/marketplace/UserPositionPanel'
 import TradeAnimations from '../components/marketplace/TradeAnimations'
+import { ProviderComparisonMatrix } from '@/components/ProviderComparisonMatrix'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
@@ -64,6 +65,16 @@ export default function MarketplacePage() {
           </motion.div>
         </div>
       )}
+
+      {/* Provider Comparison Matrix - Full Width */}
+      <div className="max-w-[1920px] mx-auto px-6 pb-6">
+        <ProviderComparisonMatrix
+          selectedProviderId={selectedProvider?.id}
+          onSelectProvider={(provider) => {
+            selectProvider(provider as any)
+          }}
+        />
+      </div>
 
       {/* Provider Heat Map - Full Width */}
       <div className="max-w-[1920px] mx-auto px-6 pb-6">
