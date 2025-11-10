@@ -43,26 +43,15 @@ export class RealProviderManager {
   // Parallax Cluster Configuration
   // Parallax uses scheduler+worker architecture:
   // - 1 scheduler on port 3001 (main API endpoint)
-  // - N workers connect to scheduler (not separate endpoints)
+  // - N workers connect to scheduler via P2P (we can't detect count via HTTP)
   //
-  // For demo visualization, we show "cluster info" as multiple "nodes"
-  // but all requests go through the single scheduler endpoint
+  // We show the cluster as a single entity since:
+  // 1. All requests go through one scheduler endpoint
+  // 2. Worker count is not exposed via HTTP API
+  // 3. This accurately represents the architecture
   private readonly PARALLAX_CLUSTER = {
     schedulerUrl: 'http://localhost:3001',
-    workers: 3, // Number of worker nodes in cluster
     model: 'Qwen/Qwen3-0.6B'
-  }
-
-  private get PARALLAX_ENDPOINTS() {
-    // For demo/visualization: show cluster as multiple "virtual nodes"
-    // All point to same scheduler endpoint but represent worker distribution
-    return Array.from({ length: this.PARALLAX_CLUSTER.workers }, (_, index) => ({
-      url: this.PARALLAX_CLUSTER.schedulerUrl, // All use same scheduler
-      region: index === 0 ? 'Scheduler' : `Worker ${index}`,
-      model: this.PARALLAX_CLUSTER.model,
-      port: 3001, // All go through scheduler port
-      workerId: index
-    }))
   }
 
   constructor() {
@@ -70,16 +59,16 @@ export class RealProviderManager {
   }
 
   /**
-   * Discover and connect to Parallax cluster
+   * Discover Parallax cluster (dynamic - works with any number of workers)
    *
-   * Checks the scheduler once, then creates visual representation for each worker
+   * Shows cluster as single entity since worker count isn't exposed via HTTP.
+   * This accurately represents the architecture: one scheduler, N workers.
    */
   async discoverProviders(): Promise<RealProvider[]> {
     console.log('🔍 Discovering Parallax cluster...')
     console.log(`   Scheduler: ${this.PARALLAX_CLUSTER.schedulerUrl}`)
-    console.log(`   Workers: ${this.PARALLAX_CLUSTER.workers}`)
 
-    // Check scheduler health ONCE
+    // Check scheduler health
     const health = await this.healthCheck(this.PARALLAX_CLUSTER.schedulerUrl)
 
     if (!health.online) {
@@ -89,36 +78,28 @@ export class RealProviderManager {
 
     console.log(`✅ Parallax cluster online (${health.latency}ms)`)
 
-    // Create provider entries for visualization
-    // Each represents a worker in the cluster, but all use same scheduler endpoint
-    const providers: RealProvider[] = this.PARALLAX_ENDPOINTS.map((endpoint, index) => {
-      const provider: RealProvider = {
-        id: `cluster-worker-${index}`,
-        url: endpoint.url,
-        name: index === 0
-          ? `Parallax Cluster (Scheduler)`
-          : `Parallax Cluster (Worker ${index})`,
-        model: endpoint.model,
-        region: endpoint.region,
-        port: endpoint.port,
-        online: health.online,
-        latency: health.latency + (index * 2), // Slight variance for visualization
-        price: this.calculateDynamicPrice(health.latency),
-        uptime: 100,
-        lastHealthCheck: Date.now(),
-        successfulRequests: 0,
-        failedRequests: 0,
-      }
+    // Create single provider entry representing the entire cluster
+    const provider: RealProvider = {
+      id: 'parallax-cluster',
+      url: this.PARALLAX_CLUSTER.schedulerUrl,
+      name: 'Parallax Cluster',
+      model: this.PARALLAX_CLUSTER.model,
+      region: 'Local',
+      port: 3001,
+      online: health.online,
+      latency: health.latency,
+      price: this.calculateDynamicPrice(health.latency),
+      uptime: 100,
+      lastHealthCheck: Date.now(),
+      successfulRequests: 0,
+      failedRequests: 0,
+    }
 
-      this.providers.set(provider.id, provider)
-      console.log(`  ✓ ${provider.name} (${provider.latency}ms)`)
+    this.providers.set(provider.id, provider)
+    console.log(`  ✓ ${provider.name} (${provider.latency}ms)`)
+    console.log(`📊 Cluster ready - works with any number of connected workers`)
 
-      return provider
-    })
-
-    console.log(`📊 Discovered ${providers.length} cluster nodes (all connected to scheduler)`)
-
-    return providers
+    return [provider]
   }
 
   /**
