@@ -18,7 +18,7 @@ import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 interface AgentStats {
   id: string
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale'
+  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'
   status: 'active' | 'idle' | 'executing'
   totalTrades: number
   profit: number
@@ -56,6 +56,7 @@ interface DeployedAgent {
   identityId?: string  // Link to AgentIdentity
   schedule?: AgentSchedule  // Autonomous scheduling config
   workflow?: CompositeWorkflow  // For composite agents
+  wallet_address?: string  // Owner's wallet address
 }
 
 interface CompositeWorkflow {
@@ -1360,13 +1361,13 @@ function AgentCard({
               {unAttestedBadges.map(badge => (
                 <div
                   key={badge.id}
-                  className="glass-hover p-4 rounded-lg border border-border-hover"
+                  className="glass-hover p-4 rounded-lg border border-gray-200-hover"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">{badge.icon}</span>
                       <div>
-                        <div className="text-sm font-bold text-white">{badge.name}</div>
+                        <div className="text-sm font-bold text-black">{badge.name}</div>
                         <div className="text-xs text-text-secondary">{badge.description}</div>
                       </div>
                     </div>
@@ -1377,7 +1378,7 @@ function AgentCard({
                     className="w-full glass-hover neon-border px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
                   >
                     {attesting ? (
-                      <span className="text-text-muted">⏳ Attesting...</span>
+                      <span className="text-gray-500">⏳ Attesting...</span>
                     ) : (
                       <span className="text-gradient">Attest This Badge</span>
                     )}
@@ -1386,7 +1387,7 @@ function AgentCard({
               ))}
             </div>
 
-            <div className="glass-hover p-3 rounded-lg border border-accent-primary/30 bg-accent-primary/5">
+            <div className="glass-hover p-3 rounded-lg border border-black/30 bg-black/5">
               <div className="text-xs text-text-secondary">
                 <div className="font-bold text-accent-primary mb-1">ℹ️ What is attestation?</div>
                 Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
@@ -1867,7 +1868,7 @@ function DeployAgentModal({
     >
       {/* Centered Modal - scrolls with backdrop */}
       <motion.div
-        className="bg-background-primary border-2 border-accent-primary rounded-2xl w-full max-w-3xl my-8"
+        className="bg-background-primary border-2 border-black rounded-2xl w-full max-w-3xl my-8"
         style={{
           boxShadow: '0 0 50px rgba(153, 69, 255, 0.5)'
         }}
@@ -1878,7 +1879,7 @@ function DeployAgentModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4 border-b border-border">
+        <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-heading font-bold text-white mb-2">
               Deploy Real Agent
@@ -1908,7 +1909,7 @@ function DeployAgentModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Trading Agent"
-              className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-white placeholder-text-muted focus:border-black focus:outline-none"
               disabled={isDeploying}
             />
           </div>
@@ -1921,7 +1922,7 @@ function DeployAgentModal({
             <select
               value={type}
               onChange={(e) => setType(e.target.value as any)}
-              className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white focus:border-accent-primary focus:outline-none"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-white focus:border-black focus:outline-none"
               disabled={isDeploying}
             >
               <option value="custom">Custom - General purpose AI agent</option>
@@ -1941,9 +1942,9 @@ function DeployAgentModal({
               </label>
               <div className="space-y-3">
                 {workflowSteps.map((step, index) => (
-                  <div key={step.id} className="glass-hover p-3 rounded-lg border border-border">
+                  <div key={step.id} className="glass-hover p-3 rounded-lg border border-gray-200">
                     <div className="flex items-start gap-2 mb-2">
-                      <div className="px-2 py-1 bg-accent-primary/20 text-accent-primary text-xs font-bold rounded">
+                      <div className="px-2 py-1 bg-black/20 text-accent-primary text-xs font-bold rounded">
                         Step {index + 1}
                       </div>
                       {workflowSteps.length > 1 && (
@@ -1963,7 +1964,7 @@ function DeployAgentModal({
                           s.id === step.id ? { ...s, agentName: e.target.value } : s
                         ))
                       }}
-                      className="w-full px-3 py-2 mb-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none"
+                      className="w-full px-3 py-2 mb-2 bg-white border border-gray-200 rounded text-sm text-white placeholder-text-muted focus:border-black focus:outline-none"
                     />
                     <textarea
                       placeholder="Prompt for this agent..."
@@ -1974,7 +1975,7 @@ function DeployAgentModal({
                         ))
                       }}
                       rows={2}
-                      className="w-full px-3 py-2 mb-2 bg-background-secondary border border-border rounded text-sm text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                      className="w-full px-3 py-2 mb-2 bg-white border border-gray-200 rounded text-sm text-white placeholder-text-muted focus:border-black focus:outline-none resize-none"
                     />
 
                     {/* Use output from previous step */}
@@ -1990,7 +1991,7 @@ function DeployAgentModal({
                                 : s
                             ))
                           }}
-                          className="rounded border-border bg-background-secondary text-accent-primary focus:ring-accent-primary focus:ring-2"
+                          className="rounded border-gray-200 bg-white text-accent-primary focus:ring-accent-primary focus:ring-2"
                         />
                         <span>Use output from Step {index}</span>
                       </label>
@@ -1999,12 +2000,12 @@ function DeployAgentModal({
                 ))}
                 <button
                   onClick={() => setWorkflowSteps(steps => [...steps, { id: `step-${Date.now()}`, agentName: '', prompt: '' }])}
-                  className="w-full glass-hover border border-accent-primary/50 px-3 py-2 rounded-lg text-sm font-semibold text-accent-primary hover:scale-105 transition-all"
+                  className="w-full glass-hover border border-black/50 px-3 py-2 rounded-lg text-sm font-semibold text-accent-primary hover:scale-105 transition-all"
                 >
                   + Add Step
                 </button>
               </div>
-              <div className="mt-2 text-xs text-text-muted">
+              <div className="mt-2 text-xs text-gray-500">
                 💡 Composite agents orchestrate other agents with x402 payments
               </div>
             </div>
@@ -2018,7 +2019,7 @@ function DeployAgentModal({
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Enter a prompt to test the agent..."
-                className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-white placeholder-text-muted focus:border-black focus:outline-none resize-none"
                 rows={3}
                 disabled={isDeploying}
               />
@@ -2056,7 +2057,7 @@ function DeployAgentModal({
             className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isDeploying ? (
-              <span className="text-text-muted">⚡ Testing agent with Parallax...</span>
+              <span className="text-gray-500">⚡ Testing agent with Parallax...</span>
             ) : result ? (
               <span className="text-status-success">Deploying...</span>
             ) : (
@@ -2064,7 +2065,7 @@ function DeployAgentModal({
             )}
           </button>
 
-          <div className="text-xs text-text-muted text-center mt-3">
+          <div className="text-xs text-gray-500 text-center mt-3">
             Make sure Parallax is running on localhost:3001
           </div>
         </div>
