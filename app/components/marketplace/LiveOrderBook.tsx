@@ -96,21 +96,21 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
   const maxAskAmount = Math.max(...asks.map(o => o.amount), 1)
 
   return (
-    <div className="glass rounded-xl border border-border overflow-hidden">
+    <div className="bg-white border-2 border-green-200 rounded-xl overflow-hidden shadow-lg">
       {/* Header */}
-      <div className="px-4 py-3 bg-background-secondary border-b border-border">
+      <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-heading font-bold text-white">Order Book</h3>
+          <h3 className="text-lg font-heading font-bold text-black">📊 Order Book</h3>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
-            <span className="text-xs text-text-muted">Live</span>
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs text-green-600 font-semibold">Live</span>
           </div>
         </div>
       </div>
 
       {/* Column Headers */}
-      <div className="px-4 py-2 bg-background-secondary/50 border-b border-border">
-        <div className="grid grid-cols-3 text-xs text-text-muted font-semibold">
+      <div className="px-4 py-2 bg-gray-50 border-b-2 border-gray-200">
+        <div className="grid grid-cols-3 text-xs text-gray-700 font-bold">
           <div>Price (SOL)</div>
           <div className="text-right">Amount</div>
           <div className="text-right">Total</div>
@@ -132,18 +132,18 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
             >
               {/* Background bar showing depth */}
               <div
-                className="absolute inset-y-0 right-0 bg-status-error/20 rounded"
+                className="absolute inset-y-0 right-0 bg-red-100 rounded"
                 style={{ width: `${(ask.amount / maxAskAmount) * 100}%` }}
               />
 
               <div className="relative grid grid-cols-3 text-sm py-1 px-2">
-                <div className="text-status-error font-mono">
+                <div className="text-red-600 font-mono font-bold">
                   {ask.price.toFixed(6)}
                 </div>
-                <div className="text-right text-white font-mono">
+                <div className="text-right text-black font-mono font-semibold">
                   {ask.amount.toLocaleString()}
                 </div>
-                <div className="text-right text-text-muted font-mono">
+                <div className="text-right text-gray-600 font-mono">
                   {ask.total.toFixed(4)}
                 </div>
               </div>
@@ -152,13 +152,13 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
         </div>
 
         {/* Spread */}
-        <div className="py-2 my-1 bg-background-secondary rounded-lg border border-border">
+        <div className="py-2 my-1 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
           <div className="text-center">
-            <div className="text-xs text-text-muted">Spread</div>
+            <div className="text-xs text-blue-600 font-semibold">Spread</div>
             <div className={`text-lg font-heading font-bold ${
-              spreadPercent < 1 ? 'text-status-success' :
-              spreadPercent < 2 ? 'text-status-warning' :
-              'text-status-error'
+              spreadPercent < 1 ? 'text-green-600' :
+              spreadPercent < 2 ? 'text-orange-600' :
+              'text-red-600'
             }`}>
               {spread.toFixed(6)} ({spreadPercent.toFixed(2)}%)
             </div>
@@ -178,18 +178,18 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
             >
               {/* Background bar showing depth */}
               <div
-                className="absolute inset-y-0 right-0 bg-status-success/20 rounded"
+                className="absolute inset-y-0 right-0 bg-green-100 rounded"
                 style={{ width: `${(bid.amount / maxBidAmount) * 100}%` }}
               />
 
               <div className="relative grid grid-cols-3 text-sm py-1 px-2">
-                <div className="text-status-success font-mono">
+                <div className="text-green-600 font-mono font-bold">
                   {bid.price.toFixed(6)}
                 </div>
-                <div className="text-right text-white font-mono">
+                <div className="text-right text-black font-mono font-semibold">
                   {bid.amount.toLocaleString()}
                 </div>
-                <div className="text-right text-text-muted font-mono">
+                <div className="text-right text-gray-600 font-mono">
                   {bid.total.toFixed(4)}
                 </div>
               </div>
@@ -199,18 +199,18 @@ export default function LiveOrderBook({ onPriceClick }: OrderBookProps) {
       </div>
 
       {/* Footer Stats */}
-      <div className="px-4 py-3 bg-background-secondary border-t border-border flex items-center justify-between text-xs">
-        <div className="text-text-muted">
+      <div className="px-4 py-3 bg-gray-50 border-t-2 border-gray-200 flex items-center justify-between text-xs">
+        <div className="text-gray-600 font-medium">
           Last update: {new Date().toLocaleTimeString()}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-status-success" />
-            <span className="text-text-muted">Bids</span>
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-gray-700 font-medium">Bids</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-status-error" />
-            <span className="text-text-muted">Asks</span>
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="text-gray-700 font-medium">Asks</span>
           </div>
         </div>
       </div>

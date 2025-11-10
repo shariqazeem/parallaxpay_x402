@@ -93,12 +93,12 @@ export default function ProviderHeatMap() {
     : providers
 
   return (
-    <div className="glass rounded-xl border border-border p-6">
+    <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-lg">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-heading font-bold">Provider Heat Map</h3>
+        <h3 className="text-xl font-heading font-bold text-black">🗺️ Provider Heat Map</h3>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
-          <span className="text-xs text-text-muted">Real-time</span>
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-xs text-green-600 font-semibold">Real-time</span>
         </div>
       </div>
 
@@ -106,10 +106,10 @@ export default function ProviderHeatMap() {
       <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={() => setSelectedRegion(null)}
-          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+          className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm ${
             selectedRegion === null
-              ? 'bg-accent-primary text-white'
-              : 'bg-background-secondary text-text-muted hover:text-white'
+              ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black border border-gray-200'
           }`}
         >
           All Regions
@@ -118,10 +118,10 @@ export default function ProviderHeatMap() {
           <button
             key={region}
             onClick={() => setSelectedRegion(region)}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm ${
               selectedRegion === region
-                ? 'bg-accent-primary text-white'
-                : 'bg-background-secondary text-text-muted hover:text-white'
+                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black border border-gray-200'
             }`}
           >
             {region}
@@ -149,10 +149,10 @@ export default function ProviderHeatMap() {
           >
             <div className="flex items-start justify-between mb-2">
               <div>
-                <div className="font-heading font-bold text-white text-sm">
+                <div className="font-heading font-bold text-black text-sm">
                   {provider.name}
                 </div>
-                <div className="text-xs text-text-muted">
+                <div className="text-xs text-gray-600 font-medium">
                   {provider.region}
                 </div>
               </div>
@@ -163,41 +163,41 @@ export default function ProviderHeatMap() {
 
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-muted">Latency:</span>
+                <span className="text-gray-600">Latency:</span>
                 <span className={`font-mono font-bold ${
-                  provider.latency < 50 ? 'text-status-success' :
-                  provider.latency < 100 ? 'text-status-warning' :
-                  'text-status-error'
+                  provider.latency < 50 ? 'text-green-600' :
+                  provider.latency < 100 ? 'text-orange-600' :
+                  'text-red-600'
                 }`}>
                   {provider.latency}ms
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-muted">Uptime:</span>
+                <span className="text-gray-600">Uptime:</span>
                 <span className={`font-mono font-bold ${
-                  provider.uptime > 99 ? 'text-status-success' :
-                  provider.uptime > 98 ? 'text-status-warning' :
-                  'text-status-error'
+                  provider.uptime > 99 ? 'text-green-600' :
+                  provider.uptime > 98 ? 'text-orange-600' :
+                  'text-red-600'
                 }`}>
                   {provider.uptime}%
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-muted">Load:</span>
-                <span className="font-mono font-bold text-white">
+                <span className="text-gray-600">Load:</span>
+                <span className="font-mono font-bold text-black">
                   {provider.load}%
                 </span>
               </div>
 
               {/* Load Bar */}
-              <div className="w-full bg-background-secondary rounded-full h-1.5 overflow-hidden mt-2">
+              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden mt-2">
                 <motion.div
                   className={`h-full rounded-full ${
-                    provider.load < 60 ? 'bg-status-success' :
-                    provider.load < 80 ? 'bg-status-warning' :
-                    'bg-status-error'
+                    provider.load < 60 ? 'bg-green-500' :
+                    provider.load < 80 ? 'bg-orange-500' :
+                    'bg-red-500'
                   }`}
                   initial={{ width: 0 }}
                   animate={{ width: `${provider.load}%` }}
@@ -210,22 +210,22 @@ export default function ProviderHeatMap() {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-border flex items-center gap-4 text-xs">
+      <div className="mt-4 pt-4 border-t-2 border-gray-200 flex items-center gap-4 text-xs flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-status-success" />
-          <span className="text-text-muted">Excellent {'(<50ms, >99%)'}</span>
+          <div className="w-3 h-3 rounded bg-green-500" />
+          <span className="text-gray-700 font-medium">Excellent {'(<50ms, >99%)'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-accent-secondary" />
-          <span className="text-text-muted">Good {'(<100ms, >98%)'}</span>
+          <div className="w-3 h-3 rounded bg-green-400" />
+          <span className="text-gray-700 font-medium">Good {'(<100ms, >98%)'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-status-warning" />
-          <span className="text-text-muted">Degraded {'(<200ms, >95%)'}</span>
+          <div className="w-3 h-3 rounded bg-orange-500" />
+          <span className="text-gray-700 font-medium">Degraded {'(<200ms, >95%)'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-status-error" />
-          <span className="text-text-muted">Down</span>
+          <div className="w-3 h-3 rounded bg-red-500" />
+          <span className="text-gray-700 font-medium">Down</span>
         </div>
       </div>
     </div>
