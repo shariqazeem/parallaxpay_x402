@@ -89,20 +89,18 @@ const x402PaymentMiddleware = paymentMiddleware(
         description: 'Basic AI Inference - Qwen 0.6B model (100 tokens)',
         mimeType: 'application/json',
         inputSchema: {
-          type: 'object',
           properties: {
             prompt: { type: 'string', description: 'User prompt for inference' },
           },
           required: ['prompt'],
         } as any,
         outputSchema: {
-          type: 'object',
           properties: {
             result: { type: 'string', description: 'AI generated response' },
             tokens: { type: 'number', description: 'Number of tokens used' },
             cost: { type: 'number', description: 'Cost in USD' },
           },
-        },
+        } as any,
       },
       network,
     },
@@ -113,21 +111,19 @@ const x402PaymentMiddleware = paymentMiddleware(
         description: 'Standard AI Inference - Qwen 1.7B model (256 tokens)',
         mimeType: 'application/json',
         inputSchema: {
-          type: 'object',
           properties: {
             prompt: { type: 'string', description: 'User prompt for inference' },
             max_tokens: { type: 'number', description: 'Maximum tokens to generate' },
           },
           required: ['prompt'],
-        },
+        } as any,
         outputSchema: {
-          type: 'object',
           properties: {
             result: { type: 'string', description: 'AI generated response' },
             tokens: { type: 'number', description: 'Number of tokens used' },
             cost: { type: 'number', description: 'Cost in USD' },
           },
-        },
+        } as any,
       },
       network,
     },
@@ -138,23 +134,21 @@ const x402PaymentMiddleware = paymentMiddleware(
         description: 'Premium AI Inference - Advanced Qwen 2.5B model (512 tokens)',
         mimeType: 'application/json',
         inputSchema: {
-          type: 'object',
           properties: {
             prompt: { type: 'string', description: 'User prompt for inference' },
             max_tokens: { type: 'number', description: 'Maximum tokens to generate' },
             temperature: { type: 'number', description: 'Sampling temperature' },
           },
           required: ['prompt'],
-        },
+        } as any,
         outputSchema: {
-          type: 'object',
           properties: {
             result: { type: 'string', description: 'AI generated response' },
             tokens: { type: 'number', description: 'Number of tokens used' },
             cost: { type: 'number', description: 'Cost in USD' },
             latency: { type: 'number', description: 'Response latency in ms' },
           },
-        },
+        } as any,
       },
       network,
     },
@@ -166,7 +160,6 @@ const x402PaymentMiddleware = paymentMiddleware(
         description: 'Composite Agent Workflow - Fixed $0.003 per workflow',
         mimeType: 'application/json',
         inputSchema: {
-          type: 'object',
           properties: {
             workflow: {
               type: 'object',
@@ -176,16 +169,15 @@ const x402PaymentMiddleware = paymentMiddleware(
             provider: { type: 'string', description: 'Preferred Parallax provider' },
           },
           required: ['workflow'],
-        },
+        } as any,
         outputSchema: {
-          type: 'object',
           properties: {
             success: { type: 'boolean' },
             finalOutput: { type: 'string' },
             totalCost: { type: 'number' },
             executionTrail: { type: 'array' },
           },
-        },
+        } as any,
       },
       network,
     },
@@ -197,7 +189,6 @@ const x402PaymentMiddleware = paymentMiddleware(
         description: 'AI Inference API - Fixed $0.001 per request',
         mimeType: 'application/json',
         inputSchema: {
-          type: 'object',
           properties: {
             messages: {
               type: 'array',
@@ -214,9 +205,8 @@ const x402PaymentMiddleware = paymentMiddleware(
             provider: { type: 'string', description: 'Preferred Parallax provider ID' },
           },
           required: ['messages'],
-        },
+        } as any,
         outputSchema: {
-          type: 'object',
           properties: {
             response: { type: 'string', description: 'AI generated response' },
             tokens: { type: 'number', description: 'Total tokens used' },
@@ -224,7 +214,7 @@ const x402PaymentMiddleware = paymentMiddleware(
             cost: { type: 'number', description: 'Fixed cost: $0.001 per request' },
             txHash: { type: 'string', description: 'Solana transaction hash' },
           },
-        },
+        } as any,
       },
       network,
     },

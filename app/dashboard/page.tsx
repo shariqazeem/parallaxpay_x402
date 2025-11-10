@@ -81,6 +81,13 @@ export default function DashboardPage() {
 
   const quickActions = [
     {
+      title: 'Market Oracle',
+      description: 'Run autonomous crypto predictions with AI consensus',
+      icon: '🔮',
+      href: '/oracle',
+      color: 'border-purple-200 hover:border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50'
+    },
+    {
       title: 'Deploy Agent',
       description: 'Create and deploy a new autonomous AI agent',
       icon: '🚀',
@@ -100,13 +107,6 @@ export default function DashboardPage() {
       icon: '🏆',
       href: '/leaderboard',
       color: 'border-yellow-200 hover:border-yellow-400'
-    },
-    {
-      title: 'Build Swarm',
-      description: 'Create collaborative agent swarms',
-      icon: '🤝',
-      href: '/swarm',
-      color: 'border-purple-200 hover:border-purple-400'
     }
   ]
 
@@ -147,6 +147,9 @@ export default function DashboardPage() {
                 </Link>
                 <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Agents
+                </Link>
+                <Link href="/oracle" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Oracle
                 </Link>
                 <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Marketplace

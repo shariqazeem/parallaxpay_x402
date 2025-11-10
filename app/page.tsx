@@ -56,6 +56,9 @@ export default function HomePage() {
                 <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Agents
                 </Link>
+                <Link href="/oracle" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Oracle
+                </Link>
                 <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Providers
                 </Link>
@@ -74,8 +77,22 @@ export default function HomePage() {
         </div>
       </motion.header>
 
-      {/* Hero Section - Premium Design */}
+      {/* Hero Section - Premium Design with Gradient Parallax */}
       <section className="relative pt-20 sm:pt-28 lg:pt-36 pb-24 sm:pb-32 lg:pb-40 px-6 sm:px-8 lg:px-12 overflow-hidden">
+        {/* Animated Gradient Background - Parallax Effect */}
+        <motion.div
+          animate={{
+            background: [
+              'radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
+              'radial-gradient(circle at 80% 50%, rgba(236, 72, 153, 0.1) 0%, transparent 50%)',
+              'radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
+              'radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
+            ],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 opacity-60"
+        />
+
         {/* Subtle Pattern Background */}
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
 
@@ -104,9 +121,15 @@ export default function HomePage() {
             >
               Autonomous AI Agents
               <br />
-              <span className="italic bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              <motion.span
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="italic bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent bg-[length:200%_auto]"
+              >
                 Built for Production
-              </span>
+              </motion.span>
             </motion.h1>
 
             {/* Subheadline */}
@@ -187,6 +210,57 @@ export default function HomePage() {
             <motion.p variants={itemVariants} className="text-2xl text-gray-600">
               Built for modern AI workflows
             </motion.p>
+          </motion.div>
+
+          {/* Hero Feature - Market Oracle */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={containerVariants}
+            className="mb-8"
+          >
+            <Link href="/oracle">
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -8, scale: 1.01, transition: { duration: 0.3 } }}
+                className="bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 rounded-3xl p-10 sm:p-12 shadow-xl hover:shadow-2xl transition-all cursor-pointer relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)] opacity-50" />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className="text-6xl"
+                      >
+                        🔮
+                      </motion.div>
+                      <div>
+                        <h3 className="text-4xl sm:text-5xl font-black text-white mb-2">Market Oracle Agent</h3>
+                        <p className="text-xl text-white/90">Real-time crypto predictions with multi-provider consensus</p>
+                      </div>
+                    </div>
+                    <div className="hidden sm:block text-white text-4xl">→</div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-6 mt-8">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <div className="text-3xl font-black text-white mb-1">Autonomous</div>
+                      <div className="text-sm text-white/80">Runs predictions automatically</div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <div className="text-3xl font-black text-white mb-1">x402 Payments</div>
+                      <div className="text-sm text-white/80">Micropayments per inference</div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <div className="text-3xl font-black text-white mb-1">Multi-Provider</div>
+                      <div className="text-sm text-white/80">Consensus from Parallax nodes</div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
           </motion.div>
 
           <motion.div
