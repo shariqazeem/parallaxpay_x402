@@ -12,6 +12,7 @@ import { getAgentIdentityManager, AgentIdentity, TrustBadge } from '@/lib/agent-
 import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-agent-scheduler'
 import { useBadgeAttestation } from '@/lib/use-badge-attestation'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
+import { LiveActivityFeed } from '@/components/LiveActivityFeed'
 
 interface AgentStats {
   id: string
@@ -1007,10 +1008,11 @@ export default function AgentDashboardPage() {
 
           {/* Right - Live Feed */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
-            <LiveTradeFeed trades={trades} />
+            <LiveActivityFeed />
             {agentIdentities.length > 0 && identityManager && (
               <AgentLeaderboard identities={identityManager.getLeaderboard(5)} />
             )}
+            <LiveTradeFeed trades={trades} />
             {allAgents.length > 0 && <AgentMetrics agents={allAgents} />}
           </div>
         </div>
