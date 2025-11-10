@@ -114,9 +114,9 @@ export default function AgentBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-primary text-white">
+    <div className="min-h-screen bg-white text-black">
       {/* Header */}
-      <div className="border-b border-border bg-background-secondary/50 backdrop-blur-xl sticky top-0 z-50">
+      <div className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -125,8 +125,8 @@ export default function AgentBuilderPage() {
                   <span className="text-gradient">ParallaxPay</span>
                 </h1>
               </Link>
-              <div className="text-text-muted">/</div>
-              <h2 className="text-xl font-heading font-bold text-white">
+              <div className="text-gray-600">/</div>
+              <h2 className="text-xl font-heading font-bold text-black">
                 🧠 AI Agent Builder
               </h2>
             </div>
@@ -134,12 +134,12 @@ export default function AgentBuilderPage() {
             <div className="flex items-center gap-3">
               <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
               <Link href="/swarm">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   Swarm
                 </button>
               </Link>
               <Link href="/agents">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   My Agents
                 </button>
               </Link>
@@ -151,11 +151,11 @@ export default function AgentBuilderPage() {
       {/* Main Content */}
       <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Hero */}
-        <div className="glass rounded-xl p-8 border border-accent-primary/30">
+        <div className="bg-white rounded-xl p-8 border-2 border-purple-200 shadow-sm">
           <h1 className="text-4xl font-heading font-black mb-4">
             <span className="text-gradient">Build Agents with Natural Language</span> 🧠
           </h1>
-          <p className="text-lg text-text-secondary mb-6 max-w-3xl">
+          <p className="text-lg text-gray-600 mb-6 max-w-3xl">
             Describe your trading strategy in plain English. Our AI (powered by Parallax) will generate production-ready TypeScript code.
             No coding required! 🚀
           </p>
@@ -163,14 +163,14 @@ export default function AgentBuilderPage() {
           {/* Input Section */}
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-text-secondary mb-2 block">
+              <label className="text-sm text-gray-600 mb-2 block">
                 Describe your agent strategy
               </label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Example: Create an agent that finds the cheapest provider but only if latency is under 100ms..."
-                className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none resize-none"
                 rows={4}
                 disabled={isGenerating}
               />
@@ -182,7 +182,7 @@ export default function AgentBuilderPage() {
               className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isGenerating ? (
-                <span className="text-text-muted">🧠 Generating strategy...</span>
+                <span>🧠 Generating strategy...</span>
               ) : (
                 <span className="text-gradient">✨ Generate Agent Strategy</span>
               )}
@@ -198,9 +198,9 @@ export default function AgentBuilderPage() {
               <button
                 key={idx}
                 onClick={() => useExample(example)}
-                className="glass-hover p-3 rounded-lg border border-border text-left text-sm hover:border-accent-primary/50 transition-all"
+                className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-purple-300 text-left text-sm transition-all"
               >
-                <div className="text-white mb-1">"{example}"</div>
+                <div className="text-black mb-1">"{example}"</div>
               </button>
             ))}
           </div>
@@ -216,16 +216,16 @@ export default function AgentBuilderPage() {
               className="space-y-6"
             >
               {/* Strategy Info */}
-              <div className="glass rounded-xl p-6 border border-accent-secondary/50">
+              <div className="bg-white rounded-xl p-6 border-2 border-green-200 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-2xl font-heading font-bold text-white mb-2">
+                    <h3 className="text-2xl font-heading font-bold text-black mb-2">
                       ✅ Strategy Generated!
                     </h3>
-                    <p className="text-text-secondary">{strategy.description}</p>
+                    <p className="text-gray-600">{strategy.description}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-text-muted mb-1">Confidence</div>
+                    <div className="text-sm text-gray-600 mb-1">Confidence</div>
                     <div className="text-3xl font-heading font-black text-accent-secondary">
                       {(strategy.confidence * 100).toFixed(0)}%
                     </div>
@@ -234,14 +234,14 @@ export default function AgentBuilderPage() {
 
                 {/* Performance Estimates */}
                 <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="glass-hover p-4 rounded-lg border border-border">
-                    <div className="text-sm text-text-muted mb-1">Expected Savings</div>
+                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                    <div className="text-sm text-gray-600 mb-1">Expected Savings</div>
                     <div className="text-2xl font-heading font-bold text-status-success">
                       {strategy.estimatedPerformance.expectedSavings}%
                     </div>
                   </div>
-                  <div className="glass-hover p-4 rounded-lg border border-border">
-                    <div className="text-sm text-text-muted mb-1">Risk Level</div>
+                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                    <div className="text-sm text-gray-600 mb-1">Risk Level</div>
                     <div className={`text-2xl font-heading font-bold ${
                       strategy.estimatedPerformance.riskLevel === 'low' ? 'text-status-success' :
                       strategy.estimatedPerformance.riskLevel === 'medium' ? 'text-status-warning' :
@@ -250,9 +250,9 @@ export default function AgentBuilderPage() {
                       {strategy.estimatedPerformance.riskLevel}
                     </div>
                   </div>
-                  <div className="glass-hover p-4 rounded-lg border border-border">
-                    <div className="text-sm text-text-muted mb-1">Complexity</div>
-                    <div className="text-2xl font-heading font-bold text-white">
+                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                    <div className="text-sm text-gray-600 mb-1">Complexity</div>
+                    <div className="text-2xl font-heading font-bold text-black">
                       {strategy.estimatedPerformance.complexity}
                     </div>
                   </div>
@@ -264,7 +264,7 @@ export default function AgentBuilderPage() {
                     <div className="text-sm font-heading font-bold text-status-warning mb-2">
                       ⚠️ Warnings
                     </div>
-                    <ul className="text-sm text-text-secondary space-y-1">
+                    <ul className="text-sm text-gray-600 space-y-1">
                       {strategy.warnings.map((warning, idx) => (
                         <li key={idx}>• {warning}</li>
                       ))}
@@ -277,7 +277,7 @@ export default function AgentBuilderPage() {
                   <button
                     onClick={testAgent}
                     disabled={isTesting}
-                    className="glass-hover border border-border px-6 py-3 rounded-lg font-heading font-bold hover:scale-105 transition-all disabled:opacity-50"
+                    className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-6 py-3 rounded-lg font-heading font-bold transition-all disabled:opacity-50"
                   >
                     {isTesting ? '🧪 Testing...' : '🧪 Test Strategy'}
                   </button>
@@ -289,7 +289,7 @@ export default function AgentBuilderPage() {
                   </button>
                   <button
                     onClick={deployAgent}
-                    className="glass-hover neon-border px-6 py-3 rounded-lg font-heading font-bold hover:scale-105 transition-all flex-1"
+                    className="bg-black text-white px-6 py-3 rounded-lg font-heading font-bold hover:bg-gray-800 transition-all flex-1"
                   >
                     <span className="text-gradient">🚀 Deploy Agent</span>
                   </button>
@@ -312,7 +312,7 @@ export default function AgentBuilderPage() {
                   </h3>
                   {testResult.success ? (
                     <div className="space-y-2">
-                      <div className="text-sm text-text-secondary">Test result:</div>
+                      <div className="text-sm text-gray-600">Test result:</div>
                       <pre className="bg-background-secondary p-4 rounded-lg text-xs overflow-x-auto">
                         {JSON.stringify(testResult.result, null, 2)}
                       </pre>

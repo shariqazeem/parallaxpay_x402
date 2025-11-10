@@ -3,27 +3,27 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Cyberpunk Color System */
-  --color-background-primary: #0A0A0F;
-  --color-background-secondary: #12121A;
-  --color-background-tertiary: #1A1A24;
+  /* Modern White Theme Color System */
+  --color-background-primary: #FFFFFF;
+  --color-background-secondary: #F9FAFB;
+  --color-background-tertiary: #F3F4F6;
 
   --color-accent-primary: #9945FF;
   --color-accent-secondary: #14F195;
   --color-accent-tertiary: #00D4FF;
 
-  --color-status-success: #14F195;
-  --color-status-warning: #FFB700;
-  --color-status-error: #FF3366;
-  --color-status-info: #00D4FF;
+  --color-status-success: #10B981;
+  --color-status-warning: #F59E0B;
+  --color-status-error: #EF4444;
+  --color-status-info: #3B82F6;
 
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #8B8B9F;
-  --color-text-muted: #4A4A5E;
+  --color-text-primary: #000000;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
 
-  --color-border: #2A2A3A;
+  --color-border: #E5E7EB;
   --color-border-focus: #9945FF;
-  --color-border-hover: #14F195;
+  --color-border-hover: #D1D5DB;
 
   /* Typography */
   --font-heading: 'Inter Tight', sans-serif;
@@ -37,12 +37,8 @@
 }
 
 body {
-  @apply bg-background-primary text-text-primary antialiased;
+  @apply bg-white text-black antialiased;
   font-family: var(--font-sans);
-  background-image: radial-gradient(at 40% 20%, rgba(153, 69, 255, 0.15) 0, transparent 50%),
-                    radial-gradient(at 80% 0%, rgba(20, 241, 149, 0.1) 0, transparent 50%),
-                    radial-gradient(at 0% 50%, rgba(0, 212, 255, 0.1) 0, transparent 50%);
-  background-attachment: fixed;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -50,23 +46,26 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
-/* Glass morphism */
+/* Glass morphism - White Theme */
 .glass {
-  background: rgba(18, 18, 26, 0.4);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(42, 42, 58, 0.5);
+  border: 2px solid #E5E7EB;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .glass-hover {
-  background: rgba(18, 18, 26, 0.4);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(42, 42, 58, 0.5);
+  border: 2px solid #E5E7EB;
   transition: all 0.3s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .glass-hover:hover {
-  background: rgba(18, 18, 26, 0.6);
-  border-color: rgba(153, 69, 255, 0.5);
+  background: rgba(249, 250, 251, 1);
+  border-color: #D1D5DB;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Neon effects */
@@ -83,8 +82,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Grid background */
 .grid-bg {
-  background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
@@ -95,17 +94,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-background-tertiary);
+  background: #F3F4F6;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(153, 69, 255, 0.5);
+  background: #D1D5DB;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(153, 69, 255, 0.7);
+  background: #9CA3AF;
 }
 
 /* Force scrollbar to always show on specific elements */
@@ -119,25 +118,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .scrollbar-custom::-webkit-scrollbar-track {
-  background: rgba(18, 18, 26, 0.8);
+  background: #F9FAFB;
   border-radius: 10px;
-  border: 1px solid rgba(42, 42, 58, 0.5);
+  border: 1px solid #E5E7EB;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb {
-  background: rgba(153, 69, 255, 0.6);
+  background: #D1D5DB;
   border-radius: 10px;
-  border: 2px solid rgba(18, 18, 26, 0.8);
+  border: 2px solid #F9FAFB;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: rgba(153, 69, 255, 0.9);
+  background: #9CA3AF;
 }
 
 /* Firefox scrollbar */
 .scrollbar-custom {
   scrollbar-width: thin;
-  scrollbar-color: rgba(153, 69, 255, 0.6) rgba(18, 18, 26, 0.8);
+  scrollbar-color: #D1D5DB #F9FAFB;
 }
 
 /* Text gradient */

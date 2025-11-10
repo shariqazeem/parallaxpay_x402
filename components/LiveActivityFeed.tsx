@@ -95,25 +95,25 @@ export function LiveActivityFeed() {
   }
 
   return (
-    <div className="glass border border-cyan-500/30 rounded-xl p-4">
+    <div className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-heading font-bold text-white">⚡ Live Activity</h3>
+          <h3 className="text-lg font-heading font-bold text-black">⚡ Live Activity</h3>
           {isLive && (
             <div className="flex items-center gap-1">
               <div className="relative">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 <div className="absolute inset-0 w-2 h-2 bg-green-500 rounded-full animate-ping opacity-75" />
               </div>
-              <span className="text-xs text-green-400 font-semibold">LIVE</span>
+              <span className="text-xs text-green-600 font-semibold">LIVE</span>
             </div>
           )}
         </div>
 
         <button
           onClick={() => setIsLive(!isLive)}
-          className="text-xs text-gray-400 hover:text-white transition-colors"
+          className="text-xs text-gray-600 hover:text-black transition-colors"
         >
           {isLive ? 'Pause' : 'Resume'}
         </button>
@@ -141,7 +141,7 @@ export function LiveActivityFeed() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.05 }}
-              className="glass-hover p-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/50 transition-all"
+              className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-all"
             >
               <div className="flex items-start gap-2">
                 <div className="text-lg">{getActivityIcon(activity.type)}</div>
@@ -149,18 +149,18 @@ export function LiveActivityFeed() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-semibold truncate ${getActivityColor(activity.type)}`}>
+                      <div className="text-sm font-semibold truncate text-black">
                         {activity.agentName}
                       </div>
 
                       {activity.details && (
-                        <div className="text-xs text-gray-400 truncate">
+                        <div className="text-xs text-gray-600 truncate">
                           {activity.details}
                         </div>
                       )}
 
                       {activity.cost !== undefined && (
-                        <div className="text-xs font-mono text-green-400 mt-1">
+                        <div className="text-xs font-mono text-green-600 mt-1">
                           ${activity.cost.toFixed(4)}
                         </div>
                       )}
@@ -175,7 +175,7 @@ export function LiveActivityFeed() {
                     <Link
                       href={`https://explorer.solana.com/tx/${activity.txHash}?cluster=devnet`}
                       target="_blank"
-                      className="text-xs text-cyan-400 hover:text-cyan-300 mt-1 inline-flex items-center gap-1"
+                      className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-flex items-center gap-1"
                     >
                       <span>View on Solana</span>
                       <span>→</span>
@@ -190,25 +190,25 @@ export function LiveActivityFeed() {
 
       {/* Footer Stats */}
       {activities.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-700">
+        <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <div className="text-xl font-bold text-white">{activities.length}</div>
-              <div className="text-xs text-gray-400">Recent Events</div>
+              <div className="text-xl font-bold text-black">{activities.length}</div>
+              <div className="text-xs text-gray-600">Recent Events</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-green-400">
+              <div className="text-xl font-bold text-green-600">
                 ${activities.reduce((sum, a) => sum + (a.cost || 0), 0).toFixed(3)}
               </div>
-              <div className="text-xs text-gray-400">Total Spent</div>
+              <div className="text-xs text-gray-600">Total Spent</div>
             </div>
           </div>
         </div>
       )}
 
       {/* Pro Tip */}
-      <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
-        <div className="text-xs text-cyan-300">
+      <div className="mt-4 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
+        <div className="text-xs text-blue-700">
           <span className="font-bold">💡 Pro Tip:</span> All agent executions appear here in real-time. This proves everything is working!
         </div>
       </div>
