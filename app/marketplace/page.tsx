@@ -324,15 +324,15 @@ function TradePanel({
 
   return (
     <motion.div
-      className="glass p-6 rounded-xl border border-border"
+      className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
     >
       <div className="mb-4">
-        <h3 className="text-xl font-heading font-bold text-white mb-1">
+        <h3 className="text-xl font-heading font-bold text-black mb-1">
           💰 Buy AI Inference
         </h3>
-        <p className="text-xs text-text-muted">
+        <p className="text-xs text-gray-600">
           Pay per token with x402 micropayments
         </p>
       </div>
@@ -340,58 +340,58 @@ function TradePanel({
       {!isWalletConnected ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">💳</div>
-          <p className="text-text-secondary text-sm mb-2">
+          <p className="text-gray-600 text-sm mb-2">
             Connect your wallet to buy AI inference
           </p>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-gray-500">
             No subscriptions • Pay only for what you use
           </p>
         </div>
       ) : !selectedProvider ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">👈</div>
-          <p className="text-text-secondary text-sm">
+          <p className="text-gray-600 text-sm">
             Select a provider to start
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-text-secondary mb-2 block">
+            <label className="text-sm text-gray-600 mb-2 block">
               Your Prompt
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="What do you want the AI to do? (e.g., 'Explain quantum computing')"
-              className="w-full px-4 py-3 bg-background-secondary border border-border rounded-lg text-white placeholder-text-muted focus:border-accent-primary focus:outline-none resize-none"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none resize-none"
               rows={4}
             />
           </div>
 
           {/* Token Control Slider - matching inference page style */}
-          <div className="glass-hover p-4 rounded-lg">
+          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <div className="text-sm font-heading font-bold text-white">
+                <div className="text-sm font-heading font-bold text-black">
                   Response Length: {maxTokens.toLocaleString()} tokens
                 </div>
-                <div className="text-xs text-text-muted">
+                <div className="text-xs text-gray-600">
                   Control how long the response will be
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-black text-status-success">
+                <div className="text-lg font-black text-green-600">
                   $0.001
                 </div>
-                <div className="text-xs text-text-muted">
+                <div className="text-xs text-gray-600">
                   Fixed price
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-xs text-text-secondary font-mono">100</span>
+              <span className="text-xs text-gray-600 font-mono">100</span>
               <input
                 type="range"
                 min="100"
@@ -399,57 +399,57 @@ function TradePanel({
                 step="100"
                 value={maxTokens}
                 onChange={(e) => setMaxTokens(Number(e.target.value))}
-                className="flex-1 h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-primary"
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-accent-primary"
                 style={{
-                  background: `linear-gradient(to right, #9945FF 0%, #14F195 ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a ${((maxTokens - 100) / 1900) * 100}%, #1a1a1a 100%)`
+                  background: `linear-gradient(to right, #9945FF 0%, #14F195 ${((maxTokens - 100) / 1900) * 100}%, #e5e7eb ${((maxTokens - 100) / 1900) * 100}%, #e5e7eb 100%)`
                 }}
               />
-              <span className="text-xs text-text-secondary font-mono">2000</span>
+              <span className="text-xs text-gray-600 font-mono">2000</span>
             </div>
 
-            <div className="text-xs text-text-muted">
+            <div className="text-xs text-gray-600">
               💡 $0.001 per request (any length)
             </div>
           </div>
 
           {/* Provider Info */}
-          <div className="glass-hover p-3 rounded-lg space-y-2">
+          <div className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="text-text-secondary">Provider</span>
-              <span className="text-white font-mono">{selectedProvider || 'None'}</span>
+              <span className="text-gray-600">Provider</span>
+              <span className="text-black font-mono">{selectedProvider || 'None'}</span>
             </div>
             <div className="flex justify-between items-center text-xs">
-              <span className="text-text-secondary">Model</span>
-              <span className="text-white font-mono">{model}</span>
+              <span className="text-gray-600">Model</span>
+              <span className="text-black font-mono">{model}</span>
             </div>
           </div>
 
           <button
             onClick={handleExecuteTrade}
             disabled={isExecuting || !prompt.trim()}
-            className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full bg-black text-white px-6 py-4 rounded-xl font-heading font-bold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isExecuting ? (
-              <span className="text-text-muted">⚡ Processing Payment...</span>
+              <span>⚡ Processing Payment...</span>
             ) : (
-              <span className="text-gradient">Buy Inference • $0.001</span>
+              <span>Buy Inference • $0.001</span>
             )}
           </button>
 
           {error && (
-            <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/30">
-              <div className="text-sm text-status-error">{error}</div>
+            <div className="p-3 rounded-lg bg-red-50 border-2 border-red-200">
+              <div className="text-sm text-red-600">{error}</div>
             </div>
           )}
 
           {result && (
-            <div className="p-4 rounded-lg bg-background-tertiary border border-accent-primary/30">
-              <div className="text-xs text-text-secondary mb-2">✅ Result:</div>
-              <div className="text-sm text-white whitespace-pre-wrap">{result}</div>
+            <div className="p-4 rounded-lg bg-green-50 border-2 border-green-200">
+              <div className="text-xs text-gray-600 mb-2">✅ Result:</div>
+              <div className="text-sm text-black whitespace-pre-wrap">{result}</div>
             </div>
           )}
 
-          <div className="text-xs text-text-muted text-center">
+          <div className="text-xs text-gray-600 text-center">
             {isExecuting
               ? 'Running on your local Parallax cluster...'
               : 'Payment will be processed automatically via x402 on Solana'
@@ -513,22 +513,22 @@ function RecentTrades() {
 
   return (
     <motion.div
-      className="glass p-6 rounded-xl border border-border"
+      className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.1 }}
     >
-      <h3 className="text-xl font-heading font-bold mb-4 text-white">
+      <h3 className="text-xl font-heading font-bold mb-4 text-black">
         Recent Trades
       </h3>
 
       {trades.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-4xl mb-3">📊</div>
-          <p className="text-text-secondary text-sm">
+          <p className="text-gray-600 text-sm">
             No trades yet
           </p>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-gray-500">
             Trades will appear when agents execute
           </p>
         </div>
@@ -537,22 +537,22 @@ function RecentTrades() {
           {trades.map((trade, i) => (
             <div
               key={i}
-              className="glass-hover p-3 rounded-lg border border-border-hover"
+              className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-mono text-text-secondary">
+                <span className="text-xs font-mono text-gray-600">
                   {trade.time}
                 </span>
-                <span className="text-xs font-semibold text-status-success">
+                <span className="text-xs font-semibold text-green-600">
                   ✓
                 </span>
               </div>
-              <div className="text-sm text-white font-medium mb-1">
+              <div className="text-sm text-black font-medium mb-1">
                 {trade.buyerId.substring(0, 8)}... → {trade.sellerId.substring(0, 8)}...
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-text-secondary">{trade.tokens.toLocaleString()} tokens</span>
-                <span className="text-accent-secondary font-bold">
+                <span className="text-gray-600">{trade.tokens.toLocaleString()} tokens</span>
+                <span className="text-green-600 font-bold">
                   ${trade.cost.toFixed(4)}
                 </span>
               </div>
@@ -561,7 +561,7 @@ function RecentTrades() {
         </div>
       )}
 
-      <button className="w-full mt-4 glass-hover px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-white transition-colors">
+      <button className="w-full mt-4 bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-100 border-2 border-gray-200 hover:border-gray-300 transition-all">
         View All Transactions →
       </button>
     </motion.div>

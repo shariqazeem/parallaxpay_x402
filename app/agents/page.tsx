@@ -1334,7 +1334,7 @@ function AgentCard({
           onClick={() => setShowAttestModal(false)}
         >
           <motion.div
-            className="glass rounded-xl border border-status-success/50 p-6 max-w-md w-full"
+            className="bg-white rounded-xl border-2 border-green-200 p-6 max-w-md w-full shadow-xl"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
@@ -1342,16 +1342,16 @@ function AgentCard({
           >
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h3 className="text-xl font-heading font-bold text-white mb-2">
+                <h3 className="text-xl font-heading font-bold text-black mb-2">
                   ⛓️ Attest Badges On-Chain
                 </h3>
-                <p className="text-sm text-text-secondary">
+                <p className="text-sm text-gray-600">
                   Create permanent, verifiable records of your agent's achievements on Solana blockchain.
                 </p>
               </div>
               <button
                 onClick={() => setShowAttestModal(false)}
-                className="text-text-secondary hover:text-white transition-colors"
+                className="text-gray-600 hover:text-black transition-colors"
               >
                 ✕
               </button>
@@ -1361,35 +1361,35 @@ function AgentCard({
               {unAttestedBadges.map(badge => (
                 <div
                   key={badge.id}
-                  className="glass-hover p-4 rounded-lg border border-gray-200-hover"
+                  className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">{badge.icon}</span>
                       <div>
                         <div className="text-sm font-bold text-black">{badge.name}</div>
-                        <div className="text-xs text-text-secondary">{badge.description}</div>
+                        <div className="text-xs text-gray-600">{badge.description}</div>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => handleAttestBadge(badge)}
                     disabled={attesting}
-                    className="w-full glass-hover neon-border px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
+                    className="w-full bg-black text-white px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                   >
                     {attesting ? (
-                      <span className="text-gray-500">⏳ Attesting...</span>
+                      <span>⏳ Attesting...</span>
                     ) : (
-                      <span className="text-gradient">Attest This Badge</span>
+                      <span>Attest This Badge</span>
                     )}
                   </button>
                 </div>
               ))}
             </div>
 
-            <div className="glass-hover p-3 rounded-lg border border-black/30 bg-black/5">
-              <div className="text-xs text-text-secondary">
-                <div className="font-bold text-accent-primary mb-1">ℹ️ What is attestation?</div>
+            <div className="bg-blue-50 p-3 rounded-lg border-2 border-blue-200">
+              <div className="text-xs text-gray-600">
+                <div className="font-bold text-blue-600 mb-1">ℹ️ What is attestation?</div>
                 Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
               </div>
             </div>
@@ -1423,7 +1423,7 @@ function AgentCard({
             />
             <button
               onClick={() => setShowScheduleModal(false)}
-              className="mt-4 w-full glass-hover px-4 py-3 rounded-lg text-white font-semibold hover:scale-105 transition-all"
+              className="mt-4 w-full bg-black text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all"
             >
               Close
             </button>
@@ -1868,10 +1868,7 @@ function DeployAgentModal({
     >
       {/* Centered Modal - scrolls with backdrop */}
       <motion.div
-        className="bg-background-primary border-2 border-black rounded-2xl w-full max-w-3xl my-8"
-        style={{
-          boxShadow: '0 0 50px rgba(153, 69, 255, 0.5)'
-        }}
+        className="bg-white border-2 border-gray-200 rounded-2xl w-full max-w-3xl my-8 shadow-xl"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
@@ -1881,16 +1878,16 @@ function DeployAgentModal({
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-heading font-bold text-white mb-2">
+            <h2 className="text-2xl font-heading font-bold text-black mb-2">
               Deploy Real Agent
             </h2>
-            <p className="text-sm text-text-secondary">
+            <p className="text-sm text-gray-600">
               This agent will run real AI inference on your Parallax cluster
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-white transition-colors text-2xl leading-none"
+            className="text-gray-600 hover:text-black transition-colors text-2xl leading-none"
           >
             ✕
           </button>
@@ -1901,7 +1898,7 @@ function DeployAgentModal({
           <div className="space-y-4">
           {/* Agent Name */}
           <div>
-            <label className="text-sm text-text-secondary mb-2 block">
+            <label className="text-sm text-gray-600 mb-2 block">
               Agent Name
             </label>
             <input
@@ -1909,20 +1906,20 @@ function DeployAgentModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Trading Agent"
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-white placeholder-text-muted focus:border-black focus:outline-none"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none"
               disabled={isDeploying}
             />
           </div>
 
           {/* Agent Type */}
           <div>
-            <label className="text-sm text-text-secondary mb-2 block">
+            <label className="text-sm text-gray-600 mb-2 block">
               Agent Type
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as any)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-white focus:border-black focus:outline-none"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black focus:border-accent-primary focus:outline-none"
               disabled={isDeploying}
             >
               <option value="custom">Custom - General purpose AI agent</option>
@@ -1937,14 +1934,14 @@ function DeployAgentModal({
           {type === 'composite' ? (
             /* Workflow Builder for Composite Agents */
             <div>
-              <label className="text-sm text-text-secondary mb-2 block">
+              <label className="text-sm text-gray-600 mb-2 block">
                 Workflow Steps (Agent-to-Agent Calls)
               </label>
               <div className="space-y-3">
                 {workflowSteps.map((step, index) => (
-                  <div key={step.id} className="glass-hover p-3 rounded-lg border border-gray-200">
+                  <div key={step.id} className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200">
                     <div className="flex items-start gap-2 mb-2">
-                      <div className="px-2 py-1 bg-black/20 text-accent-primary text-xs font-bold rounded">
+                      <div className="px-2 py-1 bg-purple-100 text-accent-primary text-xs font-bold rounded">
                         Step {index + 1}
                       </div>
                       {workflowSteps.length > 1 && (
@@ -1964,7 +1961,7 @@ function DeployAgentModal({
                           s.id === step.id ? { ...s, agentName: e.target.value } : s
                         ))
                       }}
-                      className="w-full px-3 py-2 mb-2 bg-white border border-gray-200 rounded text-sm text-white placeholder-text-muted focus:border-black focus:outline-none"
+                      className="w-full px-3 py-2 mb-2 bg-white border-2 border-gray-200 rounded text-sm text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none"
                     />
                     <textarea
                       placeholder="Prompt for this agent..."
@@ -1975,12 +1972,12 @@ function DeployAgentModal({
                         ))
                       }}
                       rows={2}
-                      className="w-full px-3 py-2 mb-2 bg-white border border-gray-200 rounded text-sm text-white placeholder-text-muted focus:border-black focus:outline-none resize-none"
+                      className="w-full px-3 py-2 mb-2 bg-white border-2 border-gray-200 rounded text-sm text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none resize-none"
                     />
 
                     {/* Use output from previous step */}
                     {index > 0 && (
-                      <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={step.useOutputFrom === workflowSteps[index - 1]?.id}
@@ -2000,7 +1997,7 @@ function DeployAgentModal({
                 ))}
                 <button
                   onClick={() => setWorkflowSteps(steps => [...steps, { id: `step-${Date.now()}`, agentName: '', prompt: '' }])}
-                  className="w-full glass-hover border border-black/50 px-3 py-2 rounded-lg text-sm font-semibold text-accent-primary hover:scale-105 transition-all"
+                  className="w-full bg-gray-50 border-2 border-gray-200 px-3 py-2 rounded-lg text-sm font-semibold text-accent-primary hover:bg-gray-100 hover:border-gray-300 transition-all"
                 >
                   + Add Step
                 </button>
@@ -2012,14 +2009,14 @@ function DeployAgentModal({
           ) : (
             /* Regular Prompt for Other Agent Types */
             <div>
-              <label className="text-sm text-text-secondary mb-2 block">
+              <label className="text-sm text-gray-600 mb-2 block">
                 Test Prompt (will run real inference)
               </label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Enter a prompt to test the agent..."
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-white placeholder-text-muted focus:border-black focus:outline-none resize-none"
+                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none resize-none"
                 rows={3}
                 disabled={isDeploying}
               />
@@ -2028,16 +2025,16 @@ function DeployAgentModal({
 
           {/* Error */}
           {error && (
-            <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/30">
-              <div className="text-sm text-status-error">{error}</div>
+            <div className="p-3 rounded-lg bg-red-50 border-2 border-red-200">
+              <div className="text-sm text-red-600">{error}</div>
             </div>
           )}
 
           {/* Result */}
           {result && (
-            <div className="p-4 rounded-lg bg-status-success/10 border border-status-success/30">
-              <div className="text-xs text-status-success mb-2">✅ Test Successful! Deploying agent...</div>
-              <div className="text-sm text-white whitespace-pre-wrap">{result.substring(0, 200)}...</div>
+            <div className="p-4 rounded-lg bg-green-50 border-2 border-green-200">
+              <div className="text-xs text-green-600 mb-2">✅ Test Successful! Deploying agent...</div>
+              <div className="text-sm text-black whitespace-pre-wrap">{result.substring(0, 200)}...</div>
             </div>
           )}
           </div>
@@ -2054,12 +2051,12 @@ function DeployAgentModal({
               ) ||
               !!result
             }
-            className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full bg-black text-white px-6 py-4 rounded-xl font-heading font-bold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isDeploying ? (
-              <span className="text-gray-500">⚡ Testing agent with Parallax...</span>
+              <span>⚡ Testing agent with Parallax...</span>
             ) : result ? (
-              <span className="text-status-success">Deploying...</span>
+              <span className="text-green-400">Deploying...</span>
             ) : (
               <span className="text-gradient">Deploy & Test Agent</span>
             )}

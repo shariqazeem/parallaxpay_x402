@@ -149,7 +149,7 @@ export default function TransactionsPage() {
                   <span className="text-gradient">ParallaxPay</span>
                 </h1>
               </Link>
-              <div className="text-text-muted">/</div>
+              <div className="text-gray-600">/</div>
               <h2 className="text-xl font-heading font-bold text-black">
                 Transaction History
               </h2>
@@ -157,12 +157,12 @@ export default function TransactionsPage() {
 
             <div className="flex items-center gap-3">
               <Link href="/marketplace">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   Marketplace
                 </button>
               </Link>
               <Link href="/agents">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   Agents
                 </button>
               </Link>
@@ -184,7 +184,7 @@ export default function TransactionsPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Filters */}
-        <div className="glass p-6 rounded-xl border border-gray-200 mb-6">
+        <div className="bg-white p-6 rounded-xl border-2 border-gray-200 mb-6 shadow-sm">
           <div className="flex flex-wrap items-center gap-4">
             <div>
               <label className="text-sm text-gray-600 mb-2 block">Status</label>
@@ -228,7 +228,7 @@ export default function TransactionsPage() {
 
         {/* Transactions Table */}
         {filteredTransactions.length === 0 ? (
-          <div className="glass p-12 rounded-xl border border-gray-200 text-center">
+          <div className="bg-white p-12 rounded-xl border-2 border-gray-200 text-center shadow-sm">
             <div className="text-6xl mb-4">📭</div>
             <h3 className="text-2xl font-heading font-bold text-black mb-2">
               No Transactions Yet
@@ -237,7 +237,7 @@ export default function TransactionsPage() {
               Make your first paid inference request to see transactions here
             </p>
             <Link href="/inference">
-              <button className="glass-hover neon-border px-6 py-3 rounded-lg font-heading font-bold hover:scale-105 transition-all">
+              <button className="bg-black text-white px-6 py-3 rounded-lg font-heading font-bold hover:bg-gray-800 transition-all">
                 <span className="text-gradient">Start Inference</span>
               </button>
             </Link>
@@ -266,7 +266,7 @@ function StatCard({
   color?: 'default' | 'success' | 'warning' | 'error'
 }) {
   return (
-    <div className="glass-hover p-3 rounded-lg">
+    <div className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all">
       <div className="flex items-start justify-between mb-1">
         <span className="text-xs text-gray-600">{label}</span>
         <span className="text-sm">{icon}</span>
@@ -314,7 +314,7 @@ function TransactionCard({
 
   return (
     <motion.div
-      className="glass rounded-xl border border-gray-200 p-6 hover:border-accent-primary/50 transition-all"
+      className="bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-purple-300 transition-all shadow-sm"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -371,14 +371,14 @@ function TransactionCard({
         </div>
         <div>
           <div className="text-xs text-gray-600 mb-1">Transaction ID</div>
-          <div className="text-sm font-mono text-text-muted">
+          <div className="text-sm font-mono text-gray-600">
             {transaction.id.substring(0, 16)}...
           </div>
         </div>
       </div>
 
       {/* Transaction Hash */}
-      <div className="glass-hover p-4 rounded-lg border border-gray-200-hover">
+      <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="text-xs text-gray-600 mb-1">Solana Transaction Hash</div>

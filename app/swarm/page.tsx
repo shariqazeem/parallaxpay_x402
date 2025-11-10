@@ -242,7 +242,7 @@ export default function SwarmPage() {
                   <span className="text-gradient">ParallaxPay</span>
                 </h1>
               </Link>
-              <div className="text-text-muted">/</div>
+              <div className="text-gray-600">/</div>
               <h2 className="text-xl font-heading font-bold text-black">
                 🐝 Swarm Intelligence
               </h2>
@@ -251,17 +251,17 @@ export default function SwarmPage() {
             <div className="flex items-center gap-3">
               <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
               <Link href="/agent-builder">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   🧠 AI Builder
                 </button>
               </Link>
               <Link href="/agents">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   My Agents
                 </button>
               </Link>
               <Link href="/marketplace">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   Marketplace
                 </button>
               </Link>
@@ -273,7 +273,7 @@ export default function SwarmPage() {
       {/* Main Content */}
       <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
         {/* Hero Section */}
-        <div className="glass rounded-xl p-8 border border-accent-primary/30 relative overflow-hidden">
+        <div className="bg-white rounded-xl p-8 border-2 border-purple-200 relative overflow-hidden shadow-sm">
           {/* Animated background */}
           <div className="absolute inset-0 bg-gradient-to-r from-accent-primary/5 to-accent-secondary/5 animate-pulse" />
 
@@ -291,12 +291,12 @@ export default function SwarmPage() {
                 <button
                   onClick={runOptimization}
                   disabled={isOptimizing}
-                  className="glass-hover neon-border px-8 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-black text-white px-8 py-4 rounded-xl font-heading font-bold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isOptimizing ? (
-                    <span className="text-text-muted">🔄 Optimizing Swarm...</span>
+                    <span>🔄 Optimizing Swarm...</span>
                   ) : (
-                    <span className="text-gradient">🚀 Run Swarm Optimization</span>
+                    <span>🚀 Run Swarm Optimization</span>
                   )}
                 </button>
 
@@ -304,12 +304,12 @@ export default function SwarmPage() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9, x: -20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
-                    className="glass-hover px-6 py-4 rounded-xl border-2 border-accent-secondary/50"
+                    className="bg-green-50 px-6 py-4 rounded-xl border-2 border-green-200"
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-3xl">🎯</div>
                       <div>
-                        <div className="text-xs text-text-muted mb-1">Swarm Recommendation:</div>
+                        <div className="text-xs text-gray-600 mb-1">Swarm Recommendation:</div>
                         <div className="font-heading font-bold text-accent-secondary text-lg">
                           {recommendation.provider}
                         </div>
@@ -324,8 +324,8 @@ export default function SwarmPage() {
             </div>
 
             {/* Swarm Health Meter */}
-            <div className="glass rounded-xl p-6 border border-gray-200 min-w-[220px]">
-              <div className="text-sm text-text-muted mb-2">Swarm Health</div>
+            <div className="bg-white rounded-xl p-6 border-2 border-gray-200 min-w-[220px] shadow-sm">
+              <div className="text-sm text-gray-600 mb-2">Swarm Health</div>
               <motion.div
                 className="text-6xl font-heading font-black mb-4"
                 key={swarmHealth}
@@ -348,7 +348,7 @@ export default function SwarmPage() {
                   transition={{ duration: 1, ease: 'easeOut' }}
                 />
               </div>
-              <div className="mt-3 text-xs text-text-muted text-center">
+              <div className="mt-3 text-xs text-gray-600 text-center">
                 {swarmHealth > 80 ? '🟢 Optimal' : swarmHealth > 60 ? '🟡 Good' : '🔴 Degraded'}
               </div>
             </div>
@@ -366,7 +366,7 @@ export default function SwarmPage() {
         </div>
 
         {/* 3D Swarm Visualization */}
-        <div className="glass rounded-xl p-6 border border-gray-200">
+        <div className="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-heading font-bold flex items-center gap-2">
               <span>🌀</span> 3D Swarm Visualization
@@ -383,7 +383,7 @@ export default function SwarmPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Swarm Members */}
-          <div className="glass rounded-xl p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm">
             <h3 className="text-xl font-heading font-bold mb-4 flex items-center gap-2">
               <span>🐝</span> Swarm Members
             </h3>
@@ -391,7 +391,7 @@ export default function SwarmPage() {
               {agents.map((agent, idx) => (
                 <motion.div
                   key={agent.id}
-                  className="glass-hover p-4 rounded-lg border border-gray-200 relative overflow-hidden"
+                  className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-gray-300 relative overflow-hidden transition-all"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
@@ -410,7 +410,7 @@ export default function SwarmPage() {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs px-2 py-1 rounded bg-white border-2 border-gray-200 text-text-muted">
+                    <div className="text-xs px-2 py-1 rounded bg-white border-2 border-gray-200 text-gray-600">
                       {agent.strategy}
                     </div>
                   </div>
@@ -424,7 +424,7 @@ export default function SwarmPage() {
                     </div>
                   </div>
 
-                  <div className="text-xs text-text-muted mb-2">
+                  <div className="text-xs text-gray-600 mb-2">
                     Last: {agent.lastActivity}
                   </div>
 
@@ -443,7 +443,7 @@ export default function SwarmPage() {
           </div>
 
           {/* Swarm Insights */}
-          <div className="glass rounded-xl p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm">
             <h3 className="text-xl font-heading font-bold mb-4 flex items-center gap-2">
               <span>💡</span> Swarm Insights
               {insights.length > 0 && (
@@ -457,7 +457,7 @@ export default function SwarmPage() {
                 {insights.map((insight, idx) => (
                   <motion.div
                     key={insight.id}
-                    className="glass-hover p-4 rounded-lg border border-gray-200"
+                    className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all"
                     initial={{ opacity: 0, x: -20, scale: 0.95 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 20, scale: 0.95 }}
@@ -472,11 +472,11 @@ export default function SwarmPage() {
                       <div className="flex-1">
                         <div className="text-sm text-black mb-2">{insight.message}</div>
                         <div className="flex items-center gap-3 text-xs">
-                          <span className="text-text-muted">
+                          <span className="text-gray-600">
                             {insight.agentId}
                           </span>
-                          <span className="text-text-muted">•</span>
-                          <span className="text-text-muted">
+                          <span className="text-gray-600">•</span>
+                          <span className="text-gray-600">
                             {(insight.confidence * 100).toFixed(0)}% confidence
                           </span>
                           <span className={`px-2 py-1 rounded ${
@@ -486,7 +486,7 @@ export default function SwarmPage() {
                           }`}>
                             {insight.impact}
                           </span>
-                          <span className="text-text-muted">
+                          <span className="text-gray-600">
                             {new Date(insight.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
@@ -497,7 +497,7 @@ export default function SwarmPage() {
               </AnimatePresence>
 
               {insights.length === 0 && (
-                <div className="text-center text-text-muted py-12">
+                <div className="text-center text-gray-600 py-12">
                   <div className="text-4xl mb-4">🐝</div>
                   <div className="text-lg">No insights yet</div>
                   <div className="text-sm">Run swarm optimization to start!</div>
@@ -508,7 +508,7 @@ export default function SwarmPage() {
         </div>
 
         {/* How It Works */}
-        <div className="glass rounded-xl p-8 border border-gray-200">
+        <div className="bg-white rounded-xl p-8 border-2 border-gray-200 shadow-sm">
           <h3 className="text-2xl font-heading font-bold mb-6 text-gradient">
             How Swarm Intelligence Works
           </h3>
@@ -563,7 +563,7 @@ function StatCard({
 
   return (
     <motion.div
-      className="glass rounded-xl p-6 border border-gray-200 hover:border-accent-primary/50 transition-all"
+      className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-purple-300 transition-all shadow-sm"
       whileHover={{ scale: 1.02 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
