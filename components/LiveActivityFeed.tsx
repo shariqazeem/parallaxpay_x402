@@ -95,7 +95,7 @@ export function LiveActivityFeed() {
   }
 
   return (
-    <div className="glass border border-cyan-500/30 rounded-xl p-4 sticky top-24">
+    <div className="glass border border-cyan-500/30 rounded-xl p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
