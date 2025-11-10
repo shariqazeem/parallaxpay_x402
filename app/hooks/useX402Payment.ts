@@ -36,6 +36,9 @@ export function useX402Payment() {
 
         // Get USDC token info for devnet
         const usdcInfo = lookupKnownSPLToken('devnet', 'USDC')
+        if (!usdcInfo) {
+          throw new Error('USDC token info not found for devnet')
+        }
         const usdcMint = new PublicKey(usdcInfo.address)
 
         console.log('🔑 Initializing Faremeter for connected wallet:', publicKey.toBase58())

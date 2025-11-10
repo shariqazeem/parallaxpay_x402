@@ -1,297 +1,388 @@
 'use client'
 
-/**
- * HOME PAGE - CLEAR VALUE PROPOSITION
- *
- * Shows:
- * 1. What is ParallaxPay?
- * 2. Why use it?
- * 3. How does it work?
- * 4. Get started CTA
- */
-
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useState, useEffect } from 'react'
 
 export default function HomePage() {
   const { publicKey } = useWallet()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  }
 
   return (
-    <div className="min-h-screen bg-background-primary">
-      {/* Header */}
-      <header className="border-b border-border bg-background-secondary/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-white">
+      {/* Premium Header */}
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-heading font-black">
-                <span className="text-gradient">ParallaxPay</span>
-              </h1>
+            <div className="flex items-center gap-8 lg:gap-12">
+              <Link href="/">
+                <motion.h1
+                  whileHover={{ scale: 1.02 }}
+                  className="text-2xl font-bold text-black cursor-pointer"
+                >
+                  ParallaxPay
+                </motion.h1>
+              </Link>
 
-              {/* Navigation */}
-              <nav className="hidden md:flex items-center gap-6">
-                <Link href="/agents" className="text-text-secondary hover:text-white transition-colors font-medium">
+              <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+                <Link href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Dashboard
+                </Link>
+                <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Agents
                 </Link>
-                <Link href="/marketplace" className="text-text-secondary hover:text-white transition-colors font-medium">
+                <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Providers
+                </Link>
+                <Link href="/leaderboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Leaderboard
                 </Link>
               </nav>
             </div>
 
-            <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+            <div className="flex items-center gap-3">
+              {mounted && (
+                <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 sm:!px-6 !py-2.5 !text-sm !font-semibold hover:!bg-gray-800 !transition-all !duration-200" />
+              )}
+            </div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Badge */}
-          <div className="inline-block mb-6">
-            <div className="glass-hover px-4 py-2 rounded-full border border-accent-primary/50 text-sm">
-              <span className="text-gradient font-bold">🏆 x402 Solana Hackathon Project</span>
-            </div>
-          </div>
+      {/* Hero Section - Premium Design */}
+      <section className="relative pt-20 sm:pt-28 lg:pt-36 pb-24 sm:pb-32 lg:pb-40 px-6 sm:px-8 lg:px-12 overflow-hidden">
+        {/* Subtle Pattern Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
 
-          {/* Main Headline */}
-          <h1 className="text-5xl md:text-7xl font-heading font-black mb-6">
-            AI Agents with <br />
-            <span className="text-gradient">Identity & Reputation</span>
-          </h1>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-white pointer-events-none" />
 
-          {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-text-secondary mb-12 max-w-3xl mx-auto">
-            Deploy autonomous AI agents that pay for themselves with <span className="text-accent-secondary font-bold">x402 micropayments</span>,
-            use <span className="text-accent-primary font-bold">Gradient Parallax</span> for decentralized compute,
-            and build <span className="text-status-success font-bold">trustless reputation</span> on Solana.
-          </p>
+        <div className="relative max-w-7xl mx-auto">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="text-center"
+          >
+            {/* Premium Badge */}
+            <motion.div variants={itemVariants} className="flex justify-center mb-6 sm:mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                x402 Solana Hackathon • Parallax Eco Track
+              </div>
+            </motion.div>
 
-          {/* CTA Buttons */}
-          <div className="flex items-center justify-center gap-4 mb-16">
-            <Link href="/agents">
-              <button className="glass-hover neon-border px-8 py-4 rounded-xl font-heading font-bold text-lg hover:scale-105 transition-all">
-                <span className="text-gradient">🚀 Deploy Your First Agent</span>
-              </button>
-            </Link>
-            <Link href="/marketplace">
-              <button className="glass-hover border border-border px-8 py-4 rounded-xl font-heading font-bold text-lg hover:scale-105 transition-all text-white">
-                🖥️ Browse Providers
-              </button>
-            </Link>
-          </div>
+            {/* Main Headline - Ultra Bold */}
+            <motion.h1
+              variants={itemVariants}
+              className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-black mb-8 tracking-tight leading-[0.9] px-4"
+            >
+              Autonomous AI Agents
+              <br />
+              <span className="italic bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                Built for Production
+              </span>
+            </motion.h1>
 
-          {/* Tech Stack Badges */}
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <div className="glass-hover px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-              <span className="text-2xl">💳</span>
-              <span className="text-white font-bold">x402 Payments</span>
-            </div>
-            <div className="glass-hover px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
-              <span className="text-white font-bold">Gradient Parallax</span>
-            </div>
-            <div className="glass-hover px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-white font-bold">Solana</span>
-            </div>
-          </div>
-        </motion.div>
-      </section>
+            {/* Subheadline */}
+            <motion.p
+              variants={itemVariants}
+              className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 sm:mb-16 max-w-5xl mx-auto font-light leading-relaxed px-6"
+            >
+              Deploy intelligent agents that execute tasks autonomously, pay with micropayments,
+              and build verifiable reputation on Solana blockchain.
+            </motion.p>
 
-      {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <h2 className="text-3xl md:text-4xl font-heading font-bold text-center mb-12">
-          How It Works
-        </h2>
+            {/* CTA Buttons */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 sm:mb-20 lg:mb-24 px-4"
+            >
+              <Link href={publicKey ? "/agents" : "/dashboard"}>
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 20px 60px -12px rgba(0, 0, 0, 0.25)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full sm:w-auto px-12 py-5 text-lg bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-xl"
+                >
+                  Get Started Free
+                </motion.button>
+              </Link>
+              <Link href="/dashboard">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full sm:w-auto px-12 py-5 text-lg bg-white text-black font-bold rounded-xl border-2 border-gray-300 hover:border-black transition-all shadow-lg"
+                >
+                  View Dashboard
+                </motion.button>
+              </Link>
+            </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Feature 1 */}
-          <FeatureCard
-            icon="🏆"
-            title="Agent Identity & Reputation"
-            description="Every agent has a wallet-based identity with a reputation score (0-1000). Earn badges, climb the leaderboard, and build trust through performance."
-            link="/agents"
-            linkText="Deploy Agent"
-          />
-
-          {/* Feature 2 */}
-          <FeatureCard
-            icon="💳"
-            title="x402 Micropayments"
-            description="Pay only for what you use. Agents automatically pay for AI inference with x402 micropayments on Solana. $0.001 per request, no subscriptions."
-            link="/agents"
-            linkText="Deploy Agent"
-          />
-
-          {/* Feature 3 */}
-          <FeatureCard
-            icon="🖥️"
-            title="Decentralized Compute"
-            description="Browse Parallax providers, compare performance, and select the best one. Agents use your chosen provider for all AI requests automatically."
-            link="/marketplace"
-            linkText="Browse Providers"
-          />
+            {/* Trust Indicators */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 text-sm text-gray-500"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">x402 Protocol</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Solana Blockchain</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Parallax Network</span>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
-      {/* How It Works Steps */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <h2 className="text-3xl md:text-4xl font-heading font-bold text-center mb-12">
-          3 Steps to Get Started
-        </h2>
+      {/* Features Section - Premium Cards */}
+      <section className="py-24 sm:py-32 lg:py-40 px-6 sm:px-8 lg:px-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={containerVariants}
+            className="text-center mb-16 sm:mb-20 lg:mb-24"
+          >
+            <motion.h2 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-7xl font-black text-black mb-6">
+              Everything you need
+            </motion.h2>
+            <motion.p variants={itemVariants} className="text-2xl text-gray-600">
+              Built for modern AI workflows
+            </motion.p>
+          </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          <StepCard
-            number="1"
-            title="Deploy Agent"
-            description="Connect your wallet and create an AI agent with a custom prompt. Your agent gets wallet-based identity and starts building reputation."
-          />
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={containerVariants}
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+          >
+            {/* Feature 1 */}
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all"
+            >
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-3xl mb-8 shadow-lg">
+                🤖
+              </div>
+              <h3 className="text-3xl font-bold text-black mb-4">AI Agents</h3>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                Deploy autonomous agents with custom prompts. Schedule execution and track performance in real-time.
+              </p>
+              <Link href="/agents" className="text-black font-bold inline-flex items-center gap-2 hover:gap-4 transition-all text-lg">
+                Learn more
+                <span>→</span>
+              </Link>
+            </motion.div>
 
-          <StepCard
-            number="2"
-            title="Select Provider"
-            description="Browse Parallax providers and select the best one for your agents. Compare latency, uptime, and models available."
-          />
+            {/* Feature 2 */}
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all"
+            >
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-3xl mb-8 shadow-lg">
+                💰
+              </div>
+              <h3 className="text-3xl font-bold text-black mb-4">Micropayments</h3>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                Pay for AI inference with x402 protocol. Tiny transactions for every API call, tracked on-chain.
+              </p>
+              <Link href="/marketplace" className="text-black font-bold inline-flex items-center gap-2 hover:gap-4 transition-all text-lg">
+                Learn more
+                <span>→</span>
+              </Link>
+            </motion.div>
 
-          <StepCard
-            number="3"
-            title="Run & Earn Reputation"
-            description="Click 'Run Agent' to execute with x402 payment. Build reputation, earn badges, and climb the leaderboard with each successful run."
-          />
+            {/* Feature 3 */}
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all"
+            >
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-3xl mb-8 shadow-lg">
+                🏆
+              </div>
+              <h3 className="text-3xl font-bold text-black mb-4">Reputation</h3>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                Build verifiable on-chain reputation. Earn badges and climb the leaderboard with successful executions.
+              </p>
+              <Link href="/leaderboard" className="text-black font-bold inline-flex items-center gap-2 hover:gap-4 transition-all text-lg">
+                Learn more
+                <span>→</span>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* How it Works - Black Section for Contrast */}
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-black text-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+            className="text-center mb-12 sm:mb-16"
+          >
+            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-black mb-4">
+              How it works
+            </motion.h2>
+            <motion.p variants={itemVariants} className="text-xl text-gray-400">
+              Get started in minutes
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12"
+          >
+            {[
+              { num: "1", title: "Connect Wallet", desc: "Link your Solana wallet with Phantom or other supported wallets" },
+              { num: "2", title: "Select Provider", desc: "Choose from available Parallax compute providers" },
+              { num: "3", title: "Deploy Agent", desc: "Create your agent with a custom prompt and schedule" },
+              { num: "4", title: "Track & Earn", desc: "Monitor performance and build on-chain reputation" }
+            ].map((step, idx) => (
+              <motion.div
+                key={step.num}
+                variants={itemVariants}
+                className="text-center"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 360 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-2xl font-black text-black mb-6 mx-auto"
+                >
+                  {step.num}
+                </motion.div>
+                <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{step.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="glass p-12 rounded-2xl border border-border">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            <StatDisplay value="$0.001" label="Cost per request" />
-            <StatDisplay value="<500ms" label="Avg latency" />
-            <StatDisplay value="100%" label="Decentralized" />
-            <StatDisplay value="0-1000" label="Reputation score" />
-          </div>
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12"
+          >
+            {[
+              { value: "< $0.001", label: "Cost per execution" },
+              { value: "< 100ms", label: "Average latency" },
+              { value: "99.9%", label: "Uptime SLA" },
+              { value: "On-chain", label: "Reputation tracking" }
+            ].map((stat, idx) => (
+              <motion.div
+                key={stat.label}
+                variants={itemVariants}
+                className="text-center"
+              >
+                <div className="text-3xl sm:text-4xl font-black text-black mb-2">{stat.value}</div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <div className="glass-hover neon-border p-12 rounded-2xl">
-          <h2 className="text-3xl md:text-5xl font-heading font-bold mb-6">
-            Ready to Deploy Your Agent?
-          </h2>
-          <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-            {publicKey
-              ? "Your wallet is connected. Let's build your first agent!"
-              : "Connect your wallet to get started with autonomous AI agents."}
-          </p>
-
-          {publicKey ? (
-            <Link href="/agents">
-              <button className="glass-hover neon-border px-12 py-5 rounded-xl font-heading font-bold text-xl hover:scale-105 transition-all">
-                <span className="text-gradient">🚀 Go to Agent Dashboard</span>
-              </button>
-            </Link>
-          ) : (
-            <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-xl !px-12 !py-5 !text-xl !font-bold hover:!scale-105 !transition-transform" />
-          )}
+      {/* Final CTA */}
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={containerVariants}
+          >
+            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-black text-black mb-6">
+              Ready to build?
+            </motion.h2>
+            <motion.p variants={itemVariants} className="text-xl text-gray-600 mb-10">
+              Join the future of autonomous AI agents
+            </motion.p>
+            <motion.div variants={itemVariants}>
+              <Link href={publicKey ? "/agents" : "/dashboard"}>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-12 py-5 bg-black text-white text-lg font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-xl"
+                >
+                  Get Started Now
+                </motion.button>
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-background-secondary/50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div className="text-text-muted text-sm">
-              Built for x402 Solana Hackathon 2024
+      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-black text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div className="text-2xl font-bold">ParallaxPay</div>
+            <div className="flex items-center gap-8 text-sm text-gray-400">
+              <Link href="/agents" className="hover:text-white transition-colors">Agents</Link>
+              <Link href="/marketplace" className="hover:text-white transition-colors">Providers</Link>
+              <Link href="/leaderboard" className="hover:text-white transition-colors">Leaderboard</Link>
+              <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
             </div>
-            <div className="flex items-center gap-4 text-sm">
-              <a href="https://github.com" className="text-text-secondary hover:text-white transition-colors">
-                GitHub
-              </a>
-              <a href="https://x402.org" className="text-text-secondary hover:text-white transition-colors">
-                x402 Protocol
-              </a>
-              <a href="https://gradient.network" className="text-text-secondary hover:text-white transition-colors">
-                Gradient Network
-              </a>
-            </div>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
+            <p>Built for x402 Solana Hackathon • Parallax Eco Track</p>
           </div>
         </div>
       </footer>
-    </div>
-  )
-}
-
-// Feature Card Component
-function FeatureCard({
-  icon,
-  title,
-  description,
-  link,
-  linkText,
-}: {
-  icon: string
-  title: string
-  description: string
-  link: string
-  linkText: string
-}) {
-  return (
-    <motion.div
-      className="glass p-8 rounded-xl border border-border hover:border-accent-primary transition-all"
-      whileHover={{ scale: 1.05 }}
-    >
-      <div className="text-5xl mb-4">{icon}</div>
-      <h3 className="text-2xl font-heading font-bold mb-4 text-white">{title}</h3>
-      <p className="text-text-secondary mb-6">{description}</p>
-      <Link href={link}>
-        <button className="text-accent-primary hover:text-accent-secondary transition-colors font-bold">
-          {linkText} →
-        </button>
-      </Link>
-    </motion.div>
-  )
-}
-
-// Step Card Component
-function StepCard({
-  number,
-  title,
-  description,
-}: {
-  number: string
-  title: string
-  description: string
-}) {
-  return (
-    <motion.div
-      className="glass-hover p-6 rounded-xl border border-border text-center"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: Number(number) * 0.1 }}
-      viewport={{ once: true }}
-    >
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary flex items-center justify-center">
-        <span className="text-3xl font-heading font-black text-white">{number}</span>
-      </div>
-      <h3 className="text-xl font-heading font-bold mb-2 text-white">{title}</h3>
-      <p className="text-text-secondary">{description}</p>
-    </motion.div>
-  )
-}
-
-// Stat Display Component
-function StatDisplay({ value, label }: { value: string; label: string }) {
-  return (
-    <div>
-      <div className="text-4xl font-heading font-black text-gradient mb-2">{value}</div>
-      <div className="text-text-secondary">{label}</div>
     </div>
   )
 }

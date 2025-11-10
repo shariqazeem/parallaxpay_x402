@@ -16,6 +16,7 @@ export interface RealProvider {
   name: string
   model: string
   region: string
+  port: number // Port number for multi-node tracking
   online: boolean
   latency: number // REAL measured latency
   price: number // Dynamic pricing
@@ -39,68 +40,66 @@ export class RealProviderManager {
   private providers: Map<string, RealProvider> = new Map()
   private healthCheckInterval: NodeJS.Timeout | null = null
 
-  // Support Parallax instances (configure based on your setup)
-  // For single node setup (Mac Air M1), just use one endpoint
-  private readonly PARALLAX_ENDPOINTS = [
-    { url: 'http://localhost:3001', region: 'Local', model: 'Qwen/Qwen3-0.6B' },
-    // Uncomment below if you want to run multiple nodes (requires more resources):
-    // { url: 'http://localhost:3002', region: 'Local-2', model: 'Qwen/Qwen2.5-1.5B' },
-    // { url: 'http://localhost:3003', region: 'Local-3', model: 'Qwen/Qwen2.5-3B' },
-  ]
+  // Parallax Cluster Configuration
+  // Parallax uses scheduler+worker architecture:
+  // - 1 scheduler on port 3001 (main API endpoint)
+  // - N workers connect to scheduler via P2P (we can't detect count via HTTP)
+  //
+  // We show the cluster as a single entity since:
+  // 1. All requests go through one scheduler endpoint
+  // 2. Worker count is not exposed via HTTP API
+  // 3. This accurately represents the architecture
+  private readonly PARALLAX_CLUSTER = {
+    schedulerUrl: 'http://localhost:3001',
+    model: 'Qwen/Qwen3-0.6B'
+  }
 
   constructor() {
     console.log('🚀 RealProviderManager initialized')
   }
 
   /**
-   * Discover and connect to all available Parallax providers
+   * Discover Parallax cluster (dynamic - works with any number of workers)
+   *
+   * Shows cluster as single entity since worker count isn't exposed via HTTP.
+   * This accurately represents the architecture: one scheduler, N workers.
    */
   async discoverProviders(): Promise<RealProvider[]> {
-    console.log('🔍 Discovering real Parallax providers...')
+    console.log('🔍 Discovering Parallax cluster...')
+    console.log(`   Scheduler: ${this.PARALLAX_CLUSTER.schedulerUrl}`)
 
-    const discoveries = await Promise.allSettled(
-      this.PARALLAX_ENDPOINTS.map(async (endpoint) => {
-        try {
-          const health = await this.healthCheck(endpoint.url)
+    // Check scheduler health
+    const health = await this.healthCheck(this.PARALLAX_CLUSTER.schedulerUrl)
 
-          const provider: RealProvider = {
-            id: `provider-${endpoint.url.split(':').pop()}`,
-            url: endpoint.url,
-            name: `Parallax ${endpoint.region}`,
-            model: endpoint.model,
-            region: endpoint.region,
-            online: health.online,
-            latency: health.latency,
-            price: this.calculateDynamicPrice(health.latency),
-            uptime: health.online ? 100 : 0,
-            lastHealthCheck: Date.now(),
-            successfulRequests: 0,
-            failedRequests: 0,
-          }
+    if (!health.online) {
+      console.log('❌ Parallax cluster is offline')
+      return []
+    }
 
-          this.providers.set(provider.id, provider)
+    console.log(`✅ Parallax cluster online (${health.latency}ms)`)
 
-          if (health.online) {
-            console.log(`✅ Found provider: ${provider.name} (${health.latency}ms)`)
-          } else {
-            console.log(`❌ Provider offline: ${provider.name}`)
-          }
+    // Create single provider entry representing the entire cluster
+    const provider: RealProvider = {
+      id: 'parallax-cluster',
+      url: this.PARALLAX_CLUSTER.schedulerUrl,
+      name: 'Parallax Cluster',
+      model: this.PARALLAX_CLUSTER.model,
+      region: 'Local',
+      port: 3001,
+      online: health.online,
+      latency: health.latency,
+      price: this.calculateDynamicPrice(health.latency),
+      uptime: 100,
+      lastHealthCheck: Date.now(),
+      successfulRequests: 0,
+      failedRequests: 0,
+    }
 
-          return provider
-        } catch (error) {
-          console.error(`Failed to discover ${endpoint.url}:`, error)
-          throw error
-        }
-      })
-    )
+    this.providers.set(provider.id, provider)
+    console.log(`  ✓ ${provider.name} (${provider.latency}ms)`)
+    console.log(`📊 Cluster ready - works with any number of connected workers`)
 
-    const activeProviders = discoveries
-      .filter((result): result is PromiseFulfilledResult<RealProvider> => result.status === 'fulfilled')
-      .map(result => result.value)
-
-    console.log(`Found ${activeProviders.length}/${this.PARALLAX_ENDPOINTS.length} providers online`)
-
-    return activeProviders
+    return [provider]
   }
 
   /**
@@ -152,16 +151,19 @@ export class RealProviderManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: provider.model,
-          messages: [{ role: 'user', content: testPrompt }],
           max_tokens: 10,
+          messages: [{ role: 'user', content: testPrompt }],
+          temperature: 0.7,
+          stream: false,
         }),
       })
 
       const latency = Date.now() - start
 
       if (!response.ok) {
-        throw new Error(`Provider returned ${response.status}`)
+        const errorText = await response.text()
+        console.error(`❌ Provider ${provider.name} returned ${response.status}:`, errorText)
+        throw new Error(`Provider returned ${response.status}: ${errorText.substring(0, 100)}`)
       }
 
       const data = await response.json()
@@ -169,8 +171,11 @@ export class RealProviderManager {
       // Update provider stats
       provider.latency = latency
       provider.successfulRequests++
+      provider.online = true // Mark online on success
       provider.uptime = (provider.successfulRequests / (provider.successfulRequests + provider.failedRequests)) * 100
       provider.lastHealthCheck = Date.now()
+
+      console.log(`✅ ${provider.name} benchmark: ${latency}ms`)
 
       return {
         providerId,
@@ -187,9 +192,11 @@ export class RealProviderManager {
       // Update failure stats
       provider.failedRequests++
       provider.online = false
-      provider.uptime = (provider.successfulRequests / (provider.successfulRequests + provider.failedRequests)) * 100
+      provider.uptime = provider.successfulRequests > 0
+        ? (provider.successfulRequests / (provider.successfulRequests + provider.failedRequests)) * 100
+        : 0
 
-      console.error(`Benchmark failed for ${provider.name}:`, error)
+      console.error(`❌ Benchmark failed for ${provider.name}:`, error)
 
       return {
         providerId,
@@ -202,7 +209,7 @@ export class RealProviderManager {
   }
 
   /**
-   * Benchmark ALL providers in parallel
+   * Benchmark ALL providers (sequentially for cluster to avoid overwhelming scheduler)
    */
   async benchmarkAll(testPrompt?: string): Promise<BenchmarkResult[]> {
     const providerIds = Array.from(this.providers.keys())
@@ -212,11 +219,20 @@ export class RealProviderManager {
       return []
     }
 
-    console.log(`⚡ Benchmarking ${providerIds.length} providers...`)
+    console.log(`⚡ Benchmarking ${providerIds.length} cluster nodes sequentially...`)
 
-    const results = await Promise.all(
-      providerIds.map(id => this.benchmarkProvider(id, testPrompt))
-    )
+    // For Parallax cluster, all providers share same scheduler
+    // So we benchmark sequentially to avoid overwhelming the scheduler
+    const results: BenchmarkResult[] = []
+
+    for (const id of providerIds) {
+      const result = await this.benchmarkProvider(id, testPrompt)
+      results.push(result)
+      // Small delay between requests to avoid overload
+      if (results.length < providerIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
 
     const successful = results.filter(r => r.success)
     console.log(`📊 Benchmark complete: ${successful.length}/${results.length} successful`)

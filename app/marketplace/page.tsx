@@ -11,6 +11,7 @@ import AgentPanel from '../components/marketplace/AgentPanel'
 import OrderPlacementPanel from '../components/marketplace/OrderPlacementPanel'
 import UserPositionPanel from '../components/marketplace/UserPositionPanel'
 import TradeAnimations from '../components/marketplace/TradeAnimations'
+import { ProviderComparisonMatrix } from '@/components/ProviderComparisonMatrix'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
@@ -28,7 +29,7 @@ export default function MarketplacePage() {
   const { fetchWithPayment, isWalletConnected } = useX402Payment()
 
   return (
-    <div className="min-h-screen bg-background-primary">
+    <div className="min-h-screen bg-white">
       {/* Trade Animations Overlay */}
       <TradeAnimations />
 
@@ -39,7 +40,7 @@ export default function MarketplacePage() {
       {selectedProvider && (
         <div className="max-w-[1920px] mx-auto px-6 pt-6">
           <motion.div
-            className="glass-hover neon-border p-4 rounded-xl"
+            className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -47,16 +48,16 @@ export default function MarketplacePage() {
               <div className="flex items-center gap-4">
                 <div className="text-2xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
                 <div>
-                  <div className="font-heading font-bold text-white mb-1">
+                  <div className="font-bold text-black mb-1">
                     ✅ Selected as Default: {selectedProvider.name}
                   </div>
-                  <div className="text-xs text-text-secondary">
+                  <div className="text-xs text-gray-600">
                     All your agents will use this provider • Model: {selectedProvider.model.split('/')[1]} • Latency: {selectedProvider.latency}ms • Uptime: {selectedProvider.uptime}%
                   </div>
                 </div>
               </div>
               <Link href="/agents">
-                <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                <button className="border-2 border-gray-200 px-4 py-2 rounded-lg text-sm font-bold text-black hover:border-black hover:bg-gray-50 transition-all">
                   Go to Agents →
                 </button>
               </Link>
@@ -64,6 +65,16 @@ export default function MarketplacePage() {
           </motion.div>
         </div>
       )}
+
+      {/* Provider Comparison Matrix - Full Width */}
+      <div className="max-w-[1920px] mx-auto px-6 pb-6">
+        <ProviderComparisonMatrix
+          selectedProviderId={selectedProvider?.id}
+          onSelectProvider={(provider) => {
+            selectProvider(provider as any)
+          }}
+        />
+      </div>
 
       {/* Provider Heat Map - Full Width */}
       <div className="max-w-[1920px] mx-auto px-6 pb-6">
@@ -82,20 +93,20 @@ export default function MarketplacePage() {
           {/* Middle Column - Provider Selection */}
           <div className="col-span-12 lg:col-span-6 space-y-6">
             {/* Provider Selection */}
-            <div className="glass p-6 rounded-xl">
+            <div className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-heading font-bold text-white">
+                <h3 className="text-xl font-bold text-black">
                   🏪 Browse Providers
                 </h3>
                 <button
                   onClick={discoverProviders}
                   disabled={isDiscovering}
-                  className="px-3 py-1.5 text-xs font-heading font-bold glass-hover border border-accent-primary rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-xs font-bold bg-black text-white rounded-lg transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isDiscovering ? (
-                    <span className="text-text-muted">🔄 Discovering...</span>
+                    <span>🔄 Discovering...</span>
                   ) : (
-                    <span className="text-gradient">🔍 Discover</span>
+                    <span>🔍 Discover</span>
                   )}
                 </button>
               </div>
@@ -103,10 +114,10 @@ export default function MarketplacePage() {
               {providers.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">🔍</div>
-                  <p className="text-text-secondary text-sm mb-2">
+                  <p className="text-gray-600 text-sm mb-2">
                     No providers discovered yet
                   </p>
-                  <p className="text-xs text-text-muted">
+                  <p className="text-xs text-gray-500">
                     Make sure Parallax nodes are running on ports 3001-3003
                   </p>
                 </div>
@@ -117,8 +128,8 @@ export default function MarketplacePage() {
                       key={provider.id}
                       className={`p-4 rounded-lg cursor-pointer transition-all ${
                         selectedProvider?.id === provider.id
-                          ? 'glass-hover neon-border'
-                          : 'glass border border-border hover:border-accent-primary'
+                          ? 'bg-blue-50 border-2 border-blue-400'
+                          : 'bg-gray-50 border-2 border-gray-200 hover:border-blue-300'
                       }`}
                       onClick={() => selectProvider(provider)}
                       whileHover={{ scale: 1.02 }}
@@ -126,53 +137,53 @@ export default function MarketplacePage() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <div className="text-lg">{provider.featured ? '⭐' : '🖥️'}</div>
-                          <div className="font-heading font-bold text-white">
+                          <div className="font-bold text-black">
                             {provider.name}
                           </div>
                           {provider.online !== undefined && (
-                            <div className={`w-2 h-2 rounded-full ${provider.online ? 'bg-status-success' : 'bg-status-error'}`} />
+                            <div className={`w-2 h-2 rounded-full ${provider.online ? 'bg-green-500' : 'bg-red-500'}`} />
                           )}
                           {provider.tier && provider.tier !== 'free' && (
                             <div className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                               provider.tier === 'premium'
-                                ? 'bg-accent-secondary/20 text-accent-secondary border border-accent-secondary/30'
-                                : 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                                ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                                : 'bg-blue-100 text-blue-700 border border-blue-300'
                             }`}>
                               {provider.tier.toUpperCase()}
                             </div>
                           )}
                         </div>
                         {selectedProvider?.id === provider.id && (
-                          <div className="text-xs bg-accent-primary/20 text-accent-primary px-2 py-1 rounded">
+                          <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">
                             ✓ Selected
                           </div>
                         )}
                       </div>
-                    <div className="text-xs text-text-muted mb-3">
+                    <div className="text-xs text-gray-500 mb-3">
                       {provider.description}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs mb-3">
                       <div>
-                        <div className="text-text-muted">Latency</div>
-                        <div className="font-mono text-white">{provider.latency}ms</div>
+                        <div className="text-gray-500">Latency</div>
+                        <div className="font-mono text-black">{provider.latency}ms</div>
                       </div>
                       <div>
-                        <div className="text-text-muted">Uptime</div>
-                        <div className="font-mono text-status-success">{provider.uptime}%</div>
+                        <div className="text-gray-500">Uptime</div>
+                        <div className="font-mono text-green-600">{provider.uptime}%</div>
                       </div>
                       <div>
-                        <div className="text-text-muted">Model</div>
-                        <div className="font-mono text-white text-[10px]">{provider.model.split('/')[1]}</div>
+                        <div className="text-gray-500">Model</div>
+                        <div className="font-mono text-black text-[10px]">{provider.model.split('/')[1]}</div>
                       </div>
                     </div>
                     {provider.minReputation && provider.minReputation > 0 && (
-                      <div className="glass-hover p-2 rounded border border-accent-secondary/30 bg-accent-secondary/5">
+                      <div className="bg-purple-50 p-2 rounded border border-purple-200">
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1 text-text-secondary">
+                          <div className="flex items-center gap-1 text-gray-600">
                             <span>🏆</span>
                             <span>Min Reputation:</span>
                           </div>
-                          <div className="font-bold text-accent-secondary">
+                          <div className="font-bold text-purple-700">
                             {provider.minReputation}+
                           </div>
                         </div>
@@ -185,13 +196,13 @@ export default function MarketplacePage() {
 
               {/* Use Provider Button */}
               {selectedProvider && (
-                <div className="mt-6 pt-4 border-t border-border">
+                <div className="mt-6 pt-4 border-t border-gray-200">
                   <Link href="/agents">
-                    <button className="w-full glass-hover neon-border px-4 py-4 rounded-lg font-heading font-bold transition-all hover:scale-105">
-                      <span className="text-gradient">🤖 Use This Provider for All Agents →</span>
+                    <button className="w-full bg-black text-white px-4 py-4 rounded-lg font-bold transition-all hover:bg-gray-800">
+                      🤖 Use This Provider for All Agents →
                     </button>
                   </Link>
-                  <p className="text-xs text-text-muted text-center mt-2">
+                  <p className="text-xs text-gray-500 text-center mt-2">
                     Provider saved. All your agents will automatically use {selectedProvider.name}
                   </p>
                 </div>
@@ -293,7 +304,7 @@ function TradePanel({
             type: 'marketplace',
             provider: selectedProvider || data.provider || 'Local Parallax Node',
             tokens: data.tokens || maxTokens,
-            cost: data.cost || estimatedCost,
+            cost: data.cost || 0.001,
             txHash: data.txHash,
             status: 'success',
             network: 'solana-devnet',
@@ -468,7 +479,7 @@ function RecentTrades() {
         const orderBook = getEnhancedOrderBook()
         const recentTrades = orderBook.getRecentTrades(5)
 
-        const displayTrades = recentTrades.map(trade => ({
+        const displayTrades = recentTrades.map((trade: any) => ({
           time: new Date(trade.timestamp).toLocaleTimeString(),
           buyerId: trade.buyerId,
           sellerId: trade.sellerId,
