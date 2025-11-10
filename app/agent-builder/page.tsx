@@ -122,7 +122,7 @@ export default function AgentBuilderPage() {
             <div className="flex items-center gap-4">
               <Link href="/">
                 <h1 className="text-2xl font-heading font-black cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-gradient">ParallaxPay</span>
+                  <span className="text-purple-600">ParallaxPay</span>
                 </h1>
               </Link>
               <div className="text-gray-600">/</div>
@@ -134,12 +134,12 @@ export default function AgentBuilderPage() {
             <div className="flex items-center gap-3">
               <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
               <Link href="/swarm">
-                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                <button className="bg-white border-2 border-purple-200 hover:border-purple-400 hover:shadow-md px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   Swarm
                 </button>
               </Link>
               <Link href="/agents">
-                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                <button className="bg-white border-2 border-purple-200 hover:border-purple-400 hover:shadow-md px-4 py-2 rounded-lg text-sm font-semibold transition-all">
                   My Agents
                 </button>
               </Link>
@@ -153,7 +153,7 @@ export default function AgentBuilderPage() {
         {/* Hero */}
         <div className="bg-white rounded-xl p-8 border-2 border-purple-200 shadow-sm">
           <h1 className="text-4xl font-heading font-black mb-4">
-            <span className="text-gradient">Build Agents with Natural Language</span> 🧠
+            <span className="text-purple-600">Build Agents with Natural Language</span> 🧠
           </h1>
           <p className="text-lg text-gray-600 mb-6 max-w-3xl">
             Describe your trading strategy in plain English. Our AI (powered by Parallax) will generate production-ready TypeScript code.
@@ -179,26 +179,26 @@ export default function AgentBuilderPage() {
             <button
               onClick={generateAgent}
               disabled={!prompt.trim() || isGenerating}
-              className="w-full glass-hover neon-border px-6 py-4 rounded-xl font-heading font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white border-2 border-purple-400 px-6 py-4 rounded-xl font-heading font-bold transition-all hover:from-purple-600 hover:to-blue-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isGenerating ? (
                 <span>🧠 Generating strategy...</span>
               ) : (
-                <span className="text-gradient">✨ Generate Agent Strategy</span>
+                <span>✨ Generate Agent Strategy</span>
               )}
             </button>
           </div>
         </div>
 
         {/* Example Prompts */}
-        <div className="glass rounded-xl p-6 border border-border">
+        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-heading font-bold mb-4">💡 Example Prompts</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {examplePrompts.slice(0, 6).map((example, idx) => (
               <button
                 key={idx}
                 onClick={() => useExample(example)}
-                className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-purple-300 text-left text-sm transition-all"
+                className="bg-gradient-to-br from-blue-50 to-purple-50 p-3 rounded-lg border-2 border-blue-200 hover:border-purple-300 text-left text-sm transition-all"
               >
                 <div className="text-black mb-1">"{example}"</div>
               </button>
@@ -234,13 +234,13 @@ export default function AgentBuilderPage() {
 
                 {/* Performance Estimates */}
                 <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
                     <div className="text-sm text-gray-600 mb-1">Expected Savings</div>
                     <div className="text-2xl font-heading font-bold text-status-success">
                       {strategy.estimatedPerformance.expectedSavings}%
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
                     <div className="text-sm text-gray-600 mb-1">Risk Level</div>
                     <div className={`text-2xl font-heading font-bold ${
                       strategy.estimatedPerformance.riskLevel === 'low' ? 'text-status-success' :
@@ -250,7 +250,7 @@ export default function AgentBuilderPage() {
                       {strategy.estimatedPerformance.riskLevel}
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
                     <div className="text-sm text-gray-600 mb-1">Complexity</div>
                     <div className="text-2xl font-heading font-bold text-black">
                       {strategy.estimatedPerformance.complexity}
@@ -277,13 +277,13 @@ export default function AgentBuilderPage() {
                   <button
                     onClick={testAgent}
                     disabled={isTesting}
-                    className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-6 py-3 rounded-lg font-heading font-bold transition-all disabled:opacity-50"
+                    className="bg-white border-2 border-purple-200 hover:border-purple-400 hover:shadow-md px-6 py-3 rounded-lg font-heading font-bold transition-all disabled:opacity-50"
                   >
                     {isTesting ? '🧪 Testing...' : '🧪 Test Strategy'}
                   </button>
                   <button
                     onClick={downloadCode}
-                    className="glass-hover border border-border px-6 py-3 rounded-lg font-heading font-bold hover:scale-105 transition-all"
+                    className="bg-white hover:shadow-md border-2 border-gray-200 px-6 py-3 rounded-lg font-heading font-bold hover:scale-105 transition-all"
                   >
                     📥 Download Code
                   </button>
@@ -291,7 +291,7 @@ export default function AgentBuilderPage() {
                     onClick={deployAgent}
                     className="bg-black text-white px-6 py-3 rounded-lg font-heading font-bold hover:bg-gray-800 transition-all flex-1"
                   >
-                    <span className="text-gradient">🚀 Deploy Agent</span>
+                    <span className="text-purple-600">🚀 Deploy Agent</span>
                   </button>
                 </div>
               </div>
@@ -301,12 +301,12 @@ export default function AgentBuilderPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`glass rounded-xl p-6 border ${
-                    testResult.success ? 'border-status-success/50' : 'border-status-error/50'
+                  className={`bg-white rounded-xl p-6 border-2 shadow-lg ${
+                    testResult.success ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
                   }`}
                 >
                   <h3 className={`text-xl font-heading font-bold mb-4 ${
-                    testResult.success ? 'text-status-success' : 'text-status-error'
+                    testResult.success ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {testResult.success ? '✅ Test Passed!' : '❌ Test Failed'}
                   </h3>
@@ -326,20 +326,20 @@ export default function AgentBuilderPage() {
               )}
 
               {/* Generated Code */}
-              <div className="glass rounded-xl p-6 border border-border">
+              <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-heading font-bold">📄 Generated Code</h3>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(strategy.code)
                     }}
-                    className="text-sm glass-hover px-4 py-2 rounded-lg border border-border hover:border-accent-primary/50 transition-all"
+                    className="text-sm bg-white hover:bg-purple-50 px-4 py-2 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all text-purple-700 font-semibold"
                   >
                     📋 Copy
                   </button>
                 </div>
-                <pre className="bg-background-secondary p-6 rounded-lg text-sm overflow-x-auto border border-border">
-                  <code className="text-accent-secondary">{strategy.code}</code>
+                <pre className="bg-gray-50 p-6 rounded-lg text-sm overflow-x-auto border-2 border-purple-200">
+                  <code className="text-purple-700 font-mono">{strategy.code}</code>
                 </pre>
               </div>
             </motion.div>
@@ -347,8 +347,8 @@ export default function AgentBuilderPage() {
         </AnimatePresence>
 
         {/* How It Works */}
-        <div className="glass rounded-xl p-8 border border-border">
-          <h3 className="text-2xl font-heading font-bold mb-6 text-gradient">
+        <div className="bg-white rounded-xl p-8 border-2 border-gray-200">
+          <h3 className="text-2xl font-heading font-bold mb-6 text-purple-600">
             How It Works
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
