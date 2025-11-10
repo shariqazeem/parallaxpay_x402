@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 import { LiveActivityFeed } from '@/components/LiveActivityFeed'
+import { useProvider } from '@/app/contexts/ProviderContext'
 
 interface DashboardStats {
   totalAgents: number
@@ -16,6 +18,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { publicKey } = useWallet()
+  const { selectedProvider, providers } = useProvider()
   const [stats, setStats] = useState<DashboardStats>({
     totalAgents: 0,
     totalExecutions: 0,
@@ -35,9 +38,9 @@ export default function DashboardPage() {
 
       // Load agents
       const { data: agents, error: agentsError } = await supabase
-        .from('deployed_agents')
+        .from('agents')
         .select('*')
-        .order('deployed', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (agentsError) {
         console.error('Failed to load agents:', agentsError)
@@ -107,73 +110,119 @@ export default function DashboardPage() {
     }
   ]
 
-  if (!publicKey) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">🔐</div>
-          <h1 className="text-3xl font-black text-black mb-4">Connect Your Wallet</h1>
-          <p className="text-gray-600 mb-8">
-            Please connect your Solana wallet to access the dashboard and manage your autonomous agents.
-          </p>
-          <Link href="/">
-            <button className="px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-all">
-              Go to Home
-            </button>
-          </Link>
-        </div>
-      </div>
-    )
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
   }
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/">
-              <h1 className="text-2xl font-bold text-black cursor-pointer hover:opacity-70 transition-opacity">
-                ParallaxPay
-              </h1>
-            </Link>
+            <div className="flex items-center gap-8">
+              <Link href="/">
+                <motion.h1
+                  whileHover={{ scale: 1.02 }}
+                  className="text-2xl font-bold text-black cursor-pointer"
+                >
+                  ParallaxPay
+                </motion.h1>
+              </Link>
 
-            <nav className="flex items-center gap-6">
-              <Link href="/dashboard" className="text-sm font-semibold text-black">
-                Dashboard
-              </Link>
-              <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                Agents
-              </Link>
-              <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                Marketplace
-              </Link>
-              <Link href="/leaderboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                Leaderboard
-              </Link>
-            </nav>
+              <nav className="hidden md:flex items-center gap-6">
+                <Link href="/dashboard" className="text-sm font-semibold text-black">
+                  Dashboard
+                </Link>
+                <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Agents
+                </Link>
+                <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Marketplace
+                </Link>
+                <Link href="/leaderboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Leaderboard
+                </Link>
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Provider Status */}
+              {selectedProvider && (
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs font-semibold text-green-700">{selectedProvider.name}</span>
+                </div>
+              )}
+
+              {/* Wallet Button */}
+              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-semibold hover:!bg-gray-800 !transition-all" />
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Welcome Section */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-black text-black mb-3">
-            Welcome back
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 sm:mb-12"
+        >
+          <h1 className="text-4xl sm:text-5xl font-black text-black mb-3">
+            {publicKey ? 'Welcome back' : 'Welcome to ParallaxPay'}
           </h1>
-          <p className="text-xl text-gray-600">
-            Here's what's happening with your autonomous agents
+          <p className="text-lg sm:text-xl text-gray-600">
+            {publicKey
+              ? "Here's what's happening with your autonomous agents"
+              : "Connect your wallet to get started with autonomous AI agents"}
           </p>
-        </div>
+        </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid md:grid-cols-4 gap-6 mb-12">
+        {/* No Wallet Connected Banner */}
+        {!publicKey && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
+            className="mb-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border-2 border-blue-200"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="text-5xl">🔐</div>
+                <div>
+                  <h3 className="text-2xl font-bold text-black mb-2">Connect Your Wallet</h3>
+                  <p className="text-gray-600">
+                    Connect your Solana wallet to deploy agents, track performance, and build reputation
+                  </p>
+                </div>
+              </div>
+              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-8 !py-4 !text-base !font-semibold hover:!bg-gray-800 !transition-all" />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Stats Grid */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12"
+        >
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="text-3xl">🤖</div>
@@ -186,10 +235,9 @@ export default function DashboardPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
+            variants={itemVariants}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="text-3xl">⚡</div>
@@ -202,10 +250,9 @@ export default function DashboardPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
+            variants={itemVariants}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="text-3xl">💰</div>
@@ -218,10 +265,9 @@ export default function DashboardPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
+            variants={itemVariants}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="text-3xl">🏆</div>
@@ -303,7 +349,7 @@ export default function DashboardPage() {
                           <p className="text-sm text-gray-600 mb-2 line-clamp-2">{agent.prompt}</p>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>🔄 {agent.total_runs || 0} runs</span>
-                            <span>📅 {new Date(agent.deployed).toLocaleDateString()}</span>
+                            <span>📅 {new Date(agent.created_at).toLocaleDateString()}</span>
                             {agent.provider && <span>⚡ {agent.provider}</span>}
                           </div>
                         </div>
