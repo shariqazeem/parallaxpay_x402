@@ -1001,7 +1001,7 @@ export default function AgentDashboardPage() {
           <div>
             {selectedProvider ? (
               <motion.div
-                className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm"
+                className="bg-gradient-to-br from-green-50/50 to-white p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -1039,7 +1039,7 @@ export default function AgentDashboardPage() {
               </motion.div>
             ) : (
               <motion.div
-                className="bg-white p-4 rounded-xl border-2 border-red-200 shadow-sm"
+                className="bg-gradient-to-br from-red-50/50 to-white p-4 rounded-xl shadow-md"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -1130,7 +1130,7 @@ export default function AgentDashboardPage() {
             {publicKey && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
-              <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
+              <div className="bg-gradient-to-br from-blue-50/30 to-white p-6 rounded-xl shadow-md mb-4">
                 <div className="flex items-start gap-4">
                   <div className="text-3xl">🚀</div>
                   <div>
@@ -1172,7 +1172,7 @@ export default function AgentDashboardPage() {
                   </div>
 
                   {!publicKey && (
-                    <div className="bg-white p-4 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
+                    <div className="bg-gradient-to-br from-blue-50/30 to-white p-4 rounded-xl shadow-md mb-4">
                       <div className="flex items-center gap-3">
                         <div className="text-2xl">👛</div>
                         <div className="flex-1">
@@ -1187,7 +1187,7 @@ export default function AgentDashboardPage() {
                   )}
 
                   {publicAgents.length === 0 && publicKey && (
-                    <div className="bg-white p-6 rounded-xl border-2 border-gray-200 text-center shadow-sm">
+                    <div className="bg-white p-6 rounded-xl shadow-md text-center">
                       <div className="text-4xl mb-3">🚀</div>
                       <div className="font-semibold text-gray-600 mb-2">No Other Agents Yet</div>
                       <div className="text-sm text-gray-500">
@@ -1556,7 +1556,7 @@ function AgentCard({
           onClick={() => setShowAttestModal(false)}
         >
           <motion.div
-            className="bg-white rounded-xl border-2 border-green-200 p-6 max-w-md w-full shadow-xl"
+            className="bg-white/95 backdrop-blur-sm rounded-xl p-6 max-w-md w-full shadow-2xl"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
@@ -1609,7 +1609,7 @@ function AgentCard({
               ))}
             </div>
 
-            <div className="bg-blue-50 p-3 rounded-lg border-2 border-blue-200">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-50/30 p-3 rounded-lg shadow-sm">
               <div className="text-xs text-gray-600">
                 <div className="font-bold text-blue-600 mb-1">ℹ️ What is attestation?</div>
                 Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
@@ -1671,7 +1671,7 @@ function AgentCard({
 
 function LiveTradeFeed({ trades }: { trades: Trade[] }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-black">
@@ -1732,7 +1732,7 @@ function LiveTradeFeed({ trades }: { trades: Trade[] }) {
 
 function AgentMetrics({ agents }: { agents: AgentStats[] }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-xl p-6 shadow-md">
       <h3 className="text-lg font-bold text-black mb-4">
         Performance Metrics
       </h3>
@@ -1766,7 +1766,7 @@ function AgentMetrics({ agents }: { agents: AgentStats[] }) {
 
 function SDKExample() {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -1806,7 +1806,7 @@ function SDKExample() {
 
 function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-black">
@@ -2132,7 +2132,7 @@ function DeployAgentModal({
     >
       {/* Centered Modal - scrolls with backdrop */}
       <motion.div
-        className="bg-white border-2 border-gray-200 rounded-2xl w-full max-w-3xl my-8 shadow-xl"
+        className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-3xl my-8 shadow-2xl"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
@@ -2209,7 +2209,7 @@ function DeployAgentModal({
               </label>
               <div className="space-y-3">
                 {workflowSteps.map((step, index) => (
-                  <div key={step.id} className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200">
+                  <div key={step.id} className="bg-gray-50/50 p-3 rounded-lg shadow-sm">
                     <div className="flex items-start gap-2 mb-2">
                       <div className="px-2 py-1 bg-purple-100 text-accent-primary text-xs font-bold rounded">
                         Step {index + 1}
