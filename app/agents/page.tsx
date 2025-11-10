@@ -104,6 +104,14 @@ export default function AgentDashboardPage() {
     }
   }, [identityManager])
 
+  // Set execution callback for autonomous scheduler
+  useEffect(() => {
+    if (scheduler) {
+      scheduler.setExecutionCallback(runAgent)
+      console.log('✅ Autonomous scheduler execution callback set')
+    }
+  }, [scheduler, deployedAgents, identityManager, isWalletConnected, publicKey, selectedProvider])
+
   // Load deployed agents from Supabase on mount
   useEffect(() => {
     const loadAgents = async () => {
@@ -370,14 +378,15 @@ export default function AgentDashboardPage() {
   }))
 
   // Run an agent's task with REAL x402 PAYMENT using USER WALLET
-  const runAgent = async (agentId: string) => {
+  const runAgent = async (agentId: string): Promise<{ success: boolean; cost: number; error?: string }> => {
     const agent = deployedAgents.find(a => a.id === agentId)
-    if (!agent || !identityManager) return
+    if (!agent || !identityManager) {
+      return { success: false, cost: 0, error: 'Agent not found or identity manager not initialized' }
+    }
 
     // Check wallet connection
     if (!isWalletConnected) {
-      alert('💳 Please connect your wallet to run agents with paid inference')
-      return
+      return { success: false, cost: 0, error: 'Wallet not connected' }
     }
 
     // Update status to running
@@ -518,7 +527,7 @@ export default function AgentDashboardPage() {
           console.warn('Failed to store transaction:', e)
         }
 
-        return
+        return { success: data.success, cost: data.totalCost, error: data.success ? undefined : 'Composite workflow failed' }
       }
 
       // REGULAR AGENT: Single inference call
@@ -655,6 +664,8 @@ export default function AgentDashboardPage() {
         console.warn('Failed to store transaction:', e)
       }
 
+      return { success: true, cost: data.cost || 0.001 }
+
     } catch (err) {
       console.error('Agent execution error:', err)
 
@@ -688,6 +699,8 @@ export default function AgentDashboardPage() {
       setDeployedAgents(prev => prev.map(a =>
         a.id === agentId ? { ...a, status: 'idle' as const } : a
       ))
+
+      return { success: false, cost: 0.001, error: errorMessage }
     }
   }
 
