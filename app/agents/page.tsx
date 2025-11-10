@@ -1147,86 +1147,92 @@ export default function AgentDashboardPage() {
             )}
 
             {/* PUBLIC MARKETPLACE SECTION */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold text-black">
-                  🌐 Public Marketplace
-                </h3>
-                {deployedAgents.length > 0 && (
-                  <div className="text-sm text-gray-600">
-                    {deployedAgents.length} agents available
-                  </div>
-                )}
-              </div>
+            {(() => {
+              // Filter to show only OTHER users' agents (not current user's own agents)
+              const publicAgents = publicKey
+                ? deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58())
+                : deployedAgents;
 
-              {!publicKey && (
-                <div className="bg-white p-4 rounded-xl border-2 border-gray-200 mb-4 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">👛</div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-black mb-1">Connect Wallet to Deploy</div>
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-bold text-black">
+                      🌐 Public Marketplace
+                    </h3>
+                    {publicAgents.length > 0 && (
                       <div className="text-sm text-gray-600">
-                        Connect your Solana wallet to deploy and run agents
+                        {publicAgents.length} public agents
+                      </div>
+                    )}
+                  </div>
+
+                  {!publicKey && (
+                    <div className="bg-white p-4 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">👛</div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-black mb-1">Connect Wallet to Run Agents</div>
+                          <div className="text-sm text-gray-600">
+                            Connect your Solana wallet to run agents with x402 micropayments
+                          </div>
+                        </div>
+                        <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800" />
                       </div>
                     </div>
-                    <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800" />
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {deployedAgents.length === 0 && (
-                <div className="bg-white p-6 rounded-xl border-2 border-gray-200 text-center shadow-sm">
-                  <div className="text-4xl mb-3">📭</div>
-                  <div className="font-semibold text-gray-600 mb-2">No Public Agents Yet</div>
-                  <div className="text-sm text-gray-500">
-                    Be the first to deploy an agent to the marketplace!
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {deployedAgents.map((agent, index) => {
-                  const identity = agent.identityId
-                    ? agentIdentities.find(id => id.id === agent.identityId)
-                    : undefined
-
-                  // Convert to AgentStats format
-                  const agentStats: AgentStats = {
-                    id: agent.id,
-                    name: agent.name,
-                    type: agent.type as any,
-                    status: agent.status === 'running' ? 'executing' : 'idle',
-                    totalTrades: agent.totalRuns,
-                    profit: 0,
-                    avgCost: 0.001,
-                    successRate: 100,
-                    lastAction: agent.lastResult || 'Ready',
-                    lastActionTime: agent.lastRun || agent.deployed,
-                    avatar: '🌐',
-                    color: 'purple',
-                    isReal: true
-                  }
-
-                  const isMyAgent = publicKey && agent.wallet_address === publicKey.toBase58()
-
-                  return (
-                    <div key={agent.id} className="relative">
-                      {isMyAgent && (
-                        <div className="absolute -top-2 -right-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                          Yours
-                        </div>
-                      )}
-                      <AgentCard
-                        agent={agentStats}
-                        index={index}
-                        onRun={() => runAgent(agent.id)}
-                        identity={identity}
-                      />
+                  {publicAgents.length === 0 && publicKey && (
+                    <div className="bg-white p-6 rounded-xl border-2 border-gray-200 text-center shadow-sm">
+                      <div className="text-4xl mb-3">🚀</div>
+                      <div className="font-semibold text-gray-600 mb-2">No Other Agents Yet</div>
+                      <div className="text-sm text-gray-500">
+                        You're the first! Share your agents with the community.
+                      </div>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {publicAgents.map((agent, index) => {
+                      const identity = agent.identityId
+                        ? agentIdentities.find(id => id.id === agent.identityId)
+                        : undefined
+
+                      // Convert to AgentStats format
+                      const agentStats: AgentStats = {
+                        id: agent.id,
+                        name: agent.name,
+                        type: agent.type as any,
+                        status: agent.status === 'running' ? 'executing' : 'idle',
+                        totalTrades: agent.totalRuns,
+                        profit: 0,
+                        avgCost: 0.001,
+                        successRate: 100,
+                        lastAction: agent.lastResult || 'Ready',
+                        lastActionTime: agent.lastRun || agent.deployed,
+                        avatar: '🌐',
+                        color: 'purple',
+                        isReal: true
+                      }
+
+                      return (
+                        <div key={agent.id} className="relative">
+                          {/* Owner badge */}
+                          <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                            👤 {agent.wallet_address ? `${agent.wallet_address.substring(0, 4)}...${agent.wallet_address.substring(agent.wallet_address.length - 4)}` : 'Public'}
+                          </div>
+                          <AgentCard
+                            agent={agentStats}
+                            index={index}
+                            onRun={() => runAgent(agent.id)}
+                            identity={identity}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* SDK Example */}
             <SDKExample />
