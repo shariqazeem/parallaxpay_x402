@@ -37,3 +37,23 @@ export interface TransactionDB {
   wallet_address?: string
   created_at?: string
 }
+
+export interface PredictionDB {
+  id: string
+  wallet_address: string
+  timestamp: number
+  asset: string
+  timeframe: string
+  current_price: number
+  predicted_direction: 'up' | 'down' | 'neutral'
+  confidence: number
+  consensus_strength: number
+  providers_data: any // jsonb
+  total_cost: number
+  tx_hash?: string
+  reasoning: string
+  actual_outcome?: 'up' | 'down' | 'neutral'
+  accuracy?: boolean
+  verified_at?: number
+  created_at?: string
+}

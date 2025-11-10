@@ -62,8 +62,10 @@ export default function MarketOraclePage() {
     setIsAnalyzing(true)
     try {
       const useMultiProvider = onlineProviders.length > 1
-      // Pass fetchWithPayment for client-side wallet payments (Phantom confirmation)
-      const prediction = await oracle.runPrediction('SOL', '1h', useMultiProvider, fetchWithPayment)
+      const walletAddress = publicKey?.toBase58()
+
+      // Pass fetchWithPayment for client-side wallet payments (Phantom confirmation) and wallet address
+      const prediction = await oracle.runPrediction('SOL', '1h', useMultiProvider, fetchWithPayment, walletAddress)
       setLatestPrediction(prediction)
       updatePerformance()
     } catch (error) {
@@ -87,9 +89,9 @@ export default function MarketOraclePage() {
       alert('⚠️ Payment client is initializing. Please wait a moment and try again.')
       return
     }
-    // Note: Autonomous mode uses server-side payments since it runs in background
-    // For user-initiated predictions, we use client-side wallet payments
-    oracle.startAutonomousMode(5, fetchWithPayment) // Run every 5 minutes
+    // Autonomous mode uses client-side wallet payments
+    const walletAddress = publicKey?.toBase58()
+    oracle.startAutonomousMode(5, fetchWithPayment, walletAddress) // Run every 5 minutes
     setIsRunning(true)
   }
 

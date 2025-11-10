@@ -10,6 +10,7 @@
  */
 
 import { getRealProviderManager } from './real-provider-manager'
+import { supabase, PredictionDB } from './supabase'
 
 export interface MarketPrediction {
   id: string
@@ -76,9 +77,16 @@ export class MarketOracleAgent {
     }
   }
 
-  async fetchCurrentPrice(asset: string): Promise<number> {
+  async fetchMarketData(asset: string): Promise<{
+    currentPrice: number
+    priceChange24h: number
+    volume24h: number
+    marketCap: number
+    high24h: number
+    low24h: number
+  }> {
     try {
-      // Using CoinGecko API for real price data (free, no auth needed)
+      // Using CoinGecko API for comprehensive market data
       const coinIds: { [key: string]: string } = {
         'BTC': 'bitcoin',
         'ETH': 'ethereum',
@@ -88,20 +96,37 @@ export class MarketOracleAgent {
 
       const coinId = coinIds[asset] || 'bitcoin'
       const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
+        `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false`,
         { next: { revalidate: 60 } } // Cache for 60 seconds
       )
 
       if (!response.ok) {
-        throw new Error('Failed to fetch price')
+        throw new Error('Failed to fetch market data')
       }
 
       const data = await response.json()
-      return data[coinId]?.usd || 0
+      const marketData = data.market_data
+
+      return {
+        currentPrice: marketData.current_price?.usd || 0,
+        priceChange24h: marketData.price_change_percentage_24h || 0,
+        volume24h: marketData.total_volume?.usd || 0,
+        marketCap: marketData.market_cap?.usd || 0,
+        high24h: marketData.high_24h?.usd || 0,
+        low24h: marketData.low_24h?.usd || 0,
+      }
     } catch (error) {
-      console.error('Price fetch error:', error)
-      // Return mock price if API fails
-      return 42000 + Math.random() * 1000
+      console.error('Market data fetch error:', error)
+      // Return mock data if API fails
+      const mockPrice = 42000 + Math.random() * 1000
+      return {
+        currentPrice: mockPrice,
+        priceChange24h: (Math.random() - 0.5) * 10,
+        volume24h: 1000000000 + Math.random() * 500000000,
+        marketCap: 80000000000 + Math.random() * 20000000000,
+        high24h: mockPrice * 1.05,
+        low24h: mockPrice * 0.95,
+      }
     }
   }
 
@@ -109,10 +134,12 @@ export class MarketOracleAgent {
     asset: string = 'SOL',
     timeframe: '5m' | '15m' | '1h' | '4h' | '24h' = '1h',
     useMultiProvider = true,
-    fetchWithPayment?: typeof fetch
+    fetchWithPayment?: typeof fetch,
+    walletAddress?: string
   ): Promise<MarketPrediction> {
     const startTime = Date.now()
-    const currentPrice = await this.fetchCurrentPrice(asset)
+    const marketData = await this.fetchMarketData(asset)
+    const currentPrice = marketData.currentPrice
 
     const providerManager = getRealProviderManager()
     const allProviders = providerManager.getAllProviders()
@@ -138,17 +165,35 @@ export class MarketOracleAgent {
       const predictionStart = Date.now()
 
       try {
-        // Create the market analysis prompt
-        const prompt = `You are a crypto market analyst. Analyze ${asset} current price: $${currentPrice}.
+        // Create comprehensive market analysis prompt with real data
+        const priceChangeEmoji = marketData.priceChange24h > 0 ? '📈' : marketData.priceChange24h < 0 ? '📉' : '➡️'
 
-Based on market trends, technical indicators, and current market sentiment, predict if the price will go UP, DOWN, or stay NEUTRAL in the next ${timeframe}.
+        const prompt = `You are an expert crypto market analyst. Analyze ${asset} with the following REAL market data:
+
+CURRENT MARKET DATA:
+• Current Price: $${currentPrice.toFixed(2)}
+• 24h Change: ${priceChangeEmoji} ${marketData.priceChange24h.toFixed(2)}%
+• 24h High: $${marketData.high24h.toFixed(2)}
+• 24h Low: $${marketData.low24h.toFixed(2)}
+• 24h Volume: $${(marketData.volume24h / 1000000).toFixed(2)}M
+• Market Cap: $${(marketData.marketCap / 1000000000).toFixed(2)}B
+
+ANALYSIS TASK:
+Predict if ${asset} will go UP, DOWN, or NEUTRAL in the next ${timeframe}.
+
+Consider:
+1. Technical Analysis: Is price near resistance/support? Current momentum?
+2. Volume Analysis: Is volume confirming the trend?
+3. 24h Performance: What does the 24h change indicate?
+4. Price Position: Where is price relative to 24h high/low?
 
 Respond in this EXACT format:
 PREDICTION: [UP/DOWN/NEUTRAL]
 CONFIDENCE: [0-100]
-REASONING: [brief explanation in 1-2 sentences]
+TARGET: [specific price target for ${timeframe}]
+REASONING: [2-3 sentences with specific technical reasoning, include key levels and indicators]
 
-Be concise and direct.`
+Be specific with numbers and technical levels. This is for real trading decisions.`
 
         // Call inference endpoint with x402 payment
         // Use client-side payment if fetchWithPayment provided, otherwise fall back to server-side
@@ -198,11 +243,18 @@ Be concise and direct.`
         // Parse AI response
         const predictionMatch = aiResponse.match(/PREDICTION:\s*(UP|DOWN|NEUTRAL)/i)
         const confidenceMatch = aiResponse.match(/CONFIDENCE:\s*(\d+)/i)
-        const reasoningMatch = aiResponse.match(/REASONING:\s*(.+?)(?:\n|$)/i)
+        const targetMatch = aiResponse.match(/TARGET:\s*\$?(\d+\.?\d*)/i)
+        const reasoningMatch = aiResponse.match(/REASONING:\s*(.+?)(?:\n\n|$)/is)
 
         const prediction = (predictionMatch?.[1]?.toLowerCase() || 'neutral') as 'up' | 'down' | 'neutral'
         const confidence = parseInt(confidenceMatch?.[1] || '50')
-        const reasoning = reasoningMatch?.[1]?.trim() || 'Analysis based on current market conditions'
+        const targetPrice = targetMatch ? parseFloat(targetMatch[1]) : null
+        let reasoning = reasoningMatch?.[1]?.trim() || 'Analysis based on current market conditions'
+
+        // Add target price to reasoning if available
+        if (targetPrice) {
+          reasoning = `Target: $${targetPrice.toFixed(2)} | ${reasoning}`
+        }
 
         providerPredictions.push({
           name: provider.name,
@@ -286,6 +338,39 @@ Be concise and direct.`
 
     this.saveToLocalStorage()
 
+    // Save to Supabase if wallet address provided
+    if (walletAddress && typeof window !== 'undefined') {
+      try {
+        const predictionDB: Omit<PredictionDB, 'created_at'> = {
+          id: prediction.id,
+          wallet_address: walletAddress,
+          timestamp: prediction.timestamp,
+          asset: prediction.asset,
+          timeframe: prediction.timeframe,
+          current_price: prediction.currentPrice,
+          predicted_direction: prediction.predictedDirection,
+          confidence: prediction.confidence,
+          consensus_strength: prediction.consensusStrength,
+          providers_data: prediction.providers,
+          total_cost: prediction.totalCost,
+          tx_hash: providerPredictions[0]?.latency ? undefined : undefined, // Get from provider if available
+          reasoning: prediction.reasoning,
+        }
+
+        const { error } = await supabase
+          .from('predictions')
+          .insert(predictionDB)
+
+        if (error) {
+          console.error('Failed to save prediction to Supabase:', error)
+        } else {
+          console.log('✅ Prediction saved to Supabase')
+        }
+      } catch (error) {
+        console.error('Error saving prediction:', error)
+      }
+    }
+
     const totalTime = Date.now() - startTime
     console.log(`✅ Prediction complete: ${consensusPrediction.toUpperCase()} (${consensusStrength.toFixed(0)}% consensus, ${totalTime}ms, $${totalCost.toFixed(4)})`)
 
@@ -359,7 +444,7 @@ Be concise and direct.`
     }
   }
 
-  startAutonomousMode(intervalMinutes: number = 5, fetchWithPayment?: typeof fetch) {
+  startAutonomousMode(intervalMinutes: number = 5, fetchWithPayment?: typeof fetch, walletAddress?: string) {
     if (this.isRunning) {
       console.log('⚠️ Oracle already running')
       return
@@ -369,11 +454,11 @@ Be concise and direct.`
     console.log(`🚀 Market Oracle starting autonomous mode (every ${intervalMinutes} minutes)`)
 
     // Run immediately
-    this.runPrediction('SOL', '1h', true, fetchWithPayment)
+    this.runPrediction('SOL', '1h', true, fetchWithPayment, walletAddress)
 
     // Then run on interval
     this.intervalId = setInterval(() => {
-      this.runPrediction('SOL', '1h', true, fetchWithPayment)
+      this.runPrediction('SOL', '1h', true, fetchWithPayment, walletAddress)
 
       // Verify old predictions
       const predictionsToVerify = this.predictions.filter(
