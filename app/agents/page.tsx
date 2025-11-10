@@ -450,7 +450,7 @@ export default function AgentDashboardPage() {
                 status: 'idle' as const,
                 totalRuns: a.totalRuns + 1,
                 lastRun: Date.now(),
-                lastResult: `${prediction.predictedDirection.toUpperCase()} (${prediction.confidence}%) - ${prediction.reasoning.substring(0, 150)}`,
+                lastResult: `${prediction.predictedDirection.toUpperCase()} (${prediction.confidence}%) - ${prediction.reasoning}`,
                 provider: `${prediction.providers.length} providers`
               }
             : a

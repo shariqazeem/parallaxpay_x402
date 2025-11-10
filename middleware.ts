@@ -218,6 +218,33 @@ const x402PaymentMiddleware = paymentMiddleware(
       },
       network,
     },
+
+    // API endpoint for blockchain queries
+    '/api/blockchain-query': {
+      price: '$0.001', // Fixed price per blockchain query
+      config: {
+        description: 'Blockchain Query API - Solana wallet & transaction data via Helius RPC',
+        mimeType: 'application/json',
+        inputSchema: {
+          properties: {
+            walletAddress: { type: 'string', description: 'Solana wallet address to query' },
+            queryType: {
+              type: 'string',
+              enum: ['balance', 'transactions', 'nfts', 'all'],
+              description: 'Type of blockchain data to query'
+            },
+          },
+          required: ['walletAddress'],
+        } as any,
+        outputSchema: {
+          properties: {
+            data: { type: 'object', description: 'Blockchain query results' },
+            metadata: { type: 'object', description: 'Query metadata (cost, latency, network)' },
+          },
+        } as any,
+      },
+      network,
+    },
   },
   facilitatorOptions || {
     url: facilitatorUrl,
@@ -264,5 +291,6 @@ export const config = {
     '/test-payment',
     '/api/inference/paid',
     '/api/runCompositeAgent', // Protect composite agent endpoint with x402
+    '/api/blockchain-query', // Protect blockchain query endpoint with x402
   ],
 }
