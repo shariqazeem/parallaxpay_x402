@@ -148,8 +148,8 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
     if (label.includes('Volume')) return { border: 'border-blue-300', bg: 'bg-gradient-to-br from-blue-50 to-cyan-50', text: 'text-blue-600' }
     if (label.includes('Trades')) return { border: 'border-green-300', bg: 'bg-gradient-to-br from-green-50 to-emerald-50', text: 'text-green-600' }
     if (label.includes('Providers')) return { border: 'border-orange-300', bg: 'bg-gradient-to-br from-orange-50 to-amber-50', text: 'text-orange-600' }
-    if (label.includes('Latency')) return { border: 'border-cyan-300', bg: 'bg-gradient-to-br from-cyan-50 to-blue-50', text: 'text-cyan-600' }
-    if (label.includes('Agents')) return { border: 'border-pink-300', bg: 'bg-gradient-to-br from-pink-50 to-rose-50', text: 'text-pink-600' }
+    if (label.includes('Latency')) return { border: 'border-cyan-300', bg: 'bg-gradient-to-br from-cyan-50 to-blue-50', text: 'text-blue-700' }
+    if (label.includes('Agents')) return { border: 'border-pink-300', bg: 'bg-gradient-to-br from-pink-50 to-rose-50', text: 'text-purple-700' }
     return { border: 'border-gray-300', bg: 'bg-white', text: 'text-gray-600' }
   }
 
