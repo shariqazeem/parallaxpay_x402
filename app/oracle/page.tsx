@@ -7,10 +7,12 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import Navbar from '@/app/components/Navbar'
 import { getMarketOracle, MarketPrediction, OraclePerformance } from '@/lib/market-oracle-agent'
 import { useProvider } from '@/app/contexts/ProviderContext'
+import { useX402Payment } from '@/app/hooks/useX402Payment'
 
 export default function MarketOraclePage() {
   const { publicKey } = useWallet()
   const { providers } = useProvider()
+  const { fetchWithPayment, isWalletConnected, isReady } = useX402Payment()
   const [oracle] = useState(() => getMarketOracle())
   const [isRunning, setIsRunning] = useState(false)
   const [performance, setPerformance] = useState<OraclePerformance | null>(null)
@@ -47,10 +49,23 @@ export default function MarketOraclePage() {
       return
     }
 
+    if (!isWalletConnected) {
+      alert('⚠️ Please connect your Solana wallet to make x402 payments!')
+      return
+    }
+
+    if (!isReady) {
+      alert('⚠️ Payment client is initializing. Please wait a moment and try again.')
+      return
+    }
+
     setIsAnalyzing(true)
     try {
       const useMultiProvider = onlineProviders.length > 1
-      const prediction = await oracle.runPrediction('SOL', '1h', useMultiProvider)
+      const walletAddress = publicKey?.toBase58()
+
+      // Pass fetchWithPayment for client-side wallet payments (Phantom confirmation) and wallet address
+      const prediction = await oracle.runPrediction('SOL', '1h', useMultiProvider, fetchWithPayment, walletAddress)
       setLatestPrediction(prediction)
       updatePerformance()
     } catch (error) {
@@ -66,7 +81,17 @@ export default function MarketOraclePage() {
       alert('⚠️ No providers available! Please visit the Marketplace to enable providers first.')
       return
     }
-    oracle.startAutonomousMode(5) // Run every 5 minutes
+    if (!isWalletConnected) {
+      alert('⚠️ Please connect your Solana wallet first!')
+      return
+    }
+    if (!isReady) {
+      alert('⚠️ Payment client is initializing. Please wait a moment and try again.')
+      return
+    }
+    // Autonomous mode uses client-side wallet payments
+    const walletAddress = publicKey?.toBase58()
+    oracle.startAutonomousMode(5, fetchWithPayment, walletAddress) // Run every 5 minutes
     setIsRunning(true)
   }
 
@@ -203,7 +228,7 @@ export default function MarketOraclePage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleRunPrediction}
-            disabled={isAnalyzing || isRunning || !hasProviders}
+            disabled={isAnalyzing || isRunning || !hasProviders || !isWalletConnected || !isReady}
             className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="text-4xl mb-3">{isAnalyzing ? '⏳' : '🎯'}</div>
@@ -211,10 +236,14 @@ export default function MarketOraclePage() {
               {isAnalyzing ? 'Analyzing...' : 'Run Single Prediction'}
             </div>
             <div className="text-sm text-blue-100">
-              {hasProviders
+              {!isWalletConnected
+                ? '⚠️ Connect wallet to pay with x402'
+                : !isReady
+                ? '⏳ Initializing payment client...'
+                : hasProviders
                 ? onlineProviders.length > 1
-                  ? `Use all ${onlineProviders.length} providers for consensus`
-                  : 'Use 1 available provider'
+                  ? `Use all ${onlineProviders.length} providers • x402 payment`
+                  : 'Use 1 provider • x402 payment'
                 : 'No providers available'}
             </div>
           </motion.button>
@@ -224,13 +253,19 @@ export default function MarketOraclePage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleStartAutonomous}
-              disabled={!hasProviders}
+              disabled={!hasProviders || !isWalletConnected || !isReady}
               className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-4xl mb-3">🚀</div>
               <div className="text-xl font-black mb-1">Start Autonomous Mode</div>
               <div className="text-sm text-green-100">
-                {hasProviders ? 'Run predictions every 5 minutes' : 'Requires providers'}
+                {!isWalletConnected
+                  ? '⚠️ Connect wallet first'
+                  : !isReady
+                  ? '⏳ Initializing...'
+                  : hasProviders
+                  ? 'Run predictions every 5 min • x402 payments'
+                  : 'Requires providers'}
               </div>
             </motion.button>
           ) : (
@@ -255,7 +290,7 @@ export default function MarketOraclePage() {
               oracle.clearHistory()
               updatePerformance()
             }}
-            className="bg-white border-2 border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all"
+            className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all"
           >
             <div className="text-4xl mb-3">🗑️</div>
             <div className="text-xl font-black text-black mb-1">Clear History</div>
@@ -284,7 +319,7 @@ export default function MarketOraclePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl p-6 border-2 border-green-200 shadow-lg"
+              className="bg-white rounded-2xl p-6 shadow-md bg-gradient-to-br from-green-50/30 to-white"
             >
               <div className="text-3xl mb-2">✅</div>
               <div className="text-4xl font-black text-green-600 mb-1">
@@ -297,7 +332,7 @@ export default function MarketOraclePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl p-6 border-2 border-blue-200 shadow-lg"
+              className="bg-white rounded-2xl p-6 shadow-md bg-gradient-to-br from-blue-50/30 to-white"
             >
               <div className="text-3xl mb-2">💰</div>
               <div className="text-4xl font-black text-blue-600 mb-1">
@@ -310,7 +345,7 @@ export default function MarketOraclePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl p-6 border-2 border-purple-200 shadow-lg"
+              className="bg-white rounded-2xl p-6 shadow-md bg-gradient-to-br from-purple-50/30 to-white"
             >
               <div className="text-3xl mb-2">⚡</div>
               <div className="text-4xl font-black text-purple-600 mb-1">
@@ -345,7 +380,7 @@ export default function MarketOraclePage() {
               className="mb-8"
             >
               <h2 className="text-2xl font-black text-black mb-4">Latest Prediction</h2>
-              <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-xl">
+              <div className="bg-white rounded-2xl p-8 shadow-xl">
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Left Side - Prediction Details */}
                   <div>
@@ -399,7 +434,7 @@ export default function MarketOraclePage() {
                       </div>
 
                       {latestPrediction.actualOutcome && (
-                        <div className={`rounded-xl p-4 ${latestPrediction.accuracy ? 'bg-green-50 border-2 border-green-400' : 'bg-red-50 border-2 border-red-400'}`}>
+                        <div className={`rounded-xl p-4 ${latestPrediction.accuracy ? 'bg-gradient-to-br from-green-100 to-green-50 shadow-md' : 'bg-gradient-to-br from-red-100 to-red-50 shadow-md'}`}>
                           <div className="flex items-center gap-3">
                             <div className="text-3xl">
                               {latestPrediction.accuracy ? '✅' : '❌'}
@@ -428,7 +463,7 @@ export default function MarketOraclePage() {
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.1 }}
-                          className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200"
+                          className="bg-gray-50/50 rounded-xl p-4 shadow-sm"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="font-bold text-black">{provider.name}</div>
@@ -453,7 +488,7 @@ export default function MarketOraclePage() {
                       ))}
                     </div>
 
-                    <div className="mt-6 bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+                    <div className="mt-6 bg-gradient-to-br from-blue-50 to-blue-50/30 rounded-xl p-4 shadow-sm">
                       <div className="text-sm text-blue-700 font-semibold mb-1">x402 Micropayment</div>
                       <div className="text-2xl font-black text-black">
                         ${latestPrediction.totalCost.toFixed(4)} total

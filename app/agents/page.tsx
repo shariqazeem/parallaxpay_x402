@@ -18,7 +18,7 @@ import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 interface AgentStats {
   id: string
   name: string
-  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle' | 'blockchain-query'
   status: 'active' | 'idle' | 'executing'
   totalTrades: number
   profit: number
@@ -45,7 +45,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle' | 'blockchain-query'
   prompt: string
   deployed: number
   totalRuns: number
@@ -398,6 +398,217 @@ export default function AgentDashboardPage() {
     const startTime = Date.now()
 
     try {
+      // MARKET ORACLE AGENT: Call Oracle API with multi-provider predictions
+      if (agent.type === 'market-oracle') {
+        console.log(`🔮 [${agent.name}] Running MARKET ORACLE agent...`)
+        console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
+
+        // Parse asset and timeframe from prompt (e.g., "BTC 1h" or "SOL 24h")
+        const promptParts = agent.prompt.trim().split(/\s+/)
+        const asset = (promptParts[0] || 'SOL').toUpperCase()
+        const timeframe = (promptParts[1] || '1h') as '5m' | '15m' | '1h' | '4h' | '24h'
+
+        // Import Oracle agent dynamically
+        const { getMarketOracle } = await import('@/lib/market-oracle-agent')
+        const oracle = getMarketOracle()
+
+        // Run Oracle prediction with client-side payment
+        const prediction = await oracle.runPrediction(
+          asset,
+          timeframe,
+          true, // use multi-provider
+          fetchWithPayment,
+          publicKey?.toBase58()
+        )
+
+        const latency = Date.now() - startTime
+
+        console.log(`✅ [${agent.name}] Oracle prediction completed!`)
+        console.log(`   Prediction: ${prediction.predictedDirection.toUpperCase()}`)
+        console.log(`   Confidence: ${prediction.confidence}%`)
+        console.log(`   Total Cost: $${prediction.totalCost.toFixed(6)}`)
+        console.log(`   Latency: ${latency}ms`)
+
+        // Record execution in identity manager
+        if (agent.identityId) {
+          identityManager.recordExecution(
+            agent.identityId,
+            true,
+            prediction.totalCost,
+            latency,
+            `${prediction.providers.length} providers`,
+            0.0001
+          )
+          setAgentIdentities(identityManager.getAllIdentities())
+        }
+
+        // Update agent stats
+        setDeployedAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? {
+                ...a,
+                status: 'idle' as const,
+                totalRuns: a.totalRuns + 1,
+                lastRun: Date.now(),
+                lastResult: `${prediction.predictedDirection.toUpperCase()} (${prediction.confidence}%) - ${prediction.reasoning}`,
+                provider: `${prediction.providers.length} providers`
+              }
+            : a
+        ))
+
+        // Add to trade feed
+        const trade: Trade = {
+          id: `oracle-${Date.now()}`,
+          agentName: agent.name,
+          provider: `Oracle (${prediction.providers.length} providers)`,
+          tokens: 300, // estimated
+          cost: prediction.totalCost,
+          timestamp: Date.now(),
+          txHash: 'oracle-prediction',
+          isReal: true,
+        }
+        setTrades(prev => [trade, ...prev.slice(0, 9)])
+
+        // Store in Supabase
+        try {
+          const txData: TransactionDB = {
+            id: `oracle-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'oracle',
+            agent_name: agent.name,
+            provider: `${prediction.providers.length} providers`,
+            tokens: 300,
+            cost: prediction.totalCost,
+            status: 'success',
+            network: 'solana-devnet',
+            wallet_address: publicKey?.toBase58(),
+          }
+
+          const { error } = await supabase.from('transactions').insert([txData])
+          if (!error) {
+            console.log('✅ Saved Oracle transaction to Supabase')
+          }
+        } catch (e) {
+          console.warn('Failed to store Oracle transaction:', e)
+        }
+
+        return { success: true, cost: prediction.totalCost }
+      }
+
+      // BLOCKCHAIN QUERY AGENT: Query Solana blockchain data via Helius
+      if (agent.type === 'blockchain-query') {
+        console.log(`⛓️ [${agent.name}] Running BLOCKCHAIN QUERY agent...`)
+        console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
+
+        // Parse wallet address and query type from prompt (e.g., "[wallet] balance" or "[wallet] transactions")
+        const promptParts = agent.prompt.trim().split(/\s+/)
+        const walletAddress = promptParts[0]
+        const queryType = (promptParts[1] || 'all') as 'balance' | 'transactions' | 'nfts' | 'all'
+
+        // Call blockchain query endpoint with x402 payment
+        const response = await fetchWithPayment('/api/blockchain-query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            walletAddress,
+            queryType
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Blockchain query failed')
+        }
+
+        const data = await response.json()
+        const latency = Date.now() - startTime
+        const cost = data.metadata?.cost || 0.001
+
+        console.log(`✅ [${agent.name}] Blockchain query completed!`)
+        console.log(`   Query Type: ${queryType}`)
+        console.log(`   Cost: $${cost.toFixed(6)}`)
+        console.log(`   Latency: ${latency}ms`)
+
+        // Format result summary
+        let resultSummary = `${queryType.toUpperCase()} query for ${walletAddress.substring(0, 10)}...`
+        if (data.data?.balance) {
+          resultSummary += ` | SOL: ${data.data.balance.sol.toFixed(4)}`
+        }
+        if (data.data?.transactions?.length) {
+          resultSummary += ` | ${data.data.transactions.length} txs`
+        }
+        if (data.data?.tokens?.length) {
+          resultSummary += ` | ${data.data.tokens.length} tokens`
+        }
+
+        // Record execution in identity manager
+        if (agent.identityId) {
+          identityManager.recordExecution(
+            agent.identityId,
+            true,
+            cost,
+            latency,
+            'Helius RPC',
+            0.0001
+          )
+          setAgentIdentities(identityManager.getAllIdentities())
+        }
+
+        // Update agent stats
+        setDeployedAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? {
+                ...a,
+                status: 'idle' as const,
+                totalRuns: a.totalRuns + 1,
+                lastRun: Date.now(),
+                lastResult: resultSummary,
+                provider: 'Helius RPC'
+              }
+            : a
+        ))
+
+        // Add to trade feed
+        const trade: Trade = {
+          id: `blockchain-${Date.now()}`,
+          agentName: agent.name,
+          provider: 'Helius RPC',
+          tokens: 100, // estimated
+          cost,
+          timestamp: Date.now(),
+          txHash: 'blockchain-query',
+          isReal: true,
+        }
+        setTrades(prev => [trade, ...prev.slice(0, 9)])
+
+        // Store in Supabase
+        try {
+          const txData: TransactionDB = {
+            id: `blockchain-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'blockchain',
+            agent_name: agent.name,
+            provider: 'Helius RPC',
+            tokens: 100,
+            cost,
+            status: 'success',
+            network: 'solana-devnet',
+            wallet_address: publicKey?.toBase58(),
+          }
+
+          const { error } = await supabase.from('transactions').insert([txData])
+          if (!error) {
+            console.log('✅ Saved blockchain query to Supabase')
+          }
+        } catch (e) {
+          console.warn('Failed to store blockchain query:', e)
+        }
+
+        return { success: true, cost }
+      }
+
       // COMPOSITE AGENT: Orchestrate multiple agent calls
       if (agent.type === 'composite' && agent.workflow) {
         console.log(`🔗 [${agent.name}] Running COMPOSITE agent with workflow...`)
@@ -753,6 +964,11 @@ export default function AgentDashboardPage() {
               {/* Wallet Connect Button */}
               <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
 
+              <Link href="/analytics">
+                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
+                  Analytics
+                </button>
+              </Link>
               <Link href="/marketplace">
                 <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
                   Marketplace
@@ -785,7 +1001,7 @@ export default function AgentDashboardPage() {
           <div>
             {selectedProvider ? (
               <motion.div
-                className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm"
+                className="bg-gradient-to-br from-green-50/50 to-white p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -823,7 +1039,7 @@ export default function AgentDashboardPage() {
               </motion.div>
             ) : (
               <motion.div
-                className="bg-white p-4 rounded-xl border-2 border-red-200 shadow-sm"
+                className="bg-gradient-to-br from-red-50/50 to-white p-4 rounded-xl shadow-md"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -914,7 +1130,7 @@ export default function AgentDashboardPage() {
             {publicKey && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
-              <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
+              <div className="bg-gradient-to-br from-blue-50/30 to-white p-6 rounded-xl shadow-md mb-4">
                 <div className="flex items-start gap-4">
                   <div className="text-3xl">🚀</div>
                   <div>
@@ -936,86 +1152,92 @@ export default function AgentDashboardPage() {
             )}
 
             {/* PUBLIC MARKETPLACE SECTION */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold text-black">
-                  🌐 Public Marketplace
-                </h3>
-                {deployedAgents.length > 0 && (
-                  <div className="text-sm text-gray-600">
-                    {deployedAgents.length} agents available
-                  </div>
-                )}
-              </div>
+            {(() => {
+              // Filter to show only OTHER users' agents (not current user's own agents)
+              const publicAgents = publicKey
+                ? deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58())
+                : deployedAgents;
 
-              {!publicKey && (
-                <div className="bg-white p-4 rounded-xl border-2 border-gray-200 mb-4 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">👛</div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-black mb-1">Connect Wallet to Deploy</div>
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-bold text-black">
+                      🌐 Public Marketplace
+                    </h3>
+                    {publicAgents.length > 0 && (
                       <div className="text-sm text-gray-600">
-                        Connect your Solana wallet to deploy and run agents
+                        {publicAgents.length} public agents
+                      </div>
+                    )}
+                  </div>
+
+                  {!publicKey && (
+                    <div className="bg-gradient-to-br from-blue-50/30 to-white p-4 rounded-xl shadow-md mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">👛</div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-black mb-1">Connect Wallet to Run Agents</div>
+                          <div className="text-sm text-gray-600">
+                            Connect your Solana wallet to run agents with x402 micropayments
+                          </div>
+                        </div>
+                        <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800" />
                       </div>
                     </div>
-                    <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800" />
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {deployedAgents.length === 0 && (
-                <div className="bg-white p-6 rounded-xl border-2 border-gray-200 text-center shadow-sm">
-                  <div className="text-4xl mb-3">📭</div>
-                  <div className="font-semibold text-gray-600 mb-2">No Public Agents Yet</div>
-                  <div className="text-sm text-gray-500">
-                    Be the first to deploy an agent to the marketplace!
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {deployedAgents.map((agent, index) => {
-                  const identity = agent.identityId
-                    ? agentIdentities.find(id => id.id === agent.identityId)
-                    : undefined
-
-                  // Convert to AgentStats format
-                  const agentStats: AgentStats = {
-                    id: agent.id,
-                    name: agent.name,
-                    type: agent.type as any,
-                    status: agent.status === 'running' ? 'executing' : 'idle',
-                    totalTrades: agent.totalRuns,
-                    profit: 0,
-                    avgCost: 0.001,
-                    successRate: 100,
-                    lastAction: agent.lastResult || 'Ready',
-                    lastActionTime: agent.lastRun || agent.deployed,
-                    avatar: '🌐',
-                    color: 'purple',
-                    isReal: true
-                  }
-
-                  const isMyAgent = publicKey && agent.wallet_address === publicKey.toBase58()
-
-                  return (
-                    <div key={agent.id} className="relative">
-                      {isMyAgent && (
-                        <div className="absolute -top-2 -right-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                          Yours
-                        </div>
-                      )}
-                      <AgentCard
-                        agent={agentStats}
-                        index={index}
-                        onRun={() => runAgent(agent.id)}
-                        identity={identity}
-                      />
+                  {publicAgents.length === 0 && publicKey && (
+                    <div className="bg-white p-6 rounded-xl shadow-md text-center">
+                      <div className="text-4xl mb-3">🚀</div>
+                      <div className="font-semibold text-gray-600 mb-2">No Other Agents Yet</div>
+                      <div className="text-sm text-gray-500">
+                        You're the first! Share your agents with the community.
+                      </div>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {publicAgents.map((agent, index) => {
+                      const identity = agent.identityId
+                        ? agentIdentities.find(id => id.id === agent.identityId)
+                        : undefined
+
+                      // Convert to AgentStats format
+                      const agentStats: AgentStats = {
+                        id: agent.id,
+                        name: agent.name,
+                        type: agent.type as any,
+                        status: agent.status === 'running' ? 'executing' : 'idle',
+                        totalTrades: agent.totalRuns,
+                        profit: 0,
+                        avgCost: 0.001,
+                        successRate: 100,
+                        lastAction: agent.lastResult || 'Ready',
+                        lastActionTime: agent.lastRun || agent.deployed,
+                        avatar: '🌐',
+                        color: 'purple',
+                        isReal: true
+                      }
+
+                      return (
+                        <div key={agent.id} className="relative">
+                          {/* Owner badge */}
+                          <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                            👤 {agent.wallet_address ? `${agent.wallet_address.substring(0, 4)}...${agent.wallet_address.substring(agent.wallet_address.length - 4)}` : 'Public'}
+                          </div>
+                          <AgentCard
+                            agent={agentStats}
+                            index={index}
+                            onRun={() => runAgent(agent.id)}
+                            identity={identity}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* SDK Example */}
             <SDKExample />
@@ -1334,7 +1556,7 @@ function AgentCard({
           onClick={() => setShowAttestModal(false)}
         >
           <motion.div
-            className="bg-white rounded-xl border-2 border-green-200 p-6 max-w-md w-full shadow-xl"
+            className="bg-white/95 backdrop-blur-sm rounded-xl p-6 max-w-md w-full shadow-2xl"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
@@ -1387,7 +1609,7 @@ function AgentCard({
               ))}
             </div>
 
-            <div className="bg-blue-50 p-3 rounded-lg border-2 border-blue-200">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-50/30 p-3 rounded-lg shadow-sm">
               <div className="text-xs text-gray-600">
                 <div className="font-bold text-blue-600 mb-1">ℹ️ What is attestation?</div>
                 Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
@@ -1449,7 +1671,7 @@ function AgentCard({
 
 function LiveTradeFeed({ trades }: { trades: Trade[] }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-black">
@@ -1510,7 +1732,7 @@ function LiveTradeFeed({ trades }: { trades: Trade[] }) {
 
 function AgentMetrics({ agents }: { agents: AgentStats[] }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-xl p-6 shadow-md">
       <h3 className="text-lg font-bold text-black mb-4">
         Performance Metrics
       </h3>
@@ -1544,7 +1766,7 @@ function AgentMetrics({ agents }: { agents: AgentStats[] }) {
 
 function SDKExample() {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -1584,7 +1806,7 @@ function SDKExample() {
 
 function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-black">
@@ -1703,8 +1925,8 @@ function DeployAgentModal({
   walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'>('market-intel')
-  const [prompt, setPrompt] = useState('Analyze current Solana (SOL) market conditions. Current price: $150. 24h change: +5.2%. Provide a brief market sentiment analysis and predict short-term price movement.')
+  const [type, setType] = useState<'market-oracle' | 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'blockchain-query'>('market-oracle')
+  const [prompt, setPrompt] = useState('SOL 1h')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
@@ -1910,7 +2132,7 @@ function DeployAgentModal({
     >
       {/* Centered Modal - scrolls with backdrop */}
       <motion.div
-        className="bg-white border-2 border-gray-200 rounded-2xl w-full max-w-3xl my-8 shadow-xl"
+        className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-3xl my-8 shadow-2xl"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
@@ -1964,6 +2186,8 @@ function DeployAgentModal({
               className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black focus:border-purple-400 focus:outline-none font-medium"
               disabled={isDeploying}
             >
+              <option value="market-oracle">🔮 Market Oracle - AI-powered price predictions (BTC/ETH/SOL)</option>
+              <option value="blockchain-query">⛓️ Blockchain Query - Solana wallet balances & transactions</option>
               <option value="market-intel">📊 Market Intelligence - Solana price & market analysis</option>
               <option value="social-sentiment">📱 Social Sentiment - Crypto Twitter sentiment tracker</option>
               <option value="defi-yield">💰 DeFi Yield Optimizer - Best yield strategies</option>
@@ -1985,7 +2209,7 @@ function DeployAgentModal({
               </label>
               <div className="space-y-3">
                 {workflowSteps.map((step, index) => (
-                  <div key={step.id} className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200">
+                  <div key={step.id} className="bg-gray-50/50 p-3 rounded-lg shadow-sm">
                     <div className="flex items-start gap-2 mb-2">
                       <div className="px-2 py-1 bg-purple-100 text-accent-primary text-xs font-bold rounded">
                         Step {index + 1}
@@ -2056,7 +2280,9 @@ function DeployAgentModal({
             /* Regular Prompt for Other Agent Types */
             <div>
               <label className="text-sm text-gray-700 mb-2 block font-semibold">
-                Agent Prompt - {type === 'market-intel' ? 'Market Data to Analyze' :
+                Agent Prompt - {type === 'market-oracle' ? 'Asset & Timeframe' :
+                             type === 'blockchain-query' ? 'Wallet Address & Query Type' :
+                             type === 'market-intel' ? 'Market Data to Analyze' :
                              type === 'social-sentiment' ? 'Social Media Data to Analyze' :
                              type === 'defi-yield' ? 'DeFi Protocols to Compare' :
                              type === 'portfolio' ? 'Portfolio Data to Analyze' :
@@ -2065,12 +2291,16 @@ function DeployAgentModal({
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Enter the data for your agent to analyze..."
+                placeholder={type === 'market-oracle' ? 'Example: BTC 1h  OR  ETH 4h  OR  SOL 24h' :
+                           type === 'blockchain-query' ? 'Example: [wallet-address] balance  OR  [wallet-address] transactions' :
+                           'Enter the data for your agent to analyze...'}
                 className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black placeholder-gray-400 focus:border-purple-400 focus:outline-none resize-none"
                 rows={5}
                 disabled={isDeploying}
               />
               <div className="mt-2 text-xs text-gray-500">
+                {type === 'market-oracle' && '💡 Format: [ASSET] [TIMEFRAME] - Supported assets: BTC, ETH, SOL. Timeframes: 5m, 15m, 1h, 4h, 24h'}
+                {type === 'blockchain-query' && '💡 Format: [WALLET] [TYPE] - Types: balance, transactions, all. Uses Helius RPC with x402'}
                 {type === 'market-intel' && '💡 Include price, volume, and trend data for AI to analyze'}
                 {type === 'social-sentiment' && '💡 Include sample tweets or social posts for sentiment analysis'}
                 {type === 'defi-yield' && '💡 Include protocol names, APYs, and risk levels for comparison'}

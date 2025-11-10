@@ -26,6 +26,17 @@ While most AI agent platforms are just glorified ChatGPT wrappers, **ParallaxPay
 
 ## Unique Features (Why We'll Win)
 
+### 🔮 **Market Oracle Agent** (⭐ STAR FEATURE!)
+Autonomous crypto predictions with multi-provider consensus:
+- **Real-time price analysis** for BTC, ETH, SOL
+- **Multi-provider consensus** - queries ALL available Parallax nodes
+- **x402 micropayments** - pays $0.001-$0.005 per prediction
+- **Accuracy tracking** - verifies predictions and builds reputation
+- **Trust levels** - Novice → Master based on prediction accuracy
+- **Autonomous mode** - runs predictions every 5 minutes
+- **Visual metrics** - accuracy %, total cost, consensus strength
+- **Live at `/oracle`** - check it out!
+
 ### 🚀 **Composite Agents** (NOBODY ELSE HAS THIS!)
 Multi-step AI workflows where agents orchestrate other agents:
 - Research Agent → Analysis Agent → Summary Agent
