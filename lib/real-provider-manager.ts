@@ -16,6 +16,7 @@ export interface RealProvider {
   name: string
   model: string
   region: string
+  port: number // Port number for multi-node tracking
   online: boolean
   latency: number // REAL measured latency
   price: number // Dynamic pricing
@@ -39,14 +40,18 @@ export class RealProviderManager {
   private providers: Map<string, RealProvider> = new Map()
   private healthCheckInterval: NodeJS.Timeout | null = null
 
-  // Support Parallax instances (configure based on your setup)
-  // For single node setup (Mac Air M1), just use one endpoint
-  private readonly PARALLAX_ENDPOINTS = [
-    { url: 'http://localhost:3001', region: 'Local', model: 'Qwen/Qwen3-0.6B' },
-    // Uncomment below if you want to run multiple nodes (requires more resources):
-    // { url: 'http://localhost:3002', region: 'Local-2', model: 'Qwen/Qwen2.5-1.5B' },
-    // { url: 'http://localhost:3003', region: 'Local-3', model: 'Qwen/Qwen2.5-3B' },
-  ]
+  // Support Parallax instances - auto-discover on ports 3001-3003
+  // This will check all ports and only use the ones that are actually running
+  private readonly PARALLAX_PORTS = [3001, 3002, 3003]
+
+  private get PARALLAX_ENDPOINTS() {
+    return this.PARALLAX_PORTS.map((port, index) => ({
+      url: `http://localhost:${port}`,
+      region: index === 0 ? 'Primary' : index === 1 ? 'Secondary' : 'Tertiary',
+      model: 'Qwen/Qwen3-0.6B', // All use same model for now
+      port
+    }))
+  }
 
   constructor() {
     console.log('🚀 RealProviderManager initialized')
@@ -64,11 +69,12 @@ export class RealProviderManager {
           const health = await this.healthCheck(endpoint.url)
 
           const provider: RealProvider = {
-            id: `provider-${endpoint.url.split(':').pop()}`,
+            id: `provider-${endpoint.port}`,
             url: endpoint.url,
-            name: `Parallax ${endpoint.region}`,
+            name: `Parallax ${endpoint.region} (${endpoint.port})`,
             model: endpoint.model,
             region: endpoint.region,
+            port: endpoint.port,
             online: health.online,
             latency: health.latency,
             price: this.calculateDynamicPrice(health.latency),
