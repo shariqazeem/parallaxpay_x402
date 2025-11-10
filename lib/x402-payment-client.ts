@@ -88,9 +88,11 @@ export class X402PaymentClient {
         connected = true
         autoApprove = true
         readyState = 'Installed' as const
+        keypair: InstanceType<typeof Keypair>
 
-        constructor(public keypair: typeof keypair) {
-          this.publicKey = keypair.publicKey
+        constructor(kp: InstanceType<typeof Keypair>) {
+          this.keypair = kp
+          this.publicKey = kp.publicKey
         }
 
         async connect() {
@@ -101,16 +103,16 @@ export class X402PaymentClient {
           // no-op for autonomous wallet
         }
 
-        async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
+        async signTransaction<T extends InstanceType<typeof Transaction> | InstanceType<typeof VersionedTransaction>>(transaction: T): Promise<T> {
           if (transaction instanceof VersionedTransaction) {
             transaction.sign([this.keypair])
           } else {
-            transaction.partialSign(this.keypair)
+            (transaction as any).partialSign(this.keypair)
           }
           return transaction
         }
 
-        async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
+        async signAllTransactions<T extends InstanceType<typeof Transaction> | InstanceType<typeof VersionedTransaction>>(transactions: T[]): Promise<T[]> {
           return transactions.map(tx => {
             if (tx instanceof VersionedTransaction) {
               tx.sign([this.keypair])
@@ -126,11 +128,11 @@ export class X402PaymentClient {
           return nacl.sign.detached(message, this.keypair.secretKey)
         }
 
-        async signAndSendTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
+        async signAndSendTransaction<T extends InstanceType<typeof Transaction> | InstanceType<typeof VersionedTransaction>>(transaction: T): Promise<T> {
           if (transaction instanceof VersionedTransaction) {
             transaction.sign([this.keypair])
           } else {
-            transaction.partialSign(this.keypair)
+            (transaction as any).partialSign(this.keypair)
           }
           return transaction
         }
@@ -164,12 +166,6 @@ export class X402PaymentClient {
       // Dynamic import of x402-fetch
       const { wrapFetchWithPayment } = await import('x402-fetch')
 
-      // Configure x402-fetch with network and options
-      const options = {
-        network: this.config.network,
-        maxPaymentAmount: this.config.maxPaymentAmount,
-      }
-
       if (this.config.enableLogging) {
         console.log('🔧 Initializing x402-fetch with:')
         console.log(`   Network: ${this.config.network}`)
@@ -178,7 +174,9 @@ export class X402PaymentClient {
       }
 
       // Wrap fetch with payment handling
-      this.fetchWithPayment = wrapFetchWithPayment(fetch, this.account, options)
+      // The maxPaymentAmount should be in bigint (lamports/smallest unit)
+      const maxPaymentLamports = BigInt(Math.floor((this.config.maxPaymentAmount || 1) * 1e9))
+      this.fetchWithPayment = wrapFetchWithPayment(fetch, this.account, maxPaymentLamports) as typeof fetch
 
       if (this.config.enableLogging) {
         console.log('✅ x402 Payment client initialized successfully')

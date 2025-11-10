@@ -304,7 +304,7 @@ function TradePanel({
             type: 'marketplace',
             provider: selectedProvider || data.provider || 'Local Parallax Node',
             tokens: data.tokens || maxTokens,
-            cost: data.cost || estimatedCost,
+            cost: data.cost || 0.001,
             txHash: data.txHash,
             status: 'success',
             network: 'solana-devnet',
@@ -479,7 +479,7 @@ function RecentTrades() {
         const orderBook = getEnhancedOrderBook()
         const recentTrades = orderBook.getRecentTrades(5)
 
-        const displayTrades = recentTrades.map(trade => ({
+        const displayTrades = recentTrades.map((trade: any) => ({
           time: new Date(trade.timestamp).toLocaleTimeString(),
           buyerId: trade.buyerId,
           sellerId: trade.sellerId,

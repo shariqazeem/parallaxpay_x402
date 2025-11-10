@@ -165,7 +165,7 @@ export default function LeaderboardPage() {
                 }`}
               >
                 {cat === 'winRate' ? 'Win Rate' :
-                 cat === 'avgSavings' ? 'Savings %' :
+                 cat === 'savings' ? 'Savings %' :
                  cat.charAt(0).toUpperCase() + cat.slice(1)}
               </button>
             ))}

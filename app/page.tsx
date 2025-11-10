@@ -75,9 +75,12 @@ export default function HomePage() {
       </motion.header>
 
       {/* Hero Section - Premium Design */}
-      <section className="relative pt-16 sm:pt-20 lg:pt-24 pb-20 sm:pb-28 lg:pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative pt-20 sm:pt-28 lg:pt-36 pb-24 sm:pb-32 lg:pb-40 px-6 sm:px-8 lg:px-12 overflow-hidden">
         {/* Subtle Pattern Background */}
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-white pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto">
           <motion.div
@@ -97,7 +100,7 @@ export default function HomePage() {
             {/* Main Headline - Ultra Bold */}
             <motion.h1
               variants={itemVariants}
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-black mb-6 tracking-tight leading-none px-4"
+              className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-black mb-8 tracking-tight leading-[0.9] px-4"
             >
               Autonomous AI Agents
               <br />
@@ -109,7 +112,7 @@ export default function HomePage() {
             {/* Subheadline */}
             <motion.p
               variants={itemVariants}
-              className="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-8 sm:mb-12 max-w-4xl mx-auto font-light leading-relaxed px-4"
+              className="text-xl sm:text-2xl lg:text-3xl text-gray-600 mb-12 sm:mb-16 max-w-5xl mx-auto font-light leading-relaxed px-6"
             >
               Deploy intelligent agents that execute tasks autonomously, pay with micropayments,
               and build verifiable reputation on Solana blockchain.
@@ -118,13 +121,13 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <motion.div
               variants={itemVariants}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 sm:mb-16 lg:mb-20 px-4"
+              className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 sm:mb-20 lg:mb-24 px-4"
             >
               <Link href={publicKey ? "/agents" : "/dashboard"}>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.05, boxShadow: "0 20px 60px -12px rgba(0, 0, 0, 0.25)" }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto px-8 py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl"
+                  className="w-full sm:w-auto px-12 py-5 text-lg bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-xl"
                 >
                   Get Started Free
                 </motion.button>
@@ -133,7 +136,7 @@ export default function HomePage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto px-8 py-4 bg-white text-black font-semibold rounded-lg border-2 border-gray-200 hover:border-black transition-all"
+                  className="w-full sm:w-auto px-12 py-5 text-lg bg-white text-black font-bold rounded-xl border-2 border-gray-300 hover:border-black transition-all shadow-lg"
                 >
                   View Dashboard
                 </motion.button>
@@ -169,19 +172,19 @@ export default function HomePage() {
       </section>
 
       {/* Features Section - Premium Cards */}
-      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <section className="py-24 sm:py-32 lg:py-40 px-6 sm:px-8 lg:px-12 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={containerVariants}
-            className="text-center mb-12 sm:mb-16"
+            className="text-center mb-16 sm:mb-20 lg:mb-24"
           >
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-black text-black mb-4">
+            <motion.h2 variants={itemVariants} className="text-5xl sm:text-6xl lg:text-7xl font-black text-black mb-6">
               Everything you need
             </motion.h2>
-            <motion.p variants={itemVariants} className="text-xl text-gray-600">
+            <motion.p variants={itemVariants} className="text-2xl text-gray-600">
               Built for modern AI workflows
             </motion.p>
           </motion.div>
@@ -196,17 +199,17 @@ export default function HomePage() {
             {/* Feature 1 */}
             <motion.div
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 hover:shadow-xl transition-all"
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all"
             >
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center text-2xl mb-6">
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-3xl mb-8 shadow-lg">
                 🤖
               </div>
-              <h3 className="text-2xl font-bold text-black mb-3">AI Agents</h3>
-              <p className="text-gray-600 leading-relaxed mb-6">
+              <h3 className="text-3xl font-bold text-black mb-4">AI Agents</h3>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
                 Deploy autonomous agents with custom prompts. Schedule execution and track performance in real-time.
               </p>
-              <Link href="/agents" className="text-black font-semibold inline-flex items-center gap-2 hover:gap-3 transition-all">
+              <Link href="/agents" className="text-black font-bold inline-flex items-center gap-2 hover:gap-4 transition-all text-lg">
                 Learn more
                 <span>→</span>
               </Link>
@@ -215,17 +218,17 @@ export default function HomePage() {
             {/* Feature 2 */}
             <motion.div
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 hover:shadow-xl transition-all"
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all"
             >
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center text-2xl mb-6">
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-3xl mb-8 shadow-lg">
                 💰
               </div>
-              <h3 className="text-2xl font-bold text-black mb-3">Micropayments</h3>
-              <p className="text-gray-600 leading-relaxed mb-6">
+              <h3 className="text-3xl font-bold text-black mb-4">Micropayments</h3>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
                 Pay for AI inference with x402 protocol. Tiny transactions for every API call, tracked on-chain.
               </p>
-              <Link href="/marketplace" className="text-black font-semibold inline-flex items-center gap-2 hover:gap-3 transition-all">
+              <Link href="/marketplace" className="text-black font-bold inline-flex items-center gap-2 hover:gap-4 transition-all text-lg">
                 Learn more
                 <span>→</span>
               </Link>
@@ -234,17 +237,17 @@ export default function HomePage() {
             {/* Feature 3 */}
             <motion.div
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 hover:shadow-xl transition-all"
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all"
             >
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center text-2xl mb-6">
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-3xl mb-8 shadow-lg">
                 🏆
               </div>
-              <h3 className="text-2xl font-bold text-black mb-3">Reputation</h3>
-              <p className="text-gray-600 leading-relaxed mb-6">
+              <h3 className="text-3xl font-bold text-black mb-4">Reputation</h3>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
                 Build verifiable on-chain reputation. Earn badges and climb the leaderboard with successful executions.
               </p>
-              <Link href="/leaderboard" className="text-black font-semibold inline-flex items-center gap-2 hover:gap-3 transition-all">
+              <Link href="/leaderboard" className="text-black font-bold inline-flex items-center gap-2 hover:gap-4 transition-all text-lg">
                 Learn more
                 <span>→</span>
               </Link>

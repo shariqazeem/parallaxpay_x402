@@ -67,7 +67,10 @@ export async function createFaremeterFetch(config: FaremeterPaymentConfig): Prom
     )
 
     // Get asset mint address
-    const assetInfo = lookupKnownSPLToken(network, asset)
+    const assetInfo = lookupKnownSPLToken(network, asset as 'USDC')
+    if (!assetInfo) {
+      throw new Error(`Asset ${asset} not found for network ${network}`)
+    }
     const assetMint = new PublicKey(assetInfo.address)
 
     if (enableLogging) {

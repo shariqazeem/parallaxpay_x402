@@ -278,7 +278,7 @@ export default function DashboardPage() {
             </div>
             <div className="text-sm text-gray-600">Your ranking score</div>
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* Quick Actions */}
         <div className="mb-12">
@@ -349,7 +349,7 @@ export default function DashboardPage() {
                           <p className="text-sm text-gray-600 mb-2 line-clamp-2">{agent.prompt}</p>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>🔄 {agent.total_runs || 0} runs</span>
-                            <span>📅 {new Date(agent.created_at).toLocaleDateString()}</span>
+                            <span>📅 {new Date(agent.deployed).toLocaleDateString()}</span>
                             {agent.provider && <span>⚡ {agent.provider}</span>}
                           </div>
                         </div>

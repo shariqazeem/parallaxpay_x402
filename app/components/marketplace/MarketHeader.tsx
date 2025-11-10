@@ -51,16 +51,16 @@ export default function MarketHeader() {
   }, [])
 
   return (
-    <div className="border-b border-border bg-background-secondary/50 backdrop-blur-xl sticky top-0 z-50">
+    <div className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-[1920px] mx-auto px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-heading font-black">
-              <span className="text-gradient">ParallaxPay</span>
+            <h1 className="text-2xl font-black">
+              <span className="text-black">ParallaxPay</span>
             </h1>
-            <div className="flex items-center gap-2 px-3 py-1 glass rounded-full">
-              <span className="w-2 h-2 bg-status-success rounded-full animate-pulse" />
-              <span className="text-xs text-status-success font-semibold">
+            <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-full">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-xs text-green-700 font-semibold">
                 LIVE
               </span>
             </div>
@@ -123,19 +123,19 @@ interface StatCardProps {
 function StatCard({ label, value, change, icon, trend }: StatCardProps) {
   return (
     <motion.div
-      className="glass-hover p-3 rounded-lg"
+      className="bg-white border-2 border-gray-200 hover:border-gray-300 p-3 rounded-xl shadow-sm hover:shadow-md transition-all"
       whileHover={{ scale: 1.02 }}
     >
       <div className="flex items-start justify-between mb-1">
-        <span className="text-xs text-text-secondary">{label}</span>
+        <span className="text-xs text-gray-600 font-semibold">{label}</span>
         <span className="text-sm">{icon}</span>
       </div>
       <div className="flex items-end gap-2">
-        <div className="text-lg font-black text-white">{value}</div>
+        <div className="text-lg font-black text-black">{value}</div>
         {change !== undefined && (
           <div
             className={`text-xs font-semibold ${
-              change >= 0 ? 'text-status-success' : 'text-status-error'
+              change >= 0 ? 'text-green-600' : 'text-red-600'
             }`}
           >
             {change >= 0 ? '+' : ''}
@@ -146,10 +146,10 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
           <div
             className={`text-xs font-semibold ${
               trend === 'good'
-                ? 'text-status-success'
+                ? 'text-green-600'
                 : trend === 'bad'
-                ? 'text-status-error'
-                : 'text-text-secondary'
+                ? 'text-red-600'
+                : 'text-gray-600'
             }`}
           >
             {trend === 'good' ? '✓' : trend === 'bad' ? '✗' : '•'}
