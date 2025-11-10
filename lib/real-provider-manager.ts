@@ -170,16 +170,18 @@ export class RealProviderManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: provider.model,
           messages: [{ role: 'user', content: testPrompt }],
           max_tokens: 10,
+          temperature: 0.7,
         }),
       })
 
       const latency = Date.now() - start
 
       if (!response.ok) {
-        throw new Error(`Provider returned ${response.status}`)
+        const errorText = await response.text()
+        console.error(`❌ Provider ${provider.name} returned ${response.status}:`, errorText)
+        throw new Error(`Provider returned ${response.status}: ${errorText.substring(0, 100)}`)
       }
 
       const data = await response.json()
@@ -187,8 +189,11 @@ export class RealProviderManager {
       // Update provider stats
       provider.latency = latency
       provider.successfulRequests++
+      provider.online = true // Mark online on success
       provider.uptime = (provider.successfulRequests / (provider.successfulRequests + provider.failedRequests)) * 100
       provider.lastHealthCheck = Date.now()
+
+      console.log(`✅ ${provider.name} benchmark: ${latency}ms`)
 
       return {
         providerId,
@@ -205,9 +210,11 @@ export class RealProviderManager {
       // Update failure stats
       provider.failedRequests++
       provider.online = false
-      provider.uptime = (provider.successfulRequests / (provider.successfulRequests + provider.failedRequests)) * 100
+      provider.uptime = provider.successfulRequests > 0
+        ? (provider.successfulRequests / (provider.successfulRequests + provider.failedRequests)) * 100
+        : 0
 
-      console.error(`Benchmark failed for ${provider.name}:`, error)
+      console.error(`❌ Benchmark failed for ${provider.name}:`, error)
 
       return {
         providerId,
@@ -220,7 +227,7 @@ export class RealProviderManager {
   }
 
   /**
-   * Benchmark ALL providers in parallel
+   * Benchmark ALL providers (sequentially for cluster to avoid overwhelming scheduler)
    */
   async benchmarkAll(testPrompt?: string): Promise<BenchmarkResult[]> {
     const providerIds = Array.from(this.providers.keys())
@@ -230,11 +237,20 @@ export class RealProviderManager {
       return []
     }
 
-    console.log(`⚡ Benchmarking ${providerIds.length} providers...`)
+    console.log(`⚡ Benchmarking ${providerIds.length} cluster nodes sequentially...`)
 
-    const results = await Promise.all(
-      providerIds.map(id => this.benchmarkProvider(id, testPrompt))
-    )
+    // For Parallax cluster, all providers share same scheduler
+    // So we benchmark sequentially to avoid overwhelming the scheduler
+    const results: BenchmarkResult[] = []
+
+    for (const id of providerIds) {
+      const result = await this.benchmarkProvider(id, testPrompt)
+      results.push(result)
+      // Small delay between requests to avoid overload
+      if (results.length < providerIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
 
     const successful = results.filter(r => r.success)
     console.log(`📊 Benchmark complete: ${successful.length}/${results.length} successful`)
