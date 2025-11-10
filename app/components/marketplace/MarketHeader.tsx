@@ -155,6 +155,9 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
 
   const colors = getColorScheme()
 
+  // Use colored text for Avg Latency and Active Agents, black for others
+  const valueColor = (label.includes('Latency') || label.includes('Agents')) ? colors.text : 'text-black'
+
   return (
     <motion.div
       className={`${colors.bg} border-2 ${colors.border} hover:shadow-lg p-3 rounded-xl shadow-md transition-all`}
@@ -165,7 +168,7 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
         <span className="text-lg">{icon}</span>
       </div>
       <div className="flex items-end gap-2">
-        <div className="text-xl font-black text-gray-900">{value}</div>
+        <div className={`text-xl font-black ${valueColor}`}>{value}</div>
         {change !== undefined && (
           <div
             className={`text-xs font-bold ${
@@ -178,12 +181,12 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
         )}
         {trend && !change && (
           <div
-            className={`text-xs font-bold ${
+            className={`text-xs font-semibold ${
               trend === 'good'
                 ? 'text-green-600'
                 : trend === 'bad'
                 ? 'text-red-600'
-                : 'text-gray-700'
+                : 'text-gray-600'
             }`}
           >
             {trend === 'good' ? '✓' : trend === 'bad' ? '✗' : '•'}
