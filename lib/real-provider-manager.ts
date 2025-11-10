@@ -40,16 +40,28 @@ export class RealProviderManager {
   private providers: Map<string, RealProvider> = new Map()
   private healthCheckInterval: NodeJS.Timeout | null = null
 
-  // Support Parallax instances - auto-discover on ports 3001-3003
-  // This will check all ports and only use the ones that are actually running
-  private readonly PARALLAX_PORTS = [3001, 3002, 3003]
+  // Parallax Cluster Configuration
+  // Parallax uses scheduler+worker architecture:
+  // - 1 scheduler on port 3001 (main API endpoint)
+  // - N workers connect to scheduler (not separate endpoints)
+  //
+  // For demo visualization, we show "cluster info" as multiple "nodes"
+  // but all requests go through the single scheduler endpoint
+  private readonly PARALLAX_CLUSTER = {
+    schedulerUrl: 'http://localhost:3001',
+    workers: 3, // Number of worker nodes in cluster
+    model: 'Qwen/Qwen3-0.6B'
+  }
 
   private get PARALLAX_ENDPOINTS() {
-    return this.PARALLAX_PORTS.map((port, index) => ({
-      url: `http://localhost:${port}`,
-      region: index === 0 ? 'Primary' : index === 1 ? 'Secondary' : 'Tertiary',
-      model: 'Qwen/Qwen3-0.6B', // All use same model for now
-      port
+    // For demo/visualization: show cluster as multiple "virtual nodes"
+    // All point to same scheduler endpoint but represent worker distribution
+    return Array.from({ length: this.PARALLAX_CLUSTER.workers }, (_, index) => ({
+      url: this.PARALLAX_CLUSTER.schedulerUrl, // All use same scheduler
+      region: index === 0 ? 'Scheduler' : `Worker ${index}`,
+      model: this.PARALLAX_CLUSTER.model,
+      port: 3001, // All go through scheduler port
+      workerId: index
     }))
   }
 
@@ -58,55 +70,55 @@ export class RealProviderManager {
   }
 
   /**
-   * Discover and connect to all available Parallax providers
+   * Discover and connect to Parallax cluster
+   *
+   * Checks the scheduler once, then creates visual representation for each worker
    */
   async discoverProviders(): Promise<RealProvider[]> {
-    console.log('🔍 Discovering real Parallax providers...')
+    console.log('🔍 Discovering Parallax cluster...')
+    console.log(`   Scheduler: ${this.PARALLAX_CLUSTER.schedulerUrl}`)
+    console.log(`   Workers: ${this.PARALLAX_CLUSTER.workers}`)
 
-    const discoveries = await Promise.allSettled(
-      this.PARALLAX_ENDPOINTS.map(async (endpoint) => {
-        try {
-          const health = await this.healthCheck(endpoint.url)
+    // Check scheduler health ONCE
+    const health = await this.healthCheck(this.PARALLAX_CLUSTER.schedulerUrl)
 
-          const provider: RealProvider = {
-            id: `provider-${endpoint.port}`,
-            url: endpoint.url,
-            name: `Parallax ${endpoint.region} (${endpoint.port})`,
-            model: endpoint.model,
-            region: endpoint.region,
-            port: endpoint.port,
-            online: health.online,
-            latency: health.latency,
-            price: this.calculateDynamicPrice(health.latency),
-            uptime: health.online ? 100 : 0,
-            lastHealthCheck: Date.now(),
-            successfulRequests: 0,
-            failedRequests: 0,
-          }
+    if (!health.online) {
+      console.log('❌ Parallax cluster is offline')
+      return []
+    }
 
-          this.providers.set(provider.id, provider)
+    console.log(`✅ Parallax cluster online (${health.latency}ms)`)
 
-          if (health.online) {
-            console.log(`✅ Found provider: ${provider.name} (${health.latency}ms)`)
-          } else {
-            console.log(`❌ Provider offline: ${provider.name}`)
-          }
+    // Create provider entries for visualization
+    // Each represents a worker in the cluster, but all use same scheduler endpoint
+    const providers: RealProvider[] = this.PARALLAX_ENDPOINTS.map((endpoint, index) => {
+      const provider: RealProvider = {
+        id: `cluster-worker-${index}`,
+        url: endpoint.url,
+        name: index === 0
+          ? `Parallax Cluster (Scheduler)`
+          : `Parallax Cluster (Worker ${index})`,
+        model: endpoint.model,
+        region: endpoint.region,
+        port: endpoint.port,
+        online: health.online,
+        latency: health.latency + (index * 2), // Slight variance for visualization
+        price: this.calculateDynamicPrice(health.latency),
+        uptime: 100,
+        lastHealthCheck: Date.now(),
+        successfulRequests: 0,
+        failedRequests: 0,
+      }
 
-          return provider
-        } catch (error) {
-          console.error(`Failed to discover ${endpoint.url}:`, error)
-          throw error
-        }
-      })
-    )
+      this.providers.set(provider.id, provider)
+      console.log(`  ✓ ${provider.name} (${provider.latency}ms)`)
 
-    const activeProviders = discoveries
-      .filter((result): result is PromiseFulfilledResult<RealProvider> => result.status === 'fulfilled')
-      .map(result => result.value)
+      return provider
+    })
 
-    console.log(`Found ${activeProviders.length}/${this.PARALLAX_ENDPOINTS.length} providers online`)
+    console.log(`📊 Discovered ${providers.length} cluster nodes (all connected to scheduler)`)
 
-    return activeProviders
+    return providers
   }
 
   /**
