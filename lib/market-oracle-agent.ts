@@ -108,7 +108,8 @@ export class MarketOracleAgent {
   async runPrediction(
     asset: string = 'SOL',
     timeframe: '5m' | '15m' | '1h' | '4h' | '24h' = '1h',
-    useMultiProvider = true
+    useMultiProvider = true,
+    fetchWithPayment?: typeof fetch
   ): Promise<MarketPrediction> {
     const startTime = Date.now()
     const currentPrice = await this.fetchCurrentPrice(asset)
@@ -149,8 +150,12 @@ REASONING: [brief explanation in 1-2 sentences]
 
 Be concise and direct.`
 
-        // Call server-side oracle inference endpoint with x402 payment via Faremeter
-        const response = await fetch('/api/oracle/inference', {
+        // Call inference endpoint with x402 payment
+        // Use client-side payment if fetchWithPayment provided, otherwise fall back to server-side
+        const apiUrl = fetchWithPayment ? '/api/inference/paid' : '/api/oracle/inference'
+        const fetchFn = fetchWithPayment || fetch
+
+        const response = await fetchFn(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -166,17 +171,31 @@ Be concise and direct.`
 
         const result = await response.json()
 
-        if (!result.success) {
-          throw new Error(result.error || 'Inference failed')
+        // Handle both client-side (/api/inference/paid) and server-side (/api/oracle/inference) responses
+        let aiResponse: string
+        let latency: number
+        let cost: number
+        let txHash: string | undefined
+
+        if (fetchWithPayment) {
+          // Client-side response from /api/inference/paid
+          aiResponse = result.response || ''
+          latency = result.latency || (Date.now() - predictionStart)
+          cost = result.cost || 0.001
+          txHash = result.txHash
+        } else {
+          // Server-side response from /api/oracle/inference
+          if (!result.success) {
+            throw new Error(result.error || 'Inference failed')
+          }
+          const data = result.data
+          aiResponse = data.content || data.response || ''
+          latency = data.latency || (Date.now() - predictionStart)
+          cost = data.cost || 0.001
+          txHash = data.txHash
         }
 
-        const data = result.data
-        const latency = data.latency || (Date.now() - predictionStart)
-        const cost = data.cost || 0.001 // Real x402 micropayment cost from blockchain
-        const txHash = data.txHash
-
         // Parse AI response
-        const aiResponse = data.content || data.response || ''
         const predictionMatch = aiResponse.match(/PREDICTION:\s*(UP|DOWN|NEUTRAL)/i)
         const confidenceMatch = aiResponse.match(/CONFIDENCE:\s*(\d+)/i)
         const reasoningMatch = aiResponse.match(/REASONING:\s*(.+?)(?:\n|$)/i)
@@ -340,7 +359,7 @@ Be concise and direct.`
     }
   }
 
-  startAutonomousMode(intervalMinutes: number = 5) {
+  startAutonomousMode(intervalMinutes: number = 5, fetchWithPayment?: typeof fetch) {
     if (this.isRunning) {
       console.log('⚠️ Oracle already running')
       return
@@ -350,11 +369,11 @@ Be concise and direct.`
     console.log(`🚀 Market Oracle starting autonomous mode (every ${intervalMinutes} minutes)`)
 
     // Run immediately
-    this.runPrediction('SOL', '1h', true)
+    this.runPrediction('SOL', '1h', true, fetchWithPayment)
 
     // Then run on interval
     this.intervalId = setInterval(() => {
-      this.runPrediction('SOL', '1h', true)
+      this.runPrediction('SOL', '1h', true, fetchWithPayment)
 
       // Verify old predictions
       const predictionsToVerify = this.predictions.filter(
