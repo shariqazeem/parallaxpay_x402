@@ -1799,7 +1799,7 @@ function DeployAgentModal({
 
         const response = await client.inference({
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 300, // Increased from 200 to avoid truncation
+          max_tokens: 800, // Increased to ensure complete responses (including reasoning)
         })
 
         console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
@@ -1823,18 +1823,21 @@ function DeployAgentModal({
 
         console.log('Content before <think> cleanup:', content)
 
-        // Clean up <think> tags if present
+        // Clean up <think> tags COMPLETELY - we only want the final answer
         if (content.includes('<think>')) {
+          const thinkStart = content.indexOf('<think>')
           const thinkEnd = content.indexOf('</think>')
+
           if (thinkEnd !== -1) {
-            // Found closing tag - remove reasoning, keep answer
+            // Found closing tag - remove ALL reasoning, keep only answer after </think>
             content = content.substring(thinkEnd + 8).trim()
-          } else {
-            // No closing tag (response truncated) - keep the reasoning but remove tag
-            // This happens when max_tokens is too small
-            content = content.replace('<think>\n', '').replace('<think>', '').trim()
-            // Add a note that this is reasoning
-            content = '💭 AI Reasoning:\n\n' + content
+          } else if (thinkStart !== -1) {
+            // No closing tag (truncated) - remove everything including the <think> tag
+            content = content.substring(0, thinkStart).trim()
+            if (!content) {
+              // If nothing before <think>, show a helpful message
+              content = '🤖 AI is analyzing... (Response was cut off during reasoning phase. Try running the agent again for the full answer.)'
+            }
           }
         }
 
