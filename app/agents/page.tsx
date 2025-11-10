@@ -964,6 +964,11 @@ export default function AgentDashboardPage() {
               {/* Wallet Connect Button */}
               <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
 
+              <Link href="/analytics">
+                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
+                  Analytics
+                </button>
+              </Link>
               <Link href="/marketplace">
                 <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
                   Marketplace
