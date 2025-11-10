@@ -18,7 +18,7 @@ import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 interface AgentStats {
   id: string
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'
   status: 'active' | 'idle' | 'executing'
   totalTrades: number
   profit: number
@@ -45,7 +45,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'
   prompt: string
   deployed: number
   totalRuns: number
@@ -255,7 +255,7 @@ export default function AgentDashboardPage() {
         const newAgent: DeployedAgent = {
           id: `agent-${Date.now()}`,
           name: agentData.name || 'Generated Agent',
-          type: 'optimizer', // Default type for AI-generated agents
+          type: 'custom', // Default type for AI-generated agents
           prompt: agentData.prompt || agentData.description,
           deployed: Date.now(),
           totalRuns: 0,
@@ -373,8 +373,8 @@ export default function AgentDashboardPage() {
       ? `Completed: "${da.lastResult.substring(0, 200)}..."`
       : `Ready to run: "${da.prompt.substring(0, 100)}..."`,
     lastActionTime: da.lastRun || da.deployed,
-    avatar: da.type === 'arbitrage' ? '🎯' : da.type === 'optimizer' ? '💰' : da.type === 'whale' ? '🐋' : da.type === 'composite' ? '🔗' : '🤖',
-    color: da.type === 'arbitrage' ? '#9945FF' : da.type === 'optimizer' ? '#14F195' : da.type === 'whale' ? '#00D4FF' : da.type === 'composite' ? '#FF6B9D' : '#00B4FF',
+    avatar: da.type === 'market-intel' ? '📊' : da.type === 'social-sentiment' ? '📱' : da.type === 'defi-yield' ? '💰' : da.type === 'portfolio' ? '📈' : da.type === 'composite' ? '🔗' : '🤖',
+    color: da.type === 'market-intel' ? '#9945FF' : da.type === 'social-sentiment' ? '#00D4FF' : da.type === 'defi-yield' ? '#14F195' : da.type === 'portfolio' ? '#FF6B9D' : da.type === 'composite' ? '#FFB800' : '#00B4FF',
     isReal: true,
   }))
 
@@ -1703,8 +1703,8 @@ function DeployAgentModal({
   walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'>('custom')
-  const [prompt, setPrompt] = useState('Explain quantum computing')
+  const [type, setType] = useState<'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'>('market-intel')
+  const [prompt, setPrompt] = useState('Analyze current Solana (SOL) market conditions. Current price: $150. 24h change: +5.2%. Provide a brief market sentiment analysis and predict short-term price movement.')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
@@ -1713,6 +1713,45 @@ function DeployAgentModal({
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
     { id: 'step-1', agentName: '', prompt: '' }
   ])
+
+  // Agent type templates with realistic prompts
+  const agentTemplates = {
+    'market-intel': {
+      name: 'SOL Market Intelligence',
+      prompt: 'Analyze current Solana (SOL) market conditions. Current price: $150. 24h volume: $2.3B. 24h change: +5.2%. Market cap rank: #6. Provide a concise market sentiment analysis (bullish/bearish/neutral) and predict short-term price movement with reasoning.'
+    },
+    'social-sentiment': {
+      name: 'Crypto Twitter Sentiment',
+      prompt: 'Analyze recent crypto Twitter sentiment for Solana. Sample tweets: "SOL breaking out! 🚀", "Solana network is blazing fast today", "Not sure about SOL, high competition". Determine overall sentiment (bullish/bearish/neutral) and provide a brief summary of community mood.'
+    },
+    'defi-yield': {
+      name: 'DeFi Yield Optimizer',
+      prompt: 'Compare Solana DeFi yields: Marinade (6.5% APY, liquid staking), Kamino (12% APY, lending), Drift (15% APY, perps, high risk). Analyze risk/reward and recommend the best strategy for $10k investment. Consider APY, smart contract risk, and liquidity.'
+    },
+    'portfolio': {
+      name: 'Portfolio Assistant',
+      prompt: 'Analyze this Solana wallet portfolio: 50 SOL ($7,500), 10,000 USDC, 5,000 BONK ($50). Total value: $17,550. Provide insights: Is it well-diversified? Should I rebalance? Any recommendations for better allocation considering current market conditions?'
+    },
+    'composite': {
+      name: 'Multi-Agent Workflow',
+      prompt: 'Workflow: Market Intel → Social Sentiment → Trading Decision'
+    },
+    'custom': {
+      name: 'Custom Agent',
+      prompt: 'Explain quantum computing in simple terms'
+    }
+  }
+
+  // Update prompt when agent type changes
+  useEffect(() => {
+    const template = agentTemplates[type]
+    if (template && !name) {
+      setName(template.name)
+    }
+    if (template && type !== 'composite') {
+      setPrompt(template.prompt)
+    }
+  }, [type])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -1913,21 +1952,25 @@ function DeployAgentModal({
 
           {/* Agent Type */}
           <div>
-            <label className="text-sm text-gray-600 mb-2 block">
-              Agent Type
+            <label className="text-sm text-gray-600 mb-2 block font-semibold">
+              Agent Type - Choose Your Use Case
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as any)}
-              className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black focus:border-accent-primary focus:outline-none"
+              className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black focus:border-purple-400 focus:outline-none font-medium"
               disabled={isDeploying}
             >
-              <option value="custom">Custom - General purpose AI agent</option>
-              <option value="composite">🔗 Composite - Orchestrates multiple agents</option>
-              <option value="arbitrage">Arbitrage - Find price differences</option>
-              <option value="optimizer">Optimizer - Minimize costs</option>
-              <option value="whale">Whale - Bulk purchases</option>
+              <option value="market-intel">📊 Market Intelligence - Solana price & market analysis</option>
+              <option value="social-sentiment">📱 Social Sentiment - Crypto Twitter sentiment tracker</option>
+              <option value="defi-yield">💰 DeFi Yield Optimizer - Best yield strategies</option>
+              <option value="portfolio">📈 Portfolio Assistant - Wallet analysis & recommendations</option>
+              <option value="composite">🔗 Composite Workflow - Orchestrate multiple agents</option>
+              <option value="custom">🤖 Custom - Build your own AI agent</option>
             </select>
+            <div className="mt-2 text-xs text-gray-500">
+              💡 Each agent uses Parallax AI inference + x402 micropayments
+            </div>
           </div>
 
           {/* Conditional UI based on type */}
@@ -2009,17 +2052,28 @@ function DeployAgentModal({
           ) : (
             /* Regular Prompt for Other Agent Types */
             <div>
-              <label className="text-sm text-gray-600 mb-2 block">
-                Test Prompt (will run real inference)
+              <label className="text-sm text-gray-700 mb-2 block font-semibold">
+                Agent Prompt - {type === 'market-intel' ? 'Market Data to Analyze' :
+                             type === 'social-sentiment' ? 'Social Media Data to Analyze' :
+                             type === 'defi-yield' ? 'DeFi Protocols to Compare' :
+                             type === 'portfolio' ? 'Portfolio Data to Analyze' :
+                             'Test Prompt'}
               </label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Enter a prompt to test the agent..."
-                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-black placeholder-gray-400 focus:border-accent-primary focus:outline-none resize-none"
-                rows={3}
+                placeholder="Enter the data for your agent to analyze..."
+                className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black placeholder-gray-400 focus:border-purple-400 focus:outline-none resize-none"
+                rows={5}
                 disabled={isDeploying}
               />
+              <div className="mt-2 text-xs text-gray-500">
+                {type === 'market-intel' && '💡 Include price, volume, and trend data for AI to analyze'}
+                {type === 'social-sentiment' && '💡 Include sample tweets or social posts for sentiment analysis'}
+                {type === 'defi-yield' && '💡 Include protocol names, APYs, and risk levels for comparison'}
+                {type === 'portfolio' && '💡 Include token holdings and values for portfolio analysis'}
+                {type === 'custom' && '💡 Enter any prompt - this will run real Parallax AI inference'}
+              </div>
             </div>
           )}
 
