@@ -165,7 +165,7 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
         <span className="text-lg">{icon}</span>
       </div>
       <div className="flex items-end gap-2">
-        <div className="text-xl font-black text-black">{value}</div>
+        <div className="text-xl font-black text-gray-900">{value}</div>
         {change !== undefined && (
           <div
             className={`text-xs font-bold ${
@@ -178,12 +178,12 @@ function StatCard({ label, value, change, icon, trend }: StatCardProps) {
         )}
         {trend && !change && (
           <div
-            className={`text-xs font-semibold ${
+            className={`text-xs font-bold ${
               trend === 'good'
                 ? 'text-green-600'
                 : trend === 'bad'
                 ? 'text-red-600'
-                : 'text-gray-600'
+                : 'text-gray-700'
             }`}
           >
             {trend === 'good' ? '✓' : trend === 'bad' ? '✗' : '•'}
