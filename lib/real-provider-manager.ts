@@ -170,9 +170,10 @@ export class RealProviderManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: testPrompt }],
           max_tokens: 10,
+          messages: [{ role: 'user', content: testPrompt }],
           temperature: 0.7,
+          stream: false,
         }),
       })
 
