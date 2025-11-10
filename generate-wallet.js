@@ -1,5 +1,5 @@
 const { Keypair } = require('@solana/web3.js');
-const bs58 = require('bs58').default;
+const bs58 = require('bs58');
 
 console.log('🔐 Generating new Solana wallet for ParallaxPay...\n');
 
