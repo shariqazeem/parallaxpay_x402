@@ -94,7 +94,7 @@ const x402PaymentMiddleware = paymentMiddleware(
             prompt: { type: 'string', description: 'User prompt for inference' },
           },
           required: ['prompt'],
-        },
+        } as any,
         outputSchema: {
           type: 'object',
           properties: {

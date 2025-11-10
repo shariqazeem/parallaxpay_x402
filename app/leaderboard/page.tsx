@@ -82,32 +82,32 @@ export default function LeaderboardPage() {
   }, [category, timeframe])
 
   return (
-    <div className="min-h-screen bg-background-primary text-white">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b border-border bg-background-secondary/50 backdrop-blur-xl sticky top-0 z-50">
+      <div className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <h1 className="text-2xl font-heading font-black cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-gradient">ParallaxPay</span>
+                <h1 className="text-2xl font-black cursor-pointer hover:opacity-70 transition-opacity">
+                  <span className="text-black">ParallaxPay</span>
                 </h1>
               </Link>
-              <div className="text-text-muted">/</div>
-              <h2 className="text-xl font-heading font-bold text-white">
+              <div className="text-gray-400">/</div>
+              <h2 className="text-xl font-bold text-black">
                 🏆 Competition Leaderboard
               </h2>
             </div>
 
             <div className="flex items-center gap-3">
-              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
               <Link href="/swarm">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
                   🐝 Swarm
                 </button>
               </Link>
               <Link href="/agents">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
                   My Agents
                 </button>
               </Link>
@@ -119,13 +119,13 @@ export default function LeaderboardPage() {
       {/* Main Content */}
       <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Hero */}
-        <div className="glass rounded-xl p-8 border border-accent-primary/30 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-accent-primary/5 to-accent-secondary/5" />
+        <div className="bg-white rounded-xl p-8 border-2 border-gray-200 shadow-sm relative overflow-hidden">
+          <div className="absolute inset-0 bg-gray-50" />
           <div className="relative z-10">
-            <h1 className="text-4xl font-heading font-black mb-4">
-              <span className="text-gradient">Competition Leaderboard</span> 🏆
+            <h1 className="text-4xl font-black mb-4 text-black">
+              Competition Leaderboard 🏆
             </h1>
-            <p className="text-lg text-text-secondary max-w-3xl">
+            <p className="text-lg text-gray-600 max-w-3xl">
               Compete with other traders and agents. Top performers earn badges, prizes, and bragging rights!
             </p>
           </div>
@@ -135,15 +135,15 @@ export default function LeaderboardPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           {/* Timeframe */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-text-muted">Timeframe:</span>
+            <span className="text-sm text-gray-600">Timeframe:</span>
             {(['24h', '7d', '30d', 'all'] as const).map((tf) => (
               <button
                 key={tf}
                 onClick={() => setTimeframe(tf)}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   timeframe === tf
-                    ? 'bg-accent-primary text-white'
-                    : 'glass-hover text-text-muted hover:text-white'
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-600 hover:text-black hover:bg-gray-200'
                 }`}
               >
                 {tf === 'all' ? 'All Time' : tf.toUpperCase()}
@@ -153,19 +153,19 @@ export default function LeaderboardPage() {
 
           {/* Category */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-text-muted">Rank by:</span>
+            <span className="text-sm text-gray-600">Rank by:</span>
             {(['profit', 'trades', 'winRate', 'savings'] as const).map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   category === cat
-                    ? 'bg-accent-secondary text-white'
-                    : 'glass-hover text-text-muted hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:text-black hover:bg-gray-200'
                 }`}
               >
                 {cat === 'winRate' ? 'Win Rate' :
-                 cat === 'avgSavings' ? 'Savings %' :
+                 cat === 'savings' ? 'Savings %' :
                  cat.charAt(0).toUpperCase() + cat.slice(1)}
               </button>
             ))}
@@ -173,10 +173,10 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Leaderboard */}
-        <div className="glass rounded-xl border border-border overflow-hidden">
+        <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
           {/* Header */}
-          <div className="px-6 py-4 bg-background-secondary border-b border-border">
-            <div className="grid grid-cols-12 gap-4 text-xs text-text-muted font-semibold uppercase">
+          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <div className="grid grid-cols-12 gap-4 text-xs text-gray-600 font-semibold uppercase">
               <div className="col-span-1">Rank</div>
               <div className="col-span-3">Agent</div>
               <div className="col-span-2">Strategy</div>
@@ -189,12 +189,12 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Entries */}
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-gray-200">
             {leaderboard.map((entry, idx) => (
               <motion.div
                 key={entry.name}
-                className={`px-6 py-4 hover:bg-background-secondary/50 transition-colors ${
-                  entry.isCurrentUser ? 'bg-accent-primary/10 border-l-4 border-accent-primary' : ''
+                className={`px-6 py-4 hover:bg-gray-50 transition-colors ${
+                  entry.isCurrentUser ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                 }`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -204,11 +204,11 @@ export default function LeaderboardPage() {
                   {/* Rank */}
                   <div className="col-span-1">
                     <div className="flex items-center gap-2">
-                      <span className={`text-2xl font-heading font-black ${
-                        entry.rank === 1 ? 'text-accent-secondary' :
-                        entry.rank === 2 ? 'text-text-secondary' :
-                        entry.rank === 3 ? 'text-status-warning' :
-                        'text-text-muted'
+                      <span className={`text-2xl font-black ${
+                        entry.rank === 1 ? 'text-yellow-500' :
+                        entry.rank === 2 ? 'text-gray-400' :
+                        entry.rank === 3 ? 'text-orange-500' :
+                        'text-gray-500'
                       }`}>
                         #{entry.rank}
                       </span>
@@ -218,31 +218,31 @@ export default function LeaderboardPage() {
 
                   {/* Name */}
                   <div className="col-span-3">
-                    <div className="font-heading font-bold text-white text-lg">
+                    <div className="font-bold text-black text-lg">
                       {entry.name}
                     </div>
                     {entry.isCurrentUser && (
-                      <div className="text-xs text-accent-primary font-semibold">YOU</div>
+                      <div className="text-xs text-blue-600 font-semibold">YOU</div>
                     )}
                   </div>
 
                   {/* Strategy */}
                   <div className="col-span-2">
-                    <div className="text-sm px-3 py-1 rounded-lg bg-background-secondary text-text-secondary inline-block">
+                    <div className="text-sm px-3 py-1 rounded-lg bg-gray-100 text-gray-700 inline-block">
                       {entry.strategy}
                     </div>
                   </div>
 
                   {/* Profit */}
                   <div className="col-span-1 text-right">
-                    <div className="text-status-success font-mono font-bold">
+                    <div className="text-green-600 font-mono font-bold">
                       ${entry.profit.toFixed(2)}
                     </div>
                   </div>
 
                   {/* Trades */}
                   <div className="col-span-1 text-right">
-                    <div className="text-white font-mono">
+                    <div className="text-black font-mono">
                       {entry.trades.toLocaleString()}
                     </div>
                   </div>
@@ -251,18 +251,18 @@ export default function LeaderboardPage() {
                   <div className="col-span-2 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <div className={`font-mono font-bold ${
-                        entry.winRate > 95 ? 'text-status-success' :
-                        entry.winRate > 90 ? 'text-status-warning' :
-                        'text-text-muted'
+                        entry.winRate > 95 ? 'text-green-600' :
+                        entry.winRate > 90 ? 'text-yellow-600' :
+                        'text-gray-500'
                       }`}>
                         {entry.winRate.toFixed(1)}%
                       </div>
-                      <div className="w-16 bg-background-secondary rounded-full h-2 overflow-hidden">
+                      <div className="w-16 bg-gray-200 rounded-full h-2 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            entry.winRate > 95 ? 'bg-status-success' :
-                            entry.winRate > 90 ? 'bg-status-warning' :
-                            'bg-text-muted'
+                            entry.winRate > 95 ? 'bg-green-600' :
+                            entry.winRate > 90 ? 'bg-yellow-600' :
+                            'bg-gray-400'
                           }`}
                           style={{ width: `${entry.winRate}%` }}
                         />
@@ -272,7 +272,7 @@ export default function LeaderboardPage() {
 
                   {/* Savings */}
                   <div className="col-span-1 text-right">
-                    <div className="text-accent-secondary font-mono font-bold">
+                    <div className="text-blue-600 font-mono font-bold">
                       {entry.avgSavings.toFixed(1)}%
                     </div>
                   </div>
@@ -281,7 +281,7 @@ export default function LeaderboardPage() {
                   <div className="col-span-1 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <span className="text-xl">🔥</span>
-                      <span className="font-mono font-bold text-white">{entry.streak}</span>
+                      <span className="font-mono font-bold text-black">{entry.streak}</span>
                     </div>
                   </div>
                 </div>
@@ -291,12 +291,12 @@ export default function LeaderboardPage() {
         </div>
 
         {/* CTA */}
-        <div className="glass rounded-xl p-8 border border-border text-center">
-          <h3 className="text-2xl font-heading font-bold mb-4">Want to compete?</h3>
-          <p className="text-text-secondary mb-6">Deploy your own agent and climb the leaderboard!</p>
+        <div className="bg-white rounded-xl p-8 border-2 border-gray-200 text-center shadow-sm">
+          <h3 className="text-2xl font-bold mb-4 text-black">Want to compete?</h3>
+          <p className="text-gray-600 mb-6">Deploy your own agent and climb the leaderboard!</p>
           <Link href="/agent-builder">
-            <button className="glass-hover neon-border px-8 py-4 rounded-xl font-heading font-bold hover:scale-105 transition-all">
-              <span className="text-gradient">🧠 Build Your Agent</span>
+            <button className="bg-black text-white px-8 py-4 rounded-xl font-bold hover:bg-gray-800 transition-all">
+              🧠 Build Your Agent
             </button>
           </Link>
         </div>

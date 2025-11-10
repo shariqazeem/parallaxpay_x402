@@ -357,7 +357,8 @@ export class SwarmIntelligence {
     await Promise.all(votePromises)
 
     // Find provider with highest consensus to "use"
-    let bestProvider: { id: string; score: number; consensus: number } | null = null
+    type BestProviderType = { id: string; score: number; consensus: number }
+    let bestProvider: BestProviderType | null = null
 
     this.providerVotes.forEach((vote, providerId) => {
       if (vote.recommendation === 'use') {
@@ -372,10 +373,11 @@ export class SwarmIntelligence {
 
     if (!bestProvider) return null
 
+    const finalProvider: BestProviderType = bestProvider
     return {
-      providerId: bestProvider.id,
-      confidence: bestProvider.consensus,
-      reason: `Swarm consensus: ${(bestProvider.consensus * 100).toFixed(1)}% agreement with ${(bestProvider.score * 100).toFixed(1)}% rating`,
+      providerId: finalProvider.id,
+      confidence: finalProvider.consensus,
+      reason: `Swarm consensus: ${(finalProvider.consensus * 100).toFixed(1)}% agreement with ${(finalProvider.score * 100).toFixed(1)}% rating`,
     }
   }
 

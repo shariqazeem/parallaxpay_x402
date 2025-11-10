@@ -17,7 +17,7 @@ export interface AgentIdentity {
   id: string // Unique agent ID
   walletAddress: string // Owner's wallet (Solana pubkey)
   name: string
-  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom'
+  type: 'arbitrage' | 'optimizer' | 'whale' | 'custom' | 'composite'
   createdAt: number
 
   // Identity verification
