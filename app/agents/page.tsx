@@ -18,7 +18,7 @@ import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 interface AgentStats {
   id: string
   name: string
-  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle' | 'blockchain-query'
   status: 'active' | 'idle' | 'executing'
   totalTrades: number
   profit: number
@@ -45,7 +45,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle' | 'blockchain-query'
   prompt: string
   deployed: number
   totalRuns: number
@@ -493,6 +493,120 @@ export default function AgentDashboardPage() {
         }
 
         return { success: true, cost: prediction.totalCost }
+      }
+
+      // BLOCKCHAIN QUERY AGENT: Query Solana blockchain data via Helius
+      if (agent.type === 'blockchain-query') {
+        console.log(`⛓️ [${agent.name}] Running BLOCKCHAIN QUERY agent...`)
+        console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
+
+        // Parse wallet address and query type from prompt (e.g., "[wallet] balance" or "[wallet] transactions")
+        const promptParts = agent.prompt.trim().split(/\s+/)
+        const walletAddress = promptParts[0]
+        const queryType = (promptParts[1] || 'all') as 'balance' | 'transactions' | 'nfts' | 'all'
+
+        // Call blockchain query endpoint with x402 payment
+        const response = await fetchWithPayment('/api/blockchain-query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            walletAddress,
+            queryType
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Blockchain query failed')
+        }
+
+        const data = await response.json()
+        const latency = Date.now() - startTime
+        const cost = data.metadata?.cost || 0.001
+
+        console.log(`✅ [${agent.name}] Blockchain query completed!`)
+        console.log(`   Query Type: ${queryType}`)
+        console.log(`   Cost: $${cost.toFixed(6)}`)
+        console.log(`   Latency: ${latency}ms`)
+
+        // Format result summary
+        let resultSummary = `${queryType.toUpperCase()} query for ${walletAddress.substring(0, 10)}...`
+        if (data.data?.balance) {
+          resultSummary += ` | SOL: ${data.data.balance.sol.toFixed(4)}`
+        }
+        if (data.data?.transactions?.length) {
+          resultSummary += ` | ${data.data.transactions.length} txs`
+        }
+        if (data.data?.tokens?.length) {
+          resultSummary += ` | ${data.data.tokens.length} tokens`
+        }
+
+        // Record execution in identity manager
+        if (agent.identityId) {
+          identityManager.recordExecution(
+            agent.identityId,
+            true,
+            cost,
+            latency,
+            'Helius RPC',
+            0.0001
+          )
+          setAgentIdentities(identityManager.getAllIdentities())
+        }
+
+        // Update agent stats
+        setDeployedAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? {
+                ...a,
+                status: 'idle' as const,
+                totalRuns: a.totalRuns + 1,
+                lastRun: Date.now(),
+                lastResult: resultSummary,
+                provider: 'Helius RPC'
+              }
+            : a
+        ))
+
+        // Add to trade feed
+        const trade: Trade = {
+          id: `blockchain-${Date.now()}`,
+          agentName: agent.name,
+          provider: 'Helius RPC',
+          tokens: 100, // estimated
+          cost,
+          timestamp: Date.now(),
+          txHash: 'blockchain-query',
+          isReal: true,
+        }
+        setTrades(prev => [trade, ...prev.slice(0, 9)])
+
+        // Store in Supabase
+        try {
+          const txData: TransactionDB = {
+            id: `blockchain-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'blockchain',
+            agent_name: agent.name,
+            provider: 'Helius RPC',
+            tokens: 100,
+            cost,
+            status: 'success',
+            network: 'solana-devnet',
+            wallet_address: publicKey?.toBase58(),
+          }
+
+          const { error } = await supabase.from('transactions').insert([txData])
+          if (!error) {
+            console.log('✅ Saved blockchain query to Supabase')
+          }
+        } catch (e) {
+          console.warn('Failed to store blockchain query:', e)
+        }
+
+        return { success: true, cost }
       }
 
       // COMPOSITE AGENT: Orchestrate multiple agent calls
@@ -1800,7 +1914,7 @@ function DeployAgentModal({
   walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'market-oracle' | 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'>('market-oracle')
+  const [type, setType] = useState<'market-oracle' | 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'blockchain-query'>('market-oracle')
   const [prompt, setPrompt] = useState('SOL 1h')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -2062,6 +2176,7 @@ function DeployAgentModal({
               disabled={isDeploying}
             >
               <option value="market-oracle">🔮 Market Oracle - AI-powered price predictions (BTC/ETH/SOL)</option>
+              <option value="blockchain-query">⛓️ Blockchain Query - Solana wallet balances & transactions</option>
               <option value="market-intel">📊 Market Intelligence - Solana price & market analysis</option>
               <option value="social-sentiment">📱 Social Sentiment - Crypto Twitter sentiment tracker</option>
               <option value="defi-yield">💰 DeFi Yield Optimizer - Best yield strategies</option>
@@ -2155,6 +2270,7 @@ function DeployAgentModal({
             <div>
               <label className="text-sm text-gray-700 mb-2 block font-semibold">
                 Agent Prompt - {type === 'market-oracle' ? 'Asset & Timeframe' :
+                             type === 'blockchain-query' ? 'Wallet Address & Query Type' :
                              type === 'market-intel' ? 'Market Data to Analyze' :
                              type === 'social-sentiment' ? 'Social Media Data to Analyze' :
                              type === 'defi-yield' ? 'DeFi Protocols to Compare' :
@@ -2164,13 +2280,16 @@ function DeployAgentModal({
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={type === 'market-oracle' ? 'Example: BTC 1h  OR  ETH 4h  OR  SOL 24h' : 'Enter the data for your agent to analyze...'}
+                placeholder={type === 'market-oracle' ? 'Example: BTC 1h  OR  ETH 4h  OR  SOL 24h' :
+                           type === 'blockchain-query' ? 'Example: [wallet-address] balance  OR  [wallet-address] transactions' :
+                           'Enter the data for your agent to analyze...'}
                 className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black placeholder-gray-400 focus:border-purple-400 focus:outline-none resize-none"
                 rows={5}
                 disabled={isDeploying}
               />
               <div className="mt-2 text-xs text-gray-500">
                 {type === 'market-oracle' && '💡 Format: [ASSET] [TIMEFRAME] - Supported assets: BTC, ETH, SOL. Timeframes: 5m, 15m, 1h, 4h, 24h'}
+                {type === 'blockchain-query' && '💡 Format: [WALLET] [TYPE] - Types: balance, transactions, all. Uses Helius RPC with x402'}
                 {type === 'market-intel' && '💡 Include price, volume, and trend data for AI to analyze'}
                 {type === 'social-sentiment' && '💡 Include sample tweets or social posts for sentiment analysis'}
                 {type === 'defi-yield' && '💡 Include protocol names, APYs, and risk levels for comparison'}
