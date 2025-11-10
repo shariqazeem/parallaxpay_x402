@@ -57,7 +57,7 @@ export default function MarketplacePage() {
                 </div>
               </div>
               <Link href="/agents">
-                <button className="border-2 border-gray-200 px-4 py-2 rounded-lg text-sm font-bold text-black hover:border-black hover:bg-gray-50 transition-all">
+                <button className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold hover:from-purple-600 hover:to-blue-600 transition-all shadow-md hover:shadow-lg">
                   Go to Agents →
                 </button>
               </Link>
@@ -93,7 +93,7 @@ export default function MarketplacePage() {
           {/* Middle Column - Provider Selection */}
           <div className="col-span-12 lg:col-span-6 space-y-6">
             {/* Provider Selection */}
-            <div className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm">
+            <div className="bg-white p-6 rounded-xl border-2 border-purple-200 shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-black">
                   🏪 Browse Providers
@@ -126,10 +126,10 @@ export default function MarketplacePage() {
                   {providers.map((provider) => (
                     <motion.div
                       key={provider.id}
-                      className={`p-4 rounded-lg cursor-pointer transition-all ${
+                      className={`p-4 rounded-xl cursor-pointer transition-all ${
                         selectedProvider?.id === provider.id
-                          ? 'bg-blue-50 border-2 border-blue-400'
-                          : 'bg-gray-50 border-2 border-gray-200 hover:border-blue-300'
+                          ? 'bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-500 shadow-lg shadow-blue-200/50'
+                          : 'bg-white border-2 border-gray-200 hover:border-purple-400 hover:shadow-md'
                       }`}
                       onClick={() => selectProvider(provider)}
                       whileHover={{ scale: 1.02 }}
@@ -154,26 +154,26 @@ export default function MarketplacePage() {
                           )}
                         </div>
                         {selectedProvider?.id === provider.id && (
-                          <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">
+                          <div className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full font-bold shadow-md">
                             ✓ Selected
                           </div>
                         )}
                       </div>
-                    <div className="text-xs text-gray-500 mb-3">
+                    <div className="text-xs text-gray-600 mb-3">
                       {provider.description}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs mb-3">
-                      <div>
-                        <div className="text-gray-500">Latency</div>
-                        <div className="font-mono text-black">{provider.latency}ms</div>
+                      <div className="bg-purple-50 p-2 rounded-lg border border-purple-200">
+                        <div className="text-purple-600 font-semibold mb-1">⚡ Latency</div>
+                        <div className="font-mono font-bold text-black">{provider.latency}ms</div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Uptime</div>
-                        <div className="font-mono text-green-600">{provider.uptime}%</div>
+                      <div className="bg-green-50 p-2 rounded-lg border border-green-200">
+                        <div className="text-green-600 font-semibold mb-1">✓ Uptime</div>
+                        <div className="font-mono font-bold text-green-700">{provider.uptime}%</div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Model</div>
-                        <div className="font-mono text-black text-[10px]">{provider.model.split('/')[1]}</div>
+                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
+                        <div className="text-blue-600 font-semibold mb-1">🤖 Model</div>
+                        <div className="font-mono font-bold text-black text-[10px]">{provider.model.split('/')[1]}</div>
                       </div>
                     </div>
                     {provider.minReputation && provider.minReputation > 0 && (
@@ -198,7 +198,7 @@ export default function MarketplacePage() {
               {selectedProvider && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   <Link href="/agents">
-                    <button className="w-full bg-black text-white px-4 py-4 rounded-lg font-bold transition-all hover:bg-gray-800">
+                    <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-4 rounded-lg font-bold transition-all hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl">
                       🤖 Use This Provider for All Agents →
                     </button>
                   </Link>
@@ -370,7 +370,7 @@ function TradePanel({
           </div>
 
           {/* Token Control Slider - matching inference page style */}
-          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-200">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="text-sm font-heading font-bold text-black">
@@ -413,7 +413,7 @@ function TradePanel({
           </div>
 
           {/* Provider Info */}
-          <div className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 space-y-2">
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-3 rounded-lg border-2 border-blue-200 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-gray-600">Provider</span>
               <span className="text-black font-mono">{selectedProvider || 'None'}</span>
@@ -537,7 +537,7 @@ function RecentTrades() {
           {trades.map((trade, i) => (
             <div
               key={i}
-              className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all"
+              className="bg-white p-3 rounded-lg border-2 border-green-200 hover:border-green-400 hover:shadow-md transition-all"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-mono text-gray-600">
@@ -561,7 +561,7 @@ function RecentTrades() {
         </div>
       )}
 
-      <button className="w-full mt-4 bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-100 border-2 border-gray-200 hover:border-gray-300 transition-all">
+      <button className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:from-green-600 hover:to-blue-600 transition-all shadow-md">
         View All Transactions →
       </button>
     </motion.div>

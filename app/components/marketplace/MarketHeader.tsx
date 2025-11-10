@@ -51,7 +51,7 @@ export default function MarketHeader() {
   }, [])
 
   return (
-    <div className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
+    <div className="border-b-2 border-purple-200 bg-white/95 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="max-w-[1920px] mx-auto px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
@@ -121,24 +121,37 @@ interface StatCardProps {
 }
 
 function StatCard({ label, value, change, icon, trend }: StatCardProps) {
+  // Determine color scheme based on label
+  const getColorScheme = () => {
+    if (label.includes('Market')) return { border: 'border-purple-300', bg: 'bg-gradient-to-br from-purple-50 to-pink-50', text: 'text-purple-600' }
+    if (label.includes('Volume')) return { border: 'border-blue-300', bg: 'bg-gradient-to-br from-blue-50 to-cyan-50', text: 'text-blue-600' }
+    if (label.includes('Trades')) return { border: 'border-green-300', bg: 'bg-gradient-to-br from-green-50 to-emerald-50', text: 'text-green-600' }
+    if (label.includes('Providers')) return { border: 'border-orange-300', bg: 'bg-gradient-to-br from-orange-50 to-amber-50', text: 'text-orange-600' }
+    if (label.includes('Latency')) return { border: 'border-cyan-300', bg: 'bg-gradient-to-br from-cyan-50 to-blue-50', text: 'text-cyan-600' }
+    if (label.includes('Agents')) return { border: 'border-pink-300', bg: 'bg-gradient-to-br from-pink-50 to-rose-50', text: 'text-pink-600' }
+    return { border: 'border-gray-300', bg: 'bg-white', text: 'text-gray-600' }
+  }
+
+  const colors = getColorScheme()
+
   return (
     <motion.div
-      className="bg-white border-2 border-gray-200 hover:border-gray-300 p-3 rounded-xl shadow-sm hover:shadow-md transition-all"
-      whileHover={{ scale: 1.02 }}
+      className={`${colors.bg} border-2 ${colors.border} hover:shadow-lg p-3 rounded-xl shadow-md transition-all`}
+      whileHover={{ scale: 1.05, y: -2 }}
     >
       <div className="flex items-start justify-between mb-1">
-        <span className="text-xs text-gray-600 font-semibold">{label}</span>
-        <span className="text-sm">{icon}</span>
+        <span className={`text-xs ${colors.text} font-bold uppercase tracking-wider`}>{label}</span>
+        <span className="text-lg">{icon}</span>
       </div>
       <div className="flex items-end gap-2">
-        <div className="text-lg font-black text-black">{value}</div>
+        <div className="text-xl font-black text-black">{value}</div>
         {change !== undefined && (
           <div
-            className={`text-xs font-semibold ${
+            className={`text-xs font-bold ${
               change >= 0 ? 'text-green-600' : 'text-red-600'
             }`}
           >
-            {change >= 0 ? '+' : ''}
+            {change >= 0 ? '↗' : '↘'}
             {change.toFixed(1)}%
           </div>
         )}
