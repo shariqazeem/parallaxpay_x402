@@ -124,15 +124,15 @@ export function AutonomousSchedulerPanel({
   }
 
   return (
-    <div className="glass border border-purple-500/30 rounded-xl overflow-hidden">
+    <div className="bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-b border-purple-500/30 p-6">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="text-4xl">🤖</div>
             <div>
-              <h3 className="text-2xl font-heading font-bold text-white mb-1">Autonomous Execution</h3>
-              <p className="text-sm text-purple-300">Let this agent run itself on a schedule</p>
+              <h3 className="text-2xl font-heading font-bold text-black mb-1">Autonomous Execution</h3>
+              <p className="text-sm text-purple-600">Let this agent run itself on a schedule</p>
             </div>
           </div>
 
@@ -155,13 +155,13 @@ export function AutonomousSchedulerPanel({
       {!schedule && (
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-white mb-3">
+            <label className="block text-sm font-bold text-black mb-3">
               ⏱️ Run Frequency
             </label>
             <select
               value={selectedInterval}
               onChange={(e) => setSelectedInterval(Number(e.target.value))}
-              className="w-full bg-gray-900/50 border border-purple-500/30 rounded-xl px-4 py-3 text-white font-mono text-sm hover:border-purple-500/50 focus:border-purple-500 focus:outline-none transition-colors"
+              className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-black font-mono text-sm hover:border-purple-300 focus:border-purple-500 focus:outline-none transition-colors"
             >
               {intervalOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -174,7 +174,7 @@ export function AutonomousSchedulerPanel({
           <button
             onClick={enableSchedule}
             disabled={isScheduling}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-6 py-4 rounded-xl font-bold text-white hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-purple-500/30"
+            className="w-full bg-black text-white px-6 py-4 rounded-xl font-bold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScheduling ? (
               <span className="flex items-center justify-center gap-2">
@@ -188,11 +188,11 @@ export function AutonomousSchedulerPanel({
             )}
           </button>
 
-          <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4">
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
             <div className="flex gap-3">
               <div className="text-2xl">💡</div>
-              <div className="text-xs text-purple-200 leading-relaxed">
-                <span className="font-bold text-purple-300">How it works:</span> Once enabled, this agent will execute automatically
+              <div className="text-xs text-gray-700 leading-relaxed">
+                <span className="font-bold text-purple-600">How it works:</span> Once enabled, this agent will execute automatically
                 on the selected schedule. It will pay for itself with x402 micropayments and build reputation over time.
               </div>
             </div>

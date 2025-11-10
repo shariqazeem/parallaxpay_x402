@@ -8,11 +8,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Cyberpunk color system
+        // Modern White Theme Color System
         background: {
-          primary: '#0A0A0F',
-          secondary: '#12121A',
-          tertiary: '#1A1A24',
+          primary: '#FFFFFF',
+          secondary: '#F9FAFB',
+          tertiary: '#F3F4F6',
         },
         accent: {
           primary: '#9945FF', // Solana purple
@@ -20,20 +20,20 @@ module.exports = {
           tertiary: '#00D4FF', // Cyan
         },
         status: {
-          success: '#14F195',
-          warning: '#FFB700',
-          error: '#FF3366',
-          info: '#00D4FF',
+          success: '#10B981',
+          warning: '#F59E0B',
+          error: '#EF4444',
+          info: '#3B82F6',
         },
         text: {
-          primary: '#FFFFFF',
-          secondary: '#8B8B9F',
-          muted: '#4A4A5E',
+          primary: '#000000',
+          secondary: '#6B7280',
+          muted: '#9CA3AF',
         },
         border: {
-          DEFAULT: '#2A2A3A',
+          DEFAULT: '#E5E7EB',
           focus: '#9945FF',
-          hover: '#14F195',
+          hover: '#D1D5DB',
         },
       },
       fontFamily: {
