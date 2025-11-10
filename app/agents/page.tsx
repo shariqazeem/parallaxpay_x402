@@ -13,6 +13,7 @@ import { getAutonomousAgentScheduler, AgentSchedule } from '@/lib/autonomous-age
 import { useBadgeAttestation } from '@/lib/use-badge-attestation'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 import { LiveActivityFeed } from '@/components/LiveActivityFeed'
+import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 
 interface AgentStats {
   id: string
@@ -1066,6 +1067,7 @@ function AgentCard({
 }) {
   const { attestBadge, attesting } = useBadgeAttestation()
   const [showAttestModal, setShowAttestModal] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
   const identityManager = getAgentIdentityManager()
 
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
@@ -1259,29 +1261,40 @@ function AgentCard({
           <div className="text-xs text-text-muted">{timeStr}</div>
         </div>
 
-        {/* Run Agent Button */}
+        {/* Action Buttons */}
         {agent.isReal && (
-          <button
-            onClick={onRun}
-            disabled={agent.status === 'executing'}
-            className="w-full glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mb-3"
-          >
-            {agent.status === 'executing' ? (
-              <span className="text-text-muted">⚡ Running...</span>
-            ) : (
-              <span className="text-gradient">▶ Run Agent</span>
-            )}
-          </button>
-        )}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onRun}
+                disabled={agent.status === 'executing'}
+                className="glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {agent.status === 'executing' ? (
+                  <span className="text-text-muted">⚡ Running...</span>
+                ) : (
+                  <span className="text-gradient">▶ Run</span>
+                )}
+              </button>
 
-        {/* Badge Attestation Button */}
-        {agent.isReal && unAttestedBadges.length > 0 && (
-          <button
-            onClick={() => setShowAttestModal(true)}
-            className="w-full glass-hover border border-status-success/30 px-4 py-2 rounded-lg font-heading text-sm font-semibold transition-all hover:scale-105 text-status-success"
-          >
-            ⛓️ Attest {unAttestedBadges.length} Badge{unAttestedBadges.length > 1 ? 's' : ''} On-Chain
-          </button>
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                className="glass-hover border border-purple-500/50 px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 text-purple-400"
+              >
+                🤖 Schedule
+              </button>
+            </div>
+
+            {/* Badge Attestation Button */}
+            {unAttestedBadges.length > 0 && (
+              <button
+                onClick={() => setShowAttestModal(true)}
+                className="w-full glass-hover border border-status-success/30 px-4 py-2 rounded-lg font-heading text-sm font-semibold transition-all hover:scale-105 text-status-success"
+              >
+                ⛓️ Attest {unAttestedBadges.length} Badge{unAttestedBadges.length > 1 ? 's' : ''} On-Chain
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -1354,6 +1367,40 @@ function AgentCard({
                 Attestation creates a permanent record on Solana blockchain proving your agent earned this badge. Anyone can verify it via the transaction signature.
               </div>
             </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
+
+      {/* Autonomous Scheduler Modal */}
+      {showScheduleModal && typeof window !== 'undefined' && createPortal(
+        <motion.div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowScheduleModal(false)}
+        >
+          <motion.div
+            className="max-w-2xl w-full"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <AutonomousSchedulerPanel
+              agentId={agent.id}
+              agentName={agent.name}
+              onScheduleChange={() => {
+                // Modal will close manually when user clicks close button
+              }}
+            />
+            <button
+              onClick={() => setShowScheduleModal(false)}
+              className="mt-4 w-full glass-hover px-4 py-3 rounded-lg text-white font-semibold hover:scale-105 transition-all"
+            >
+              Close
+            </button>
           </motion.div>
         </motion.div>,
         document.body
