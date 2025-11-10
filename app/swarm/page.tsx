@@ -27,10 +27,10 @@ import dynamic from 'next/dynamic'
 const Swarm3D = dynamic(() => import('@/app/components/Swarm3D'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[600px] flex items-center justify-center glass rounded-xl border border-gray-200">
+    <div className="w-full h-[600px] flex items-center justify-center bg-white rounded-xl border-2 border-purple-200 shadow-lg">
       <div className="text-center">
         <div className="text-4xl mb-3 animate-pulse">🌀</div>
-        <div className="text-gray-600">Loading 3D Visualization...</div>
+        <div className="text-gray-700 font-semibold">Loading 3D Visualization...</div>
       </div>
     </div>
   ),
@@ -238,8 +238,8 @@ export default function SwarmPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <h1 className="text-2xl font-heading font-black cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-gradient">ParallaxPay</span>
+                <h1 className="text-2xl font-heading font-black cursor-pointer hover:opacity-80 transition-all">
+                  <span className="text-purple-600">ParallaxPay</span>
                 </h1>
               </Link>
               <div className="text-gray-600">/</div>
@@ -249,19 +249,19 @@ export default function SwarmPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+              <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-blue-500 !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!from-purple-600 hover:!to-blue-600 !transition-all hover:!shadow-lg" />
               <Link href="/agent-builder">
-                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                <button className="bg-white border-2 border-purple-200 hover:border-purple-400 hover:shadow-md px-4 py-2 rounded-lg text-sm font-semibold transition-all text-purple-700 hover:text-purple-900">
                   🧠 AI Builder
                 </button>
               </Link>
               <Link href="/agents">
-                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                <button className="bg-white border-2 border-blue-200 hover:border-blue-400 hover:shadow-md px-4 py-2 rounded-lg text-sm font-semibold transition-all text-blue-700 hover:text-blue-900">
                   My Agents
                 </button>
               </Link>
               <Link href="/marketplace">
-                <button className="bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                <button className="bg-white border-2 border-green-200 hover:border-green-400 hover:shadow-md px-4 py-2 rounded-lg text-sm font-semibold transition-all text-green-700 hover:text-green-900">
                   Marketplace
                 </button>
               </Link>
@@ -280,11 +280,11 @@ export default function SwarmPage() {
           <div className="relative z-10 flex items-start justify-between">
             <div className="flex-1">
               <h1 className="text-4xl font-heading font-black mb-4">
-                <span className="text-gradient">Swarm Intelligence</span> 🐝
+                <span className="text-purple-600">Swarm Intelligence</span> 🐝
               </h1>
-              <p className="text-lg text-gray-600 mb-6 max-w-3xl">
+              <p className="text-lg text-gray-700 mb-6 max-w-3xl">
                 Multiple agents collaborating to find optimal providers through collective intelligence.
-                The swarm learns faster, trades smarter, and achieves <span className="text-accent-secondary font-bold text-2xl">{performanceGain.toFixed(0)}%+ better performance</span> than individual agents!
+                The swarm learns faster, trades smarter, and achieves <span className="text-green-600 font-bold text-2xl">{performanceGain.toFixed(0)}%+ better performance</span> than individual agents!
               </p>
 
               <div className="flex items-center gap-4 flex-wrap">
@@ -391,47 +391,47 @@ export default function SwarmPage() {
               {agents.map((agent, idx) => (
                 <motion.div
                   key={agent.id}
-                  className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-gray-300 relative overflow-hidden transition-all"
+                  className="bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200 hover:border-purple-400 hover:shadow-md relative overflow-hidden transition-all"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
                 >
                   {/* Status indicator */}
                   {agent.status !== 'idle' && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-primary to-accent-secondary animate-pulse" />
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse" />
                   )}
 
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="font-heading font-bold">{agent.name}</div>
+                      <div className="font-heading font-bold text-black">{agent.name}</div>
                       {agent.status !== 'idle' && (
-                        <div className="text-xs px-2 py-1 rounded bg-black/20 text-black animate-pulse">
+                        <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700 font-semibold animate-pulse border border-purple-300">
                           {agent.status}
                         </div>
                       )}
                     </div>
-                    <div className="text-xs px-2 py-1 rounded bg-white border-2 border-gray-200 text-gray-600">
+                    <div className="text-xs px-2 py-1 rounded bg-white border-2 border-blue-300 text-blue-700 font-semibold">
                       {agent.strategy}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between text-sm mb-2">
-                    <div className="text-gray-600">
-                      Reputation: <span className="text-accent-secondary font-bold">{agent.reputation}</span>
+                    <div className="text-gray-700">
+                      Reputation: <span className="text-green-600 font-bold">{agent.reputation}</span>
                     </div>
-                    <div className="text-gray-600">
-                      Contributions: <span className="text-black font-bold">{agent.contributions}</span>
+                    <div className="text-gray-700">
+                      Contributions: <span className="text-purple-700 font-bold">{agent.contributions}</span>
                     </div>
                   </div>
 
-                  <div className="text-xs text-gray-600 mb-2">
+                  <div className="text-xs text-gray-700 mb-2 font-medium">
                     Last: {agent.lastActivity}
                   </div>
 
                   {/* Reputation Bar */}
-                  <div className="w-full bg-white border-2 border-gray-200 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-white border-2 border-purple-200 rounded-full h-2 overflow-hidden">
                     <motion.div
-                      className="h-full bg-accent-secondary rounded-full"
+                      className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${agent.reputation}%` }}
                       transition={{ duration: 0.5, delay: idx * 0.1 }}
@@ -457,7 +457,7 @@ export default function SwarmPage() {
                 {insights.map((insight, idx) => (
                   <motion.div
                     key={insight.id}
-                    className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all"
+                    className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border-2 border-green-200 hover:border-green-400 hover:shadow-md transition-all"
                     initial={{ opacity: 0, x: -20, scale: 0.95 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 20, scale: 0.95 }}
@@ -508,8 +508,8 @@ export default function SwarmPage() {
         </div>
 
         {/* How It Works */}
-        <div className="bg-white rounded-xl p-8 border-2 border-gray-200 shadow-sm">
-          <h3 className="text-2xl font-heading font-bold mb-6 text-gradient">
+        <div className="bg-white rounded-xl p-8 border-2 border-blue-200 shadow-sm">
+          <h3 className="text-2xl font-heading font-bold mb-6 text-blue-600">
             How Swarm Intelligence Works
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

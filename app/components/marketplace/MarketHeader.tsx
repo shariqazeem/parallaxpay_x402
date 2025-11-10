@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import WalletButton from '../WalletButton'
 import { getRealProviderManager } from '@/lib/real-provider-manager'
+import Link from 'next/link'
 
 export default function MarketHeader() {
   const [stats, setStats] = useState({
@@ -54,16 +55,36 @@ export default function MarketHeader() {
     <div className="border-b-2 border-purple-200 bg-white/95 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="max-w-[1920px] mx-auto px-6 py-4">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-black">
-              <span className="text-black">ParallaxPay</span>
-            </h1>
+          <div className="flex items-center gap-6">
+            <Link href="/">
+              <h1 className="text-2xl font-black cursor-pointer hover:opacity-80 transition-opacity">
+                <span className="text-black">ParallaxPay</span>
+              </h1>
+            </Link>
             <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-full">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="text-xs text-green-700 font-semibold">
                 LIVE
               </span>
             </div>
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center gap-4">
+              <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+                Dashboard
+              </Link>
+              <Link href="/marketplace" className="text-sm font-semibold text-purple-600 border-b-2 border-purple-600">
+                Marketplace
+              </Link>
+              <Link href="/agents" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+                Agents
+              </Link>
+              <Link href="/swarm" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+                Swarm
+              </Link>
+              <Link href="/transactions" className="text-sm font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+                Transactions
+              </Link>
+            </nav>
           </div>
 
           <WalletButton />
@@ -96,13 +117,13 @@ export default function MarketHeader() {
           />
           <StatCard
             label="Avg Latency"
-            value={`${stats.avgLatency}ms`}
+            value={`${stats.avgLatency || 0}ms`}
             icon="⏱️"
             trend={stats.avgLatency < 90 ? 'good' : 'neutral'}
           />
           <StatCard
             label="Active Agents"
-            value={stats.totalAgents}
+            value={stats.totalAgents || 0}
             change={8.1}
             icon="🤖"
           />
