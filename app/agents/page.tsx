@@ -18,7 +18,7 @@ import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 interface AgentStats {
   id: string
   name: string
-  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle'
   status: 'active' | 'idle' | 'executing'
   totalTrades: number
   profit: number
@@ -45,7 +45,7 @@ interface Trade {
 interface DeployedAgent {
   id: string
   name: string
-  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'
+  type: 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'market-oracle'
   prompt: string
   deployed: number
   totalRuns: number
@@ -398,6 +398,103 @@ export default function AgentDashboardPage() {
     const startTime = Date.now()
 
     try {
+      // MARKET ORACLE AGENT: Call Oracle API with multi-provider predictions
+      if (agent.type === 'market-oracle') {
+        console.log(`🔮 [${agent.name}] Running MARKET ORACLE agent...`)
+        console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
+
+        // Parse asset and timeframe from prompt (e.g., "BTC 1h" or "SOL 24h")
+        const promptParts = agent.prompt.trim().split(/\s+/)
+        const asset = (promptParts[0] || 'SOL').toUpperCase()
+        const timeframe = (promptParts[1] || '1h') as '5m' | '15m' | '1h' | '4h' | '24h'
+
+        // Import Oracle agent dynamically
+        const { getMarketOracle } = await import('@/lib/market-oracle-agent')
+        const oracle = getMarketOracle()
+
+        // Run Oracle prediction with client-side payment
+        const prediction = await oracle.runPrediction(
+          asset,
+          timeframe,
+          true, // use multi-provider
+          fetchWithPayment,
+          publicKey?.toBase58()
+        )
+
+        const latency = Date.now() - startTime
+
+        console.log(`✅ [${agent.name}] Oracle prediction completed!`)
+        console.log(`   Prediction: ${prediction.predictedDirection.toUpperCase()}`)
+        console.log(`   Confidence: ${prediction.confidence}%`)
+        console.log(`   Total Cost: $${prediction.totalCost.toFixed(6)}`)
+        console.log(`   Latency: ${latency}ms`)
+
+        // Record execution in identity manager
+        if (agent.identityId) {
+          identityManager.recordExecution(
+            agent.identityId,
+            true,
+            prediction.totalCost,
+            latency,
+            `${prediction.providers.length} providers`,
+            0.0001
+          )
+          setAgentIdentities(identityManager.getAllIdentities())
+        }
+
+        // Update agent stats
+        setDeployedAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? {
+                ...a,
+                status: 'idle' as const,
+                totalRuns: a.totalRuns + 1,
+                lastRun: Date.now(),
+                lastResult: `${prediction.predictedDirection.toUpperCase()} (${prediction.confidence}%) - ${prediction.reasoning.substring(0, 150)}`,
+                provider: `${prediction.providers.length} providers`
+              }
+            : a
+        ))
+
+        // Add to trade feed
+        const trade: Trade = {
+          id: `oracle-${Date.now()}`,
+          agentName: agent.name,
+          provider: `Oracle (${prediction.providers.length} providers)`,
+          tokens: 300, // estimated
+          cost: prediction.totalCost,
+          timestamp: Date.now(),
+          txHash: 'oracle-prediction',
+          isReal: true,
+        }
+        setTrades(prev => [trade, ...prev.slice(0, 9)])
+
+        // Store in Supabase
+        try {
+          const txData: TransactionDB = {
+            id: `oracle-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'oracle',
+            agent_name: agent.name,
+            provider: `${prediction.providers.length} providers`,
+            tokens: 300,
+            cost: prediction.totalCost,
+            status: 'success',
+            network: 'solana-devnet',
+            wallet_address: publicKey?.toBase58(),
+          }
+
+          const { error } = await supabase.from('transactions').insert([txData])
+          if (!error) {
+            console.log('✅ Saved Oracle transaction to Supabase')
+          }
+        } catch (e) {
+          console.warn('Failed to store Oracle transaction:', e)
+        }
+
+        return { success: true, cost: prediction.totalCost }
+      }
+
       // COMPOSITE AGENT: Orchestrate multiple agent calls
       if (agent.type === 'composite' && agent.workflow) {
         console.log(`🔗 [${agent.name}] Running COMPOSITE agent with workflow...`)
@@ -1703,8 +1800,8 @@ function DeployAgentModal({
   walletAddress?: string
 }) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'>('market-intel')
-  const [prompt, setPrompt] = useState('Analyze current Solana (SOL) market conditions. Current price: $150. 24h change: +5.2%. Provide a brief market sentiment analysis and predict short-term price movement.')
+  const [type, setType] = useState<'market-oracle' | 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom'>('market-oracle')
+  const [prompt, setPrompt] = useState('SOL 1h')
   const [isDeploying, setIsDeploying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
@@ -1964,6 +2061,7 @@ function DeployAgentModal({
               className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black focus:border-purple-400 focus:outline-none font-medium"
               disabled={isDeploying}
             >
+              <option value="market-oracle">🔮 Market Oracle - AI-powered price predictions (BTC/ETH/SOL)</option>
               <option value="market-intel">📊 Market Intelligence - Solana price & market analysis</option>
               <option value="social-sentiment">📱 Social Sentiment - Crypto Twitter sentiment tracker</option>
               <option value="defi-yield">💰 DeFi Yield Optimizer - Best yield strategies</option>
@@ -2056,7 +2154,8 @@ function DeployAgentModal({
             /* Regular Prompt for Other Agent Types */
             <div>
               <label className="text-sm text-gray-700 mb-2 block font-semibold">
-                Agent Prompt - {type === 'market-intel' ? 'Market Data to Analyze' :
+                Agent Prompt - {type === 'market-oracle' ? 'Asset & Timeframe' :
+                             type === 'market-intel' ? 'Market Data to Analyze' :
                              type === 'social-sentiment' ? 'Social Media Data to Analyze' :
                              type === 'defi-yield' ? 'DeFi Protocols to Compare' :
                              type === 'portfolio' ? 'Portfolio Data to Analyze' :
@@ -2065,12 +2164,13 @@ function DeployAgentModal({
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Enter the data for your agent to analyze..."
+                placeholder={type === 'market-oracle' ? 'Example: BTC 1h  OR  ETH 4h  OR  SOL 24h' : 'Enter the data for your agent to analyze...'}
                 className="w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg text-black placeholder-gray-400 focus:border-purple-400 focus:outline-none resize-none"
                 rows={5}
                 disabled={isDeploying}
               />
               <div className="mt-2 text-xs text-gray-500">
+                {type === 'market-oracle' && '💡 Format: [ASSET] [TIMEFRAME] - Supported assets: BTC, ETH, SOL. Timeframes: 5m, 15m, 1h, 4h, 24h'}
                 {type === 'market-intel' && '💡 Include price, volume, and trend data for AI to analyze'}
                 {type === 'social-sentiment' && '💡 Include sample tweets or social posts for sentiment analysis'}
                 {type === 'defi-yield' && '💡 Include protocol names, APYs, and risk levels for comparison'}
