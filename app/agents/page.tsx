@@ -1020,14 +1020,16 @@ export default function AgentDashboardPage() {
             <SDKExample />
           </div>
 
-          {/* Right - Live Feed */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            <LiveActivityFeed />
-            {agentIdentities.length > 0 && identityManager && (
-              <AgentLeaderboard identities={identityManager.getLeaderboard(5)} />
-            )}
-            <LiveTradeFeed trades={trades} />
-            {allAgents.length > 0 && <AgentMetrics agents={allAgents} />}
+          {/* Right - Live Feed (Sticky) */}
+          <div className="col-span-12 lg:col-span-4">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              <LiveActivityFeed />
+              {agentIdentities.length > 0 && identityManager && (
+                <AgentLeaderboard identities={identityManager.getLeaderboard(5)} />
+              )}
+              <LiveTradeFeed trades={trades} />
+              {allAgents.length > 0 && <AgentMetrics agents={allAgents} />}
+            </div>
           </div>
         </div>
       </div>
@@ -1082,6 +1084,18 @@ function AgentCard({
   const [showAttestModal, setShowAttestModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const identityManager = getAgentIdentityManager()
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showScheduleModal || showAttestModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showScheduleModal, showAttestModal])
 
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
   const timeStr =
@@ -1388,14 +1402,14 @@ function AgentCard({
       {/* Autonomous Scheduler Modal */}
       {showScheduleModal && typeof window !== 'undefined' && createPortal(
         <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-start justify-center p-4 overflow-y-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setShowScheduleModal(false)}
         >
           <motion.div
-            className="max-w-2xl w-full"
+            className="max-w-2xl w-full my-8"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
