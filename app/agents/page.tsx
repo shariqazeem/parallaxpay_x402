@@ -713,7 +713,7 @@ export default function AgentDashboardPage() {
   const totalVolume = trades.reduce((sum, t) => sum + t.cost, 0)
 
   return (
-    <div className="min-h-screen bg-background-primary">
+    <div className="min-h-screen bg-white">
       {/* Deploy Agent Modal */}
       <AnimatePresence>
         {showDeployModal && (
@@ -733,35 +733,35 @@ export default function AgentDashboardPage() {
       </AnimatePresence>
 
       {/* Header - Only title bar is sticky */}
-      <div className="sticky top-0 z-50 border-b border-border bg-background-secondary/50 backdrop-blur-xl">
+      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <h1 className="text-2xl font-heading font-black cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-gradient">ParallaxPay</span>
+                <h1 className="text-2xl font-black cursor-pointer hover:opacity-70 transition-opacity">
+                  <span className="text-black">ParallaxPay</span>
                 </h1>
               </Link>
-              <div className="text-text-muted">/</div>
-              <h2 className="text-xl font-heading font-bold text-white">
+              <div className="text-gray-400">/</div>
+              <h2 className="text-xl font-bold text-black">
                 Agent Dashboard
               </h2>
             </div>
 
             <div className="flex items-center gap-3">
               {/* Wallet Connect Button */}
-              <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!scale-105 !transition-transform" />
+              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
 
               <Link href="/marketplace">
-                <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
                   Marketplace
                 </button>
               </Link>
               <button
                 onClick={() => setShowDeployModal(true)}
-                className="glass-hover neon-border px-6 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all"
+                className="bg-black text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
               >
-                <span className="text-gradient">+ Deploy Agent</span>
+                + Deploy Agent
               </button>
             </div>
           </div>
@@ -769,7 +769,7 @@ export default function AgentDashboardPage() {
       </div>
 
       {/* Stats and Provider Section - NOT sticky, scrolls away */}
-      <div className="border-b border-border bg-background-secondary/30">
+      <div className="border-b border-gray-200 bg-gray-50">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
           {/* Stats Bar */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -784,7 +784,7 @@ export default function AgentDashboardPage() {
           <div>
             {selectedProvider ? (
               <motion.div
-                className="glass-hover neon-border p-4 rounded-xl"
+                className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -792,29 +792,29 @@ export default function AgentDashboardPage() {
                   <div className="flex items-center gap-4 flex-1">
                     <div className="text-3xl">{selectedProvider.featured ? '⭐' : '🖥️'}</div>
                     <div className="flex-1">
-                      <div className="font-heading font-bold text-white mb-1 text-lg">
+                      <div className="font-bold text-black mb-1 text-lg">
                         ✅ Agents using: {selectedProvider.name}
                       </div>
                       <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-1">
-                          <span className="text-text-muted">Model:</span>
-                          <span className="text-accent-secondary font-mono font-bold">{selectedProvider.model.split('/')[1]}</span>
+                          <span className="text-gray-600">Model:</span>
+                          <span className="text-black font-mono font-bold">{selectedProvider.model.split('/')[1]}</span>
                         </div>
-                        <span className="text-text-muted">•</span>
+                        <span className="text-gray-400">•</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-text-muted">Latency:</span>
-                          <span className="text-status-success font-mono font-bold">{selectedProvider.latency}ms</span>
+                          <span className="text-gray-600">Latency:</span>
+                          <span className="text-green-600 font-mono font-bold">{selectedProvider.latency}ms</span>
                         </div>
-                        <span className="text-text-muted">•</span>
+                        <span className="text-gray-400">•</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-text-muted">Uptime:</span>
-                          <span className="text-accent-primary font-mono font-bold">{selectedProvider.uptime}%</span>
+                          <span className="text-gray-600">Uptime:</span>
+                          <span className="text-blue-600 font-mono font-bold">{selectedProvider.uptime}%</span>
                         </div>
                       </div>
                     </div>
                   </div>
                   <Link href="/marketplace">
-                    <button className="glass-hover border border-border px-4 py-2 rounded-lg text-sm font-heading font-bold text-white hover:scale-105 transition-all">
+                    <button className="border-2 border-gray-200 px-4 py-2 rounded-lg text-sm font-bold text-black hover:border-black hover:bg-gray-50 transition-all">
                       Change Provider →
                     </button>
                   </Link>
@@ -822,7 +822,7 @@ export default function AgentDashboardPage() {
               </motion.div>
             ) : (
               <motion.div
-                className="glass-hover p-4 rounded-xl border border-status-error/50 bg-status-error/5"
+                className="bg-white p-4 rounded-xl border-2 border-red-200 shadow-sm"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -830,17 +830,17 @@ export default function AgentDashboardPage() {
                   <div className="flex items-center gap-4 flex-1">
                     <div className="text-3xl">⚠️</div>
                     <div className="flex-1">
-                      <div className="font-heading font-bold text-status-error mb-1 text-lg">
+                      <div className="font-bold text-red-600 mb-1 text-lg">
                         No Provider Selected
                       </div>
-                      <div className="text-xs text-text-secondary">
+                      <div className="text-xs text-gray-600">
                         Select a Parallax provider to run your agents. Agents need a compute provider for AI inference.
                       </div>
                     </div>
                   </div>
                   <Link href="/marketplace">
-                    <button className="glass-hover neon-border px-6 py-3 rounded-lg text-sm font-heading font-bold hover:scale-105 transition-all">
-                      <span className="text-gradient">Select Provider →</span>
+                    <button className="bg-black text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-gray-800 transition-all">
+                      Select Provider →
                     </button>
                   </Link>
                 </div>
@@ -863,10 +863,10 @@ export default function AgentDashboardPage() {
               return myAgents.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-heading font-bold text-white">
+                    <h3 className="text-2xl font-bold text-black">
                       💼 My Agents
                     </h3>
-                    <div className="text-sm text-status-success font-semibold">
+                    <div className="text-sm text-green-600 font-semibold">
                       {myAgents.length} active
                     </div>
                   </div>
@@ -913,21 +913,21 @@ export default function AgentDashboardPage() {
             {publicKey && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
-              <div className="glass-hover p-6 rounded-xl border border-accent-primary/30 mb-4">
+              <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
                 <div className="flex items-start gap-4">
                   <div className="text-3xl">🚀</div>
                   <div>
-                    <div className="font-heading font-bold text-white mb-2">
+                    <div className="font-bold text-black mb-2">
                       Deploy Your First Agent
                     </div>
-                    <div className="text-sm text-text-secondary mb-3">
+                    <div className="text-sm text-gray-600 mb-3">
                       Create an autonomous AI agent that runs on Gradient Parallax and pays for itself with x402 micropayments.
                     </div>
                     <button
                       onClick={() => setShowDeployModal(true)}
-                      className="glass-hover neon-border px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all"
+                      className="bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
                     >
-                      <span className="text-gradient">Deploy First Agent</span>
+                      Deploy First Agent
                     </button>
                   </div>
                 </div>
@@ -937,35 +937,35 @@ export default function AgentDashboardPage() {
             {/* PUBLIC MARKETPLACE SECTION */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-heading font-bold text-white">
+                <h3 className="text-2xl font-bold text-black">
                   🌐 Public Marketplace
                 </h3>
                 {deployedAgents.length > 0 && (
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm text-gray-600">
                     {deployedAgents.length} agents available
                   </div>
                 )}
               </div>
 
               {!publicKey && (
-                <div className="glass-hover p-4 rounded-xl border border-accent-secondary/30 mb-4">
+                <div className="bg-white p-4 rounded-xl border-2 border-gray-200 mb-4 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">👛</div>
                     <div className="flex-1">
-                      <div className="font-semibold text-white mb-1">Connect Wallet to Deploy</div>
-                      <div className="text-sm text-gray-400">
+                      <div className="font-semibold text-black mb-1">Connect Wallet to Deploy</div>
+                      <div className="text-sm text-gray-600">
                         Connect your Solana wallet to deploy and run agents
                       </div>
                     </div>
-                    <WalletMultiButton className="!bg-gradient-to-r !from-accent-primary !to-accent-secondary !rounded-lg !px-4 !py-2 !text-sm !font-bold" />
+                    <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800" />
                   </div>
                 </div>
               )}
 
               {deployedAgents.length === 0 && (
-                <div className="glass-hover p-6 rounded-xl border border-gray-700 text-center">
+                <div className="bg-white p-6 rounded-xl border-2 border-gray-200 text-center shadow-sm">
                   <div className="text-4xl mb-3">📭</div>
-                  <div className="font-semibold text-gray-400 mb-2">No Public Agents Yet</div>
+                  <div className="font-semibold text-gray-600 mb-2">No Public Agents Yet</div>
                   <div className="text-sm text-gray-500">
                     Be the first to deploy an agent to the marketplace!
                   </div>
@@ -1047,18 +1047,18 @@ function StatCard({
   color?: 'default' | 'success' | 'error'
 }) {
   return (
-    <div className="glass-hover p-3 rounded-lg">
+    <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
       <div className="flex items-start justify-between mb-1">
-        <span className="text-xs text-text-secondary">{label}</span>
+        <span className="text-xs text-gray-600">{label}</span>
         <span className="text-sm">{icon}</span>
       </div>
       <div
         className={`text-lg font-black ${
           color === 'success'
-            ? 'text-status-success'
+            ? 'text-green-600'
             : color === 'error'
-            ? 'text-status-error'
-            : 'text-white'
+            ? 'text-red-600'
+            : 'text-black'
         }`}
       >
         {value}
@@ -1138,10 +1138,10 @@ function AgentCard({
 
   return (
     <motion.div
-      className={`glass rounded-xl border overflow-hidden ${
+      className={`bg-white rounded-xl border-2 overflow-hidden shadow-sm ${
         agent.isReal
-          ? 'border-accent-primary/50 bg-accent-primary/5'
-          : 'border-border opacity-60'
+          ? 'border-blue-200'
+          : 'border-gray-200 opacity-60'
       }`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1153,32 +1153,32 @@ function AgentCard({
             <div className="text-4xl">{agent.avatar}</div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="text-xl font-heading font-bold text-white">
+                <h4 className="text-xl font-bold text-black">
                   {agent.name}
                 </h4>
                 {agent.isReal && (
-                  <span className="px-2 py-0.5 rounded bg-status-success/20 text-status-success text-xs font-bold border border-status-success/30">
+                  <span className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-bold border border-green-300">
                     REAL
                   </span>
                 )}
                 {identity?.isVerified && (
-                  <span className="text-accent-secondary text-sm" title="Wallet Verified">
+                  <span className="text-blue-600 text-sm" title="Wallet Verified">
                     ✓
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <div className="text-sm text-text-secondary capitalize">
+                <div className="text-sm text-gray-600 capitalize">
                   {agent.type} Strategy
                 </div>
                 {identity && (
                   <>
-                    <span className="text-text-muted">•</span>
+                    <span className="text-gray-400">•</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-accent-secondary">
+                      <span className="text-xs font-bold text-blue-600">
                         {identity.reputation.level}
                       </span>
-                      <span className="text-xs text-text-muted">
+                      <span className="text-xs text-gray-500">
                         ({identity.reputation.score})
                       </span>
                     </div>
@@ -1191,10 +1191,10 @@ function AgentCard({
           <div
             className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
               agent.status === 'executing'
-                ? 'bg-accent-primary/20 text-accent-primary animate-pulse'
+                ? 'bg-blue-100 text-blue-700 animate-pulse'
                 : agent.status === 'active'
-                ? 'bg-status-success/20 text-status-success'
-                : 'bg-gray-500/20 text-gray-400'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-600'
             }`}
           >
             {agent.status === 'executing' ? '⚡ EXECUTING' : agent.status.toUpperCase()}
@@ -1205,9 +1205,9 @@ function AgentCard({
         {identity && identity.badges.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-text-secondary font-semibold">Trust Badges</div>
+              <div className="text-xs text-gray-600 font-semibold">Trust Badges</div>
               {identity.badges.some(b => b.attestation) && (
-                <div className="text-xs text-status-success flex items-center gap-1">
+                <div className="text-xs text-green-600 flex items-center gap-1">
                   <span>⛓️</span>
                   <span>On-chain verified</span>
                 </div>
@@ -1219,8 +1219,8 @@ function AgentCard({
                   key={badge.id}
                   className={`group relative px-2 py-1 rounded-lg text-xs font-semibold ${
                     badge.attestation
-                      ? 'bg-status-success/10 border border-status-success/30 text-status-success'
-                      : 'bg-accent-primary/10 border border-accent-primary/30 text-accent-primary'
+                      ? 'bg-green-100 border border-green-300 text-green-700'
+                      : 'bg-blue-100 border border-blue-300 text-blue-700'
                   }`}
                   title={badge.description}
                 >
@@ -1231,7 +1231,7 @@ function AgentCard({
                         href={badge.attestation.explorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-status-success hover:text-accent-secondary ml-0.5"
+                        className="text-green-700 hover:text-blue-600 ml-0.5"
                         onClick={(e) => e.stopPropagation()}
                         title="View on Solana Explorer"
                       >
@@ -1242,7 +1242,7 @@ function AgentCard({
                 </div>
               ))}
               {identity.badges.length > 4 && (
-                <div className="px-2 py-1 rounded-lg bg-background-tertiary text-xs text-text-muted">
+                <div className="px-2 py-1 rounded-lg bg-gray-100 text-xs text-gray-600">
                   +{identity.badges.length - 4} more
                 </div>
               )}
@@ -1253,37 +1253,37 @@ function AgentCard({
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-4 mb-4">
           <div>
-            <div className="text-xs text-text-secondary mb-1">Trades</div>
-            <div className="text-lg font-bold text-white">
+            <div className="text-xs text-gray-600 mb-1">Trades</div>
+            <div className="text-lg font-bold text-black">
               {agent.totalTrades}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-secondary mb-1">Profit</div>
-            <div className="text-lg font-bold text-status-success">
+            <div className="text-xs text-gray-600 mb-1">Profit</div>
+            <div className="text-lg font-bold text-green-600">
               +${agent.profit.toFixed(0)}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-secondary mb-1">Avg Cost</div>
-            <div className="text-lg font-bold text-white">
+            <div className="text-xs text-gray-600 mb-1">Avg Cost</div>
+            <div className="text-lg font-bold text-black">
               ${agent.avgCost.toFixed(5)}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-secondary mb-1">Success</div>
-            <div className="text-lg font-bold text-accent-secondary">
+            <div className="text-xs text-gray-600 mb-1">Success</div>
+            <div className="text-lg font-bold text-blue-600">
               {agent.successRate}%
             </div>
           </div>
         </div>
 
         {/* Last Action */}
-        <div className="glass-hover p-4 rounded-lg border border-border-hover mb-4">
-          <div className="text-sm text-white font-medium mb-1">
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+          <div className="text-sm text-black font-medium mb-1">
             {agent.lastAction}
           </div>
-          <div className="text-xs text-text-muted">{timeStr}</div>
+          <div className="text-xs text-gray-500">{timeStr}</div>
         </div>
 
         {/* Action Buttons */}
@@ -1293,18 +1293,18 @@ function AgentCard({
               <button
                 onClick={onRun}
                 disabled={agent.status === 'executing'}
-                className="glass-hover neon-border px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="bg-black text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
               >
                 {agent.status === 'executing' ? (
-                  <span className="text-text-muted">⚡ Running...</span>
+                  <span>⚡ Running...</span>
                 ) : (
-                  <span className="text-gradient">▶ Run</span>
+                  <span>▶ Run</span>
                 )}
               </button>
 
               <button
                 onClick={() => setShowScheduleModal(true)}
-                className="glass-hover border border-purple-500/50 px-4 py-3 rounded-lg font-heading font-semibold transition-all hover:scale-105 text-purple-400"
+                className="border-2 border-purple-200 px-4 py-3 rounded-lg font-semibold transition-all hover:border-purple-400 hover:bg-purple-50 text-purple-700"
               >
                 🤖 Schedule
               </button>
@@ -1314,7 +1314,7 @@ function AgentCard({
             {unAttestedBadges.length > 0 && (
               <button
                 onClick={() => setShowAttestModal(true)}
-                className="w-full glass-hover border border-status-success/30 px-4 py-2 rounded-lg font-heading text-sm font-semibold transition-all hover:scale-105 text-status-success"
+                className="w-full border-2 border-green-200 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:border-green-400 hover:bg-green-50 text-green-700"
               >
                 ⛓️ Attest {unAttestedBadges.length} Badge{unAttestedBadges.length > 1 ? 's' : ''} On-Chain
               </button>
@@ -1433,9 +1433,9 @@ function AgentCard({
 
       {/* Progress Bar */}
       {agent.status === 'executing' && (
-        <div className="h-1 bg-background-tertiary">
+        <div className="h-1 bg-gray-200">
           <motion.div
-            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary"
+            className="h-full bg-blue-600"
             initial={{ width: '0%' }}
             animate={{ width: '100%' }}
             transition={{ duration: 3, ease: 'linear' }}
@@ -1448,15 +1448,15 @@ function AgentCard({
 
 function LiveTradeFeed({ trades }: { trades: Trade[] }) {
   return (
-    <div className="glass rounded-xl border border-border overflow-hidden">
-      <div className="p-4 border-b border-border">
+    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-heading font-bold text-white">
+          <h3 className="text-lg font-bold text-black">
             Live Trade Feed
           </h3>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-status-success rounded-full animate-pulse" />
-            <span className="text-xs text-status-success font-semibold">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-xs text-green-600 font-semibold">
               LIVE
             </span>
           </div>
@@ -1471,24 +1471,24 @@ function LiveTradeFeed({ trades }: { trades: Trade[] }) {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="glass-hover p-3 rounded-lg border border-border-hover"
+              className="bg-gray-50 p-3 rounded-lg border border-gray-200"
             >
               <div className="flex items-start justify-between mb-2">
-                <div className="text-sm font-medium text-white">
+                <div className="text-sm font-medium text-black">
                   {trade.agentName}
                 </div>
-                <div className="text-xs text-status-success font-bold">
+                <div className="text-xs text-green-600 font-bold">
                   +${trade.cost.toFixed(4)}
                 </div>
               </div>
-              <div className="text-xs text-text-secondary mb-2">
+              <div className="text-xs text-gray-600 mb-2">
                 {trade.provider} • {trade.tokens} tokens
               </div>
               <div className="flex items-center justify-between">
-                <div className="text-xs font-mono text-text-muted">
+                <div className="text-xs font-mono text-gray-500">
                   {trade.txHash}
                 </div>
-                <div className="text-xs text-text-muted">
+                <div className="text-xs text-gray-500">
                   {new Date(trade.timestamp).toLocaleTimeString()}
                 </div>
               </div>
@@ -1497,7 +1497,7 @@ function LiveTradeFeed({ trades }: { trades: Trade[] }) {
         </AnimatePresence>
 
         {trades.length === 0 && (
-          <div className="text-center py-12 text-text-secondary">
+          <div className="text-center py-12 text-gray-600">
             <div className="text-4xl mb-3">⏳</div>
             <div className="text-sm">Waiting for trades...</div>
           </div>
@@ -1509,8 +1509,8 @@ function LiveTradeFeed({ trades }: { trades: Trade[] }) {
 
 function AgentMetrics({ agents }: { agents: AgentStats[] }) {
   return (
-    <div className="glass rounded-xl border border-border p-6">
-      <h3 className="text-lg font-heading font-bold text-white mb-4">
+    <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
+      <h3 className="text-lg font-bold text-black mb-4">
         Performance Metrics
       </h3>
 
@@ -1520,17 +1520,17 @@ function AgentMetrics({ agents }: { agents: AgentStats[] }) {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span>{agent.avatar}</span>
-                <span className="text-sm text-white font-medium">
+                <span className="text-sm text-black font-medium">
                   {agent.type}
                 </span>
               </div>
-              <span className="text-sm text-status-success font-bold">
+              <span className="text-sm text-green-600 font-bold">
                 ${agent.profit.toFixed(0)}
               </span>
             </div>
-            <div className="w-full h-2 bg-background-tertiary rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full"
+                className="h-full bg-blue-600 rounded-full"
                 style={{ width: `${agent.successRate}%` }}
               />
             </div>
@@ -1543,37 +1543,37 @@ function AgentMetrics({ agents }: { agents: AgentStats[] }) {
 
 function SDKExample() {
   return (
-    <div className="glass rounded-xl border border-accent-primary/30 overflow-hidden">
+    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-xl font-heading font-bold text-white mb-2">
+            <h3 className="text-xl font-bold text-black mb-2">
               Build Your Own Agent
             </h3>
-            <p className="text-sm text-text-secondary">
+            <p className="text-sm text-gray-600">
               Use our SDK to create custom trading strategies
             </p>
           </div>
-          <button className="glass-hover px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-all">
+          <button className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 hover:border-black transition-all">
             View Docs →
           </button>
         </div>
 
-        <div className="glass-hover p-4 rounded-lg font-mono text-sm overflow-x-auto">
-          <pre className="text-text-secondary">
-            <span className="text-accent-tertiary">import</span> {'{'}
-            <span className="text-accent-secondary"> Agent </span>
-            {'}'} <span className="text-accent-tertiary">from</span>{' '}
-            <span className="text-accent-primary">'@parallaxpay/sdk'</span>
+        <div className="bg-gray-50 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-gray-200">
+          <pre className="text-gray-700">
+            <span className="text-purple-600">import</span> {'{'}
+            <span className="text-blue-600"> Agent </span>
+            {'}'} <span className="text-purple-600">from</span>{' '}
+            <span className="text-green-600">'@parallaxpay/sdk'</span>
             {'\n\n'}
-            <span className="text-accent-tertiary">const</span> agent ={' '}
-            <span className="text-accent-tertiary">new</span>{' '}
-            <span className="text-accent-primary">Agent</span>({'{'}
-            {'\n  '}strategy: <span className="text-accent-secondary">'arbitrage'</span>,
-            {'\n  '}maxBudget: <span className="text-accent-secondary">1000</span>,
-            {'\n  '}minReputation: <span className="text-accent-secondary">95</span>
+            <span className="text-purple-600">const</span> agent ={' '}
+            <span className="text-purple-600">new</span>{' '}
+            <span className="text-blue-600">Agent</span>({'{'}
+            {'\n  '}strategy: <span className="text-green-600">'arbitrage'</span>,
+            {'\n  '}maxBudget: <span className="text-orange-600">1000</span>,
+            {'\n  '}minReputation: <span className="text-orange-600">95</span>
             {'\n}'}){'\n\n'}
-            agent.<span className="text-accent-secondary">start</span>()
+            agent.<span className="text-blue-600">start</span>()
           </pre>
         </div>
       </div>
@@ -1583,13 +1583,13 @@ function SDKExample() {
 
 function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
   return (
-    <div className="glass rounded-xl border border-border overflow-hidden">
-      <div className="p-4 border-b border-border">
+    <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-heading font-bold text-white">
+          <h3 className="text-lg font-bold text-black">
             🏆 Top Agents
           </h3>
-          <div className="text-xs text-text-secondary">
+          <div className="text-xs text-gray-600">
             by Reputation
           </div>
         </div>
@@ -1602,34 +1602,34 @@ function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="glass-hover p-3 rounded-lg border border-border-hover"
+            className="bg-gray-50 p-3 rounded-lg border border-gray-200"
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="text-2xl font-bold text-accent-primary">
+              <div className="text-2xl font-bold text-blue-600">
                 #{index + 1}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="text-sm font-bold text-white">
+                  <div className="text-sm font-bold text-black">
                     {identity.name}
                   </div>
                   {identity.isVerified && (
-                    <span className="text-accent-secondary text-xs">✓</span>
+                    <span className="text-blue-600 text-xs">✓</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-accent-secondary">
+                  <span className="text-xs font-bold text-blue-600">
                     {identity.reputation.level}
                   </span>
-                  <span className="text-xs text-text-muted">•</span>
-                  <span className="text-xs text-text-muted">
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-500">
                     {identity.reputation.score} pts
                   </span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-text-secondary">Executions</div>
-                <div className="text-sm font-bold text-white">
+                <div className="text-xs text-gray-600">Executions</div>
+                <div className="text-sm font-bold text-black">
                   {identity.stats.totalExecutions}
                 </div>
               </div>
@@ -1638,10 +1638,10 @@ function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
             {/* Top Badge */}
             {identity.badges.length > 0 && (
               <div className="flex items-center gap-1 text-xs">
-                <span className="text-accent-primary">
+                <span className="text-blue-600">
                   {identity.badges[0].icon}
                 </span>
-                <span className="text-text-muted">
+                <span className="text-gray-500">
                   {identity.badges[0].name}
                 </span>
               </div>
@@ -1650,26 +1650,26 @@ function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
             {/* Reputation Breakdown */}
             <div className="grid grid-cols-4 gap-1 mt-2">
               <div className="text-center">
-                <div className="text-xs text-text-muted">Perf</div>
-                <div className="text-xs font-bold text-status-success">
+                <div className="text-xs text-gray-500">Perf</div>
+                <div className="text-xs font-bold text-green-600">
                   {identity.reputation.performanceScore}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-text-muted">Rel</div>
-                <div className="text-xs font-bold text-accent-secondary">
+                <div className="text-xs text-gray-500">Rel</div>
+                <div className="text-xs font-bold text-blue-600">
                   {identity.reputation.reliabilityScore}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-text-muted">Eff</div>
-                <div className="text-xs font-bold text-accent-primary">
+                <div className="text-xs text-gray-500">Eff</div>
+                <div className="text-xs font-bold text-purple-600">
                   {identity.reputation.efficiencyScore}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-text-muted">Com</div>
-                <div className="text-xs font-bold text-text-secondary">
+                <div className="text-xs text-gray-500">Com</div>
+                <div className="text-xs font-bold text-gray-600">
                   {identity.reputation.communityScore}
                 </div>
               </div>
@@ -1678,10 +1678,10 @@ function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
         ))}
 
         {identities.length === 0 && (
-          <div className="text-center py-12 text-text-secondary">
+          <div className="text-center py-12 text-gray-600">
             <div className="text-4xl mb-3">🏆</div>
             <div className="text-sm">No agents yet</div>
-            <div className="text-xs text-text-muted mt-1">
+            <div className="text-xs text-gray-500 mt-1">
               Deploy an agent to appear on the leaderboard
             </div>
           </div>
