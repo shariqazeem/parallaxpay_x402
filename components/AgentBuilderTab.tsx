@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NLAgentBuilder, type GeneratedStrategy } from '@/lib/nl-agent-builder'
+import toast from 'react-hot-toast'
 
 interface AgentBuilderTabProps {
   onDeploy?: (agentData: {
@@ -105,7 +106,7 @@ export function AgentBuilderTab({ onDeploy }: AgentBuilderTabProps) {
     } else {
       // Fallback to localStorage method
       localStorage.setItem('pendingAgentDeploy', JSON.stringify(agentData))
-      alert('Agent ready to deploy! Switch to "My Agents" tab.')
+      toast.success('Agent ready to deploy! Switch to "My Agents" tab.')
     }
   }
 
@@ -293,7 +294,7 @@ export function AgentBuilderTab({ onDeploy }: AgentBuilderTabProps) {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(strategy.code)
-                    alert('Code copied to clipboard!')
+                    toast.success('Code copied to clipboard!')
                   }}
                   className="text-sm bg-white hover:bg-purple-50 px-4 py-2 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-all text-purple-700 font-semibold"
                 >
