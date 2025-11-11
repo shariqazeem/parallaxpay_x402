@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import WalletButton from '../WalletButton'
 import { getRealProviderManager } from '@/lib/real-provider-manager'
 import Link from 'next/link'
@@ -57,9 +58,18 @@ export default function MarketHeader() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-6">
             <Link href="/">
-              <h1 className="text-2xl font-black cursor-pointer hover:opacity-80 transition-opacity">
-                <span className="text-black">ParallaxPay</span>
-              </h1>
+              <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                <Image
+                  src="/logo.png"
+                  alt="ParallaxPay Logo"
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 object-contain"
+                />
+                <h1 className="text-2xl font-black">
+                  <span className="text-black">ParallaxPay</span>
+                </h1>
+              </div>
             </Link>
             <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-full">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
@@ -46,9 +47,13 @@ export default function Navbar() {
               whileHover={{ scale: 1.02 }}
               className="flex items-center gap-3 cursor-pointer"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-lg font-bold">P</span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="ParallaxPay Logo"
+                width={48}
+                height={48}
+                className="w-12 h-12 object-contain"
+              />
               <h1 className="text-xl font-bold text-black">
                 ParallaxPay
               </h1>

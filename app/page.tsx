@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useState, useEffect } from 'react'
@@ -41,12 +42,21 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8 lg:gap-12">
               <Link href="/">
-                <motion.h1
+                <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="text-2xl font-bold text-black cursor-pointer"
+                  className="flex items-center gap-3 cursor-pointer"
                 >
-                  ParallaxPay
-                </motion.h1>
+                  <Image
+                    src="/logo.png"
+                    alt="ParallaxPay Logo"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain"
+                  />
+                  <h1 className="text-2xl font-bold text-black">
+                    ParallaxPay
+                  </h1>
+                </motion.div>
               </Link>
 
               <nav className="hidden md:flex items-center gap-6 lg:gap-8">
@@ -453,7 +463,16 @@ export default function HomePage() {
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-black text-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-            <div className="text-2xl font-bold">ParallaxPay</div>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="ParallaxPay Logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
+              />
+              <div className="text-2xl font-bold">ParallaxPay</div>
+            </div>
             <div className="flex items-center gap-8 text-sm text-gray-400">
               <Link href="/agents" className="hover:text-white transition-colors">Agents</Link>
               <Link href="/marketplace" className="hover:text-white transition-colors">Providers</Link>
