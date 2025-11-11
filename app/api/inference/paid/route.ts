@@ -62,18 +62,28 @@ export async function POST(request: NextRequest) {
 
     // Check if any Parallax nodes are available
     const discovery = getProviderDiscoveryService()
-    const onlineProviders = discovery.getOnlineProviders()
+    let onlineProviders = discovery.getOnlineProviders()
 
+    // If no providers found, trigger immediate re-discovery
     if (onlineProviders.length === 0) {
-      const clusterUrls = process.env.PARALLAX_CLUSTER_URLS || process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001'
-      return NextResponse.json(
-        {
-          error: 'No Parallax nodes available',
-          details: `Please start Parallax cluster: ./scripts/start-parallax-cluster.sh\nOr manually: parallax run -m Qwen/Qwen2.5-0.5B-Instruct -n 1 --host 0.0.0.0 --port 3001`,
-          clusterUrls: clusterUrls.split(','),
-        },
-        { status: 503 }
-      )
+      console.log('⚠️  No providers found, triggering immediate discovery...')
+      await discovery.discoverProviders()
+      onlineProviders = discovery.getOnlineProviders()
+
+      // If still no providers after re-discovery, return error
+      if (onlineProviders.length === 0) {
+        const clusterUrls = process.env.PARALLAX_CLUSTER_URLS || process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001'
+        return NextResponse.json(
+          {
+            error: 'No Parallax nodes available',
+            details: `Please start Parallax cluster: ./scripts/start-parallax-cluster.sh\nOr manually: parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0`,
+            clusterUrls: clusterUrls.split(','),
+          },
+          { status: 503 }
+        )
+      } else {
+        console.log(`✅ Discovery successful! Found ${onlineProviders.length} provider(s)`)
+      }
     }
 
     // Run inference with automatic load balancing
