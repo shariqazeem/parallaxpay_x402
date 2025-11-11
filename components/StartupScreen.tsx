@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 interface StartupScreenProps {
   onComplete: () => void
@@ -35,10 +36,10 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
           setStep(step + 1)
         }, initSteps[step].duration)
       } else {
-        // Complete after last step
+        // Complete after last step - smooth transition to white theme
         setTimeout(() => {
           onComplete()
-        }, 500)
+        }, 800)
       }
     }, 100)
 
@@ -49,11 +50,20 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{
+          opacity: 1,
+          backgroundColor: step === initSteps.length ? '#ffffff' : undefined
+        }}
         exit={{ opacity: 0 }}
+        transition={{
+          opacity: { duration: 0.5 },
+          backgroundColor: { duration: 0.8, delay: 0.3 }
+        }}
         className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 50%, #16213e 100%)'
+          background: step === initSteps.length
+            ? '#ffffff'
+            : 'linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 50%, #16213e 100%)'
         }}
       >
         {/* Animated Grid Background */}
@@ -143,7 +153,7 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
             transition={{ duration: 0.8, type: "spring" }}
             className="text-center mb-8"
           >
-            {/* Hexagon Logo */}
+            {/* Logo with Glowing Effect */}
             <motion.div
               className="inline-block mb-6 relative"
               animate={{
@@ -155,12 +165,18 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
                 ease: 'linear'
               }}
             >
-              <div className="relative w-24 h-24">
+              <div className="relative w-28 h-28">
                 {/* Outer glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-2xl blur-xl opacity-75 animate-pulse" />
-                {/* Inner shape */}
-                <div className="relative w-24 h-24 bg-gradient-to-br from-purple-600 via-pink-600 to-cyan-600 rounded-2xl flex items-center justify-center text-5xl shadow-2xl border-2 border-cyan-400/30">
-                  ⚡
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-full blur-2xl opacity-75 animate-pulse" />
+                {/* Logo container with white background */}
+                <div className="relative w-28 h-28 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl border-2 border-cyan-400/30 overflow-hidden">
+                  <Image
+                    src="/logo.png"
+                    alt="ParallaxPay Logo"
+                    width={96}
+                    height={96}
+                    className="object-contain p-2"
+                  />
                 </div>
               </div>
             </motion.div>
