@@ -1272,25 +1272,54 @@ export default function AgentDashboardPage() {
             {publicKey && activeTab === 'my-agents' && !isLoadingAgents && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
-              <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl">🚀</div>
-                  <div>
-                    <div className="font-bold text-black mb-2">
-                      Deploy Your First Agent
-                    </div>
-                    <div className="text-sm text-gray-600 mb-3">
-                      Create an autonomous AI agent that runs on Gradient Parallax and pays for itself with x402 micropayments.
-                    </div>
-                    <button
-                      onClick={() => setShowDeployModal(true)}
-                      className="bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
-                    >
-                      Deploy First Agent
-                    </button>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-xl border-2 border-blue-200 mb-4 shadow-lg text-center"
+              >
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5, type: "spring" }}
+                  className="text-7xl mb-4"
+                >
+                  🚀
+                </motion.div>
+                <h3 className="text-2xl font-bold text-black mb-3">
+                  Deploy Your First Agent
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+                  Create an autonomous AI agent that runs on Gradient Parallax, processes requests with x402 micropayments, and earns reputation through on-chain attestations.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => setActiveTab('builder')}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-lg font-bold hover:from-purple-600 hover:to-blue-600 transition-all shadow-md hover:shadow-lg"
+                  >
+                    🤖 Use AI Builder
+                  </button>
+                  <button
+                    onClick={() => setShowDeployModal(true)}
+                    className="bg-white text-black border-2 border-gray-300 px-6 py-3 rounded-lg font-bold hover:border-gray-400 transition-all"
+                  >
+                    ⚡ Deploy Manually
+                  </button>
+                </div>
+                <div className="mt-6 grid grid-cols-3 gap-4 max-w-2xl mx-auto">
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="text-2xl mb-1">💰</div>
+                    <div className="text-xs font-semibold text-gray-700">$0.001 per request</div>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="text-2xl mb-1">⚡</div>
+                    <div className="text-xs font-semibold text-gray-700">~50ms latency</div>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="text-2xl mb-1">🏆</div>
+                    <div className="text-xs font-semibold text-gray-700">Earn reputation</div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* AI BUILDER TAB */}
@@ -1388,13 +1417,32 @@ export default function AgentDashboardPage() {
                   )}
 
                   {publicAgents.length === 0 && publicKey && (
-                    <div className="bg-white p-6 rounded-xl border-2 border-gray-200 text-center shadow-sm">
-                      <div className="text-4xl mb-3">🚀</div>
-                      <div className="font-semibold text-gray-600 mb-2">No Other Agents Yet</div>
-                      <div className="text-sm text-gray-500">
-                        You're the first! Share your agents with the community.
-                      </div>
-                    </div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-gradient-to-br from-gray-50 to-blue-50 p-8 rounded-xl border-2 border-gray-200 text-center shadow-lg"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.5, type: "spring" }}
+                        className="text-7xl mb-4"
+                      >
+                        🌐
+                      </motion.div>
+                      <h3 className="text-2xl font-bold text-black mb-3">
+                        Be the First to Share!
+                      </h3>
+                      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                        No public agents in the marketplace yet. Deploy your agents and make them available for the community to discover and use.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab('my-agents')}
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-bold hover:from-blue-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
+                      >
+                        View My Agents →
+                      </button>
+                    </motion.div>
                   )}
 
                   <div className="space-y-4">
@@ -2141,13 +2189,30 @@ function AgentLeaderboard({ identities }: { identities: AgentIdentity[] }) {
         ))}
 
         {identities.length === 0 && (
-          <div className="text-center py-12 text-gray-600">
-            <div className="text-4xl mb-3">🏆</div>
-            <div className="text-sm">No agents yet</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Deploy an agent to appear on the leaderboard
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-12 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-200"
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, type: "spring" }}
+              className="text-6xl mb-4"
+            >
+              🏆
+            </motion.div>
+            <h4 className="text-xl font-bold text-black mb-2">Start Your Journey</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Deploy your first agent to appear on the leaderboard and start earning reputation
+            </p>
+            <button
+              onClick={() => setShowDeployModal(true)}
+              className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg"
+            >
+              Deploy Agent
+            </button>
+          </motion.div>
         )}
       </div>
     </div>
