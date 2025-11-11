@@ -534,17 +534,32 @@ export default function AgentDashboardPage() {
         console.log(`   Cost: $${cost.toFixed(6)}`)
         console.log(`   Latency: ${latency}ms`)
 
-        // Format result summary
+        // Format result summary with complete info (show zeros explicitly)
         let resultSummary = `${queryType.toUpperCase()} query for ${walletAddress.substring(0, 10)}...`
+
+        // Add balance info
         if (data.data?.balance?.sol !== undefined) {
           resultSummary += ` | SOL: ${data.data.balance.sol.toFixed(4)}`
+        } else if (queryType === 'balance' || queryType === 'all') {
+          resultSummary += ` | SOL: 0.0000`
         }
+
+        // Add transaction count
         if (data.data?.transactions?.length) {
           resultSummary += ` | ${data.data.transactions.length} txs`
+        } else if (queryType === 'transactions' || queryType === 'all') {
+          resultSummary += ` | 0 txs`
         }
+
+        // Add token count
         if (data.data?.tokens?.length) {
           resultSummary += ` | ${data.data.tokens.length} tokens`
+        } else if (queryType === 'balance' || queryType === 'all') {
+          resultSummary += ` | 0 tokens`
         }
+
+        // Add success indicator
+        resultSummary += ` ✓`
 
         // Record execution in identity manager
         if (agent.identityId) {
