@@ -31,21 +31,14 @@ services:
       - "8000:8000"
       - "3002:3002"
     volumes:
+      - ./start-parallax.sh:/app/start-parallax.sh:ro
       - ./parallax-data:/app/data
       - parallax-cache:/root/.cache
     environment:
       - PYTHONUNBUFFERED=1
     networks:
       - parallaxpay-network
-    command: >
-      bash -c "
-        pip install --upgrade pip &&
-        pip install parallax-gradient &&
-        parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0 &
-        sleep 10 &&
-        parallax join --port 3002 &&
-        tail -f /dev/null
-      "
+    command: bash /app/start-parallax.sh
 
   # Nginx Reverse Proxy
   nginx:

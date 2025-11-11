@@ -1,35 +1,39 @@
 #!/bin/bash
 
-# ParallaxPay - Start Parallax Direct Method
-# This bypasses the scheduler/worker P2P system and runs Parallax directly
+# Parallax Cluster Startup Script
+# This runs the proper two-command sequence for Parallax
 
-echo "🌊 Starting Gradient Parallax (Direct Method)"
-echo "================================================"
+set -e
+
+echo "🚀 Starting Parallax Cluster..."
+echo "================================"
+
+# Upgrade pip and install parallax
+echo "📦 Installing Parallax..."
+pip install --upgrade pip --quiet
+pip install parallax-gradient --quiet
+
+echo "✅ Parallax installed"
+
+# Step 1: Start Parallax server with model
+echo "🤖 Starting Parallax server with Qwen/Qwen3-0.6B..."
+parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0 &
+PARALLAX_PID=$!
+
+# Wait for server to initialize
+echo "⏳ Waiting for server to initialize..."
+sleep 15
+
+# Step 2: Join the cluster
+echo "🔗 Joining Parallax cluster..."
+parallax join --port 3002 &
+JOIN_PID=$!
+
 echo ""
-echo "This will:"
-echo "  1. Run Parallax inference engine on port 3001"
-echo "  2. Download Qwen3-0.6B model (first time, ~600MB)"
-echo "  3. Start API server for your provider agent"
-echo ""
-echo "Press Ctrl+C to stop"
+echo "✅ Parallax Cluster Started!"
+echo "   Server PID: $PARALLAX_PID"
+echo "   Join PID: $JOIN_PID"
 echo ""
 
-cd "$(dirname "$0")/parallax"
-
-# Activate venv
-if [ -d "venv" ]; then
-    source venv/bin/activate
-else
-    echo "❌ Virtual environment not found!"
-    echo "Run: python3 -m venv venv && source venv/bin/activate && pip install -e '.[mac]'"
-    exit 1
-fi
-
-# Run Parallax directly
-# Qwen3-0.6B has 28 layers (0-27 inclusive)
-python3 src/parallax/launch.py \
-  --model-path Qwen/Qwen3-0.6B \
-  --max-batch-size 8 \
-  --host 0.0.0.0 \
-  --start-layer 0 \
-  --end-layer 28
+# Keep container running
+wait
