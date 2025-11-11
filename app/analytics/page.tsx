@@ -187,6 +187,68 @@ export default function AnalyticsPage() {
               />
             </div>
 
+            {/* Cost Comparison - THE BIG WOW MOMENT */}
+            {totalCost > 0 && (
+              <motion.div
+                className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-8 rounded-xl border-2 border-green-300 shadow-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-3">💰</div>
+                  <h3 className="text-2xl font-black text-black mb-2">
+                    Cost Savings vs Traditional AI APIs
+                  </h3>
+                  <p className="text-gray-600">
+                    See how much you're saving with decentralized AI
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {/* ParallaxPay Cost */}
+                  <div className="bg-white p-6 rounded-lg border-2 border-green-200">
+                    <div className="text-sm text-gray-600 mb-2">Your Total Cost</div>
+                    <div className="text-3xl font-black text-green-600 mb-1">
+                      ${totalCost.toFixed(4)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {totalRuns} runs on Parallax
+                    </div>
+                  </div>
+
+                  {/* ChatGPT API Equivalent */}
+                  <div className="bg-white p-6 rounded-lg border-2 border-red-200">
+                    <div className="text-sm text-gray-600 mb-2">ChatGPT API Cost</div>
+                    <div className="text-3xl font-black text-red-600 mb-1">
+                      ${(totalRuns * 0.002).toFixed(4)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ~$0.002 per request
+                    </div>
+                  </div>
+
+                  {/* Savings */}
+                  <div className="bg-gradient-to-br from-green-100 to-emerald-100 p-6 rounded-lg border-2 border-green-400">
+                    <div className="text-sm text-green-700 font-bold mb-2">YOU SAVED</div>
+                    <div className="text-4xl font-black text-green-700 mb-1">
+                      {totalRuns > 0 ? `${((1 - (totalCost / (totalRuns * 0.002))) * 100).toFixed(1)}%` : '0%'}
+                    </div>
+                    <div className="text-sm text-green-700 font-bold">
+                      ${((totalRuns * 0.002) - totalCost).toFixed(4)} saved
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-bold text-green-700">Decentralized AI with Parallax</span> offers
+                    significantly lower costs while maintaining high performance and reliability.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Best Performers */}
             {bestAgent && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
