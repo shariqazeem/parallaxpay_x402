@@ -109,7 +109,7 @@ export default function AgentDashboardPage() {
       cleaned = cleaned.substring(0, cleaned.indexOf('<think>')).trim()
     }
 
-    return cleaned || 'Response processing...'
+    return cleaned || text // Return original if cleaning results in empty string
   }
 
   // Identity and scheduler managers (initialized client-side only)
