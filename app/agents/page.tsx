@@ -381,9 +381,7 @@ export default function AgentDashboardPage() {
     profit: da.totalRuns * 0.5, // Simulated profit
     avgCost: 0.00112,
     successRate: 100,
-    lastAction: da.lastResult
-      ? `Completed: "${da.lastResult.substring(0, 200)}..."`
-      : `Ready to run: "${da.prompt.substring(0, 100)}..."`,
+    lastAction: da.lastResult || `Ready to run: "${da.prompt.substring(0, 100)}..."`,
     lastActionTime: da.lastRun || da.deployed,
     avatar: da.type === 'market-intel' ? '📊' : da.type === 'social-sentiment' ? '📱' : da.type === 'defi-yield' ? '💰' : da.type === 'portfolio' ? '📈' : da.type === 'composite' ? '🔗' : '🤖',
     color: da.type === 'market-intel' ? '#9945FF' : da.type === 'social-sentiment' ? '#00D4FF' : da.type === 'defi-yield' ? '#14F195' : da.type === 'portfolio' ? '#FF6B9D' : da.type === 'composite' ? '#FFB800' : '#00B4FF',
@@ -1756,10 +1754,10 @@ function AgentCard({
 
         {/* Last Action */}
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-          <div className="text-sm text-black font-medium mb-1">
+          <div className="text-sm text-black font-medium mb-1 max-h-48 overflow-y-auto whitespace-pre-wrap break-words">
             {agent.lastAction}
           </div>
-          <div className="text-xs text-gray-500">{timeStr}</div>
+          <div className="text-xs text-gray-500 mt-2">{timeStr}</div>
         </div>
 
         {/* AUTONOMOUS SCHEDULE STATUS - PROMINENT! */}
