@@ -233,7 +233,7 @@ export default function AgentDashboardPage() {
           provider: agent.provider,
           wallet_address: publicKey?.toBase58(),
           workflow: agent.workflow,
-          is_public: agent.is_public || false, // Include is_public flag
+          // is_public: agent.is_public || false, // TODO: Add column to Supabase first
         }))
 
         // Upsert to Supabase (insert or update)
