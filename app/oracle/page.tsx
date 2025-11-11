@@ -5,36 +5,74 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { UnifiedNavbar } from '@/components/UnifiedNavbar'
+import { CoinSelector } from '@/components/CoinSelector'
 import { getMarketOracle, MarketPrediction, OraclePerformance } from '@/lib/market-oracle-agent'
 import { useProvider } from '@/app/contexts/ProviderContext'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import { TOTAL_SUPPORTED_COINS, getTopCoins, FEATURED_COINS } from '@/lib/crypto-database'
 import toast from 'react-hot-toast'
 
-export default function MarketOraclePage() {
+export default function MarketOraclePageEnhanced() {
   const { publicKey } = useWallet()
   const { providers } = useProvider()
   const { fetchWithPayment, isWalletConnected, isReady } = useX402Payment()
   const [oracle] = useState(() => getMarketOracle())
+  const [selectedCoin, setSelectedCoin] = useState('SOL')
+  const [timeframe, setTimeframe] = useState<'5m' | '15m' | '1h' | '4h' | '24h'>('1h')
   const [isRunning, setIsRunning] = useState(false)
   const [performance, setPerformance] = useState<OraclePerformance | null>(null)
   const [latestPrediction, setLatestPrediction] = useState<MarketPrediction | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [showCostComparison, setShowCostComparison] = useState(false)
+  const [isPredictionsLoaded, setIsPredictionsLoaded] = useState(false)
 
   const onlineProviders = providers.filter(p => p.online)
   const hasProviders = onlineProviders.length > 0
 
+  // Load predictions for current wallet
   useEffect(() => {
-    // Load initial performance
-    updatePerformance()
+    if (publicKey) {
+      const walletAddress = publicKey.toBase58()
+      console.log('💼 Loading predictions for wallet:', walletAddress)
+      setIsPredictionsLoaded(false)
 
-    // Update every 2 seconds
+      oracle.loadPredictionsForWallet(walletAddress).then(() => {
+        // Restore autonomous asset and timeframe if they were set
+        const autonomousAsset = oracle.getAutonomousAsset()
+        const autonomousTimeframe = oracle.getAutonomousTimeframe()
+
+        if (autonomousAsset && autonomousAsset !== 'SOL') {
+          setSelectedCoin(autonomousAsset)
+        }
+        if (autonomousTimeframe && autonomousTimeframe !== '1h') {
+          setTimeframe(autonomousTimeframe)
+        }
+
+        // Mark predictions as loaded and update performance
+        setIsPredictionsLoaded(true)
+        updatePerformance()
+
+        console.log(`📍 Restored state: ${autonomousAsset} ${autonomousTimeframe}`)
+      })
+    } else {
+      // No wallet connected, reset state
+      setIsPredictionsLoaded(false)
+      setPerformance(null)
+      setLatestPrediction(null)
+    }
+  }, [publicKey, oracle])
+
+  // Update performance periodically only after predictions are loaded
+  useEffect(() => {
+    if (!isPredictionsLoaded) return
+
+    updatePerformance()
     const interval = setInterval(() => {
       updatePerformance()
       setIsRunning(oracle.isActive())
     }, 2000)
-
     return () => clearInterval(interval)
-  }, [oracle])
+  }, [oracle, isPredictionsLoaded])
 
   const updatePerformance = () => {
     const perf = oracle.getPerformance()
@@ -46,17 +84,15 @@ export default function MarketOraclePage() {
 
   const handleRunPrediction = async () => {
     if (!hasProviders) {
-      toast.error('No providers available! Please visit the Marketplace to enable providers first.')
+      toast.error('No providers available! Visit Marketplace first.')
       return
     }
-
     if (!isWalletConnected) {
-      toast.error('Please connect your Solana wallet to make x402 payments!')
+      toast.error('Connect your Solana wallet for x402 payments!')
       return
     }
-
     if (!isReady) {
-      toast.error('Payment client is initializing. Please wait a moment and try again.')
+      toast.error('Payment client initializing...')
       return
     }
 
@@ -64,41 +100,34 @@ export default function MarketOraclePage() {
     try {
       const useMultiProvider = onlineProviders.length > 1
       const walletAddress = publicKey?.toBase58()
-
-      // Pass fetchWithPayment for client-side wallet payments (Phantom confirmation) and wallet address
-      const prediction = await oracle.runPrediction('SOL', '1h', useMultiProvider, fetchWithPayment, walletAddress)
+      const prediction = await oracle.runPrediction(selectedCoin, timeframe, useMultiProvider, fetchWithPayment, walletAddress)
       setLatestPrediction(prediction)
       updatePerformance()
+      toast.success(`${selectedCoin} prediction complete!`)
     } catch (error) {
       console.error('Prediction failed:', error)
-      toast.error(`Prediction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(`Failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsAnalyzing(false)
     }
   }
 
   const handleStartAutonomous = () => {
-    if (!hasProviders) {
-      toast.error('No providers available! Please visit the Marketplace to enable providers first.')
+    if (!hasProviders || !isWalletConnected || !isReady) {
+      toast.error('Please connect wallet and ensure providers are available')
       return
     }
-    if (!isWalletConnected) {
-      toast.error('Please connect your Solana wallet first!')
-      return
-    }
-    if (!isReady) {
-      toast.error('Payment client is initializing. Please wait a moment and try again.')
-      return
-    }
-    // Autonomous mode uses client-side wallet payments
     const walletAddress = publicKey?.toBase58()
-    oracle.startAutonomousMode(5, fetchWithPayment, walletAddress) // Run every 5 minutes
+    // Pass the selected coin and timeframe to autonomous mode
+    oracle.startAutonomousMode(selectedCoin, timeframe, 5, fetchWithPayment, walletAddress)
     setIsRunning(true)
+    toast.success(`Autonomous mode started for ${selectedCoin} (${timeframe})!`)
   }
 
   const handleStopAutonomous = () => {
     oracle.stopAutonomousMode()
     setIsRunning(false)
+    toast.success('Autonomous mode stopped')
   }
 
   const getTrustBadge = (trustLevel: string) => {
@@ -113,12 +142,19 @@ export default function MarketOraclePage() {
 
   const badge = performance ? getTrustBadge(performance.trustLevel) : null
 
+  // Calculate traditional API cost comparison
+  const traditionalAPICost = 99 // $99/month for typical market data API
+  const predictionsPerMonth = 8640 // Every 5 mins = 288/day * 30 days
+  const x402CostPerMonth = performance ? (performance.avgCostPerPrediction * predictionsPerMonth) : 0
+  const costSavings = traditionalAPICost - x402CostPerMonth
+  const savingsPercentage = traditionalAPICost > 0 ? ((costSavings / traditionalAPICost) * 100) : 0
+
   return (
     <div className="min-h-screen bg-white">
       <UnifiedNavbar currentPage="oracle" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
+        {/* Hero Section with Coin Selector */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -137,7 +173,7 @@ export default function MarketOraclePage() {
                 </motion.div>
               </div>
               <p className="text-xl text-gray-600">
-                Autonomous AI agent powered by Parallax • x402 micropayments • {hasProviders ? (onlineProviders.length > 1 ? `${onlineProviders.length}-provider consensus` : 'Single provider') : 'Dynamic provider selection'}
+                <strong>{TOTAL_SUPPORTED_COINS}+ cryptocurrencies</strong> • Gradient Parallax AI • x402 micropayments
               </p>
             </div>
 
@@ -152,49 +188,103 @@ export default function MarketOraclePage() {
                 <div>
                   <div className="text-xs font-bold text-gray-600 uppercase">Status</div>
                   <div className="text-lg font-black text-black">
-                    {isRunning ? 'Running Autonomously' : 'Idle'}
+                    {isRunning ? `Running (${selectedCoin})` : 'Idle'}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Hackathon Banner */}
+          {/* Feature Banner */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white shadow-xl"
+            className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl p-6 text-white shadow-xl mb-6"
           >
             <div className="flex items-center gap-4">
               <div className="text-5xl">🔮</div>
-              <div>
-                <h3 className="text-2xl font-black mb-1">AI Market Oracle</h3>
+              <div className="flex-1">
+                <h3 className="text-2xl font-black mb-1">Multi-Asset Market Intelligence</h3>
                 <p className="text-purple-100">
-                  Powered by <strong>Gradient Parallax</strong> and <strong>x402 micropayments</strong> — Real-time market intelligence through decentralized AI agents with multi-provider consensus and on-chain reputation.
+                  <strong className="text-white">{TOTAL_SUPPORTED_COINS}+ Cryptocurrencies Supported</strong> — Track and predict any crypto asset from major coins to DeFi tokens, Layer 1s, Layer 2s, AI tokens, meme coins, and more. Powered by <strong className="text-white">Gradient Parallax</strong> multi-provider AI consensus with <strong className="text-white">x402 micropayments</strong> for transparent, pay-per-prediction pricing.
                 </p>
               </div>
             </div>
           </motion.div>
+
+          {/* Coin Selection & Timeframe */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Select Cryptocurrency ({TOTAL_SUPPORTED_COINS}+ supported)
+              </label>
+              <CoinSelector
+                selectedCoin={selectedCoin}
+                onSelectCoin={setSelectedCoin}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Prediction Timeframe
+              </label>
+              <div className="flex gap-2">
+                {(['5m', '15m', '1h', '4h', '24h'] as const).map(tf => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all ${
+                      timeframe === tf
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Access Featured Coins */}
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="text-sm font-bold text-gray-700 mb-2">Quick Access</div>
+            <div className="flex flex-wrap gap-2">
+              {FEATURED_COINS.map(coin => (
+                <button
+                  key={coin}
+                  onClick={() => setSelectedCoin(coin)}
+                  className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                    selectedCoin === coin
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:border-purple-400'
+                  }`}
+                >
+                  {coin}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Provider Status */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className={`rounded-2xl p-6 border-2 ${hasProviders ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} shadow-lg`}
+            className={`mt-6 rounded-2xl p-6 border-2 ${hasProviders ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} shadow-lg`}
           >
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-black text-black mb-1">
-                  {hasProviders ? `${onlineProviders.length} Provider${onlineProviders.length !== 1 ? 's' : ''} Available` : 'No Providers Available'}
+                  {hasProviders ? `${onlineProviders.length} Parallax Provider${onlineProviders.length !== 1 ? 's' : ''} Online` : 'No Providers Available'}
                 </h3>
                 <p className="text-sm text-gray-700">
                   {hasProviders
                     ? onlineProviders.length > 1
-                      ? `Multi-provider consensus enabled (using all ${onlineProviders.length} providers)`
-                      : 'Single provider mode (1 provider available)'
-                    : 'Visit Marketplace to enable providers'}
+                      ? `Multi-provider consensus enabled • Distributed AI inference`
+                      : 'Single provider mode'
+                    : 'Visit Marketplace to enable Gradient Parallax providers'}
                 </p>
               </div>
               <Link href="/marketplace">
@@ -203,7 +293,7 @@ export default function MarketOraclePage() {
                   whileTap={{ scale: 0.95 }}
                   className="bg-black text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-800 transition-all"
                 >
-                  {hasProviders ? 'View Providers' : 'Go to Marketplace'}
+                  {hasProviders ? 'Manage Providers' : 'Enable Providers'}
                 </motion.button>
               </Link>
             </div>
@@ -233,18 +323,16 @@ export default function MarketOraclePage() {
           >
             <div className="text-4xl mb-3">{isAnalyzing ? '⏳' : '🎯'}</div>
             <div className="text-xl font-black mb-1">
-              {isAnalyzing ? 'Analyzing...' : 'Run Single Prediction'}
+              {isAnalyzing ? `Analyzing ${selectedCoin}...` : `Predict ${selectedCoin} Price`}
             </div>
             <div className="text-sm text-blue-100">
               {!isWalletConnected
-                ? '⚠️ Connect wallet to pay with x402'
+                ? '⚠️ Connect wallet for x402 payments'
                 : !isReady
-                ? '⏳ Initializing payment client...'
+                ? '⏳ Initializing...'
                 : hasProviders
-                ? onlineProviders.length > 1
-                  ? `Use all ${onlineProviders.length} providers • x402 payment`
-                  : 'Use 1 provider • x402 payment'
-                : 'No providers available'}
+                ? `${timeframe} forecast • ${onlineProviders.length} provider${onlineProviders.length > 1 ? 's' : ''}`
+                : 'Enable providers first'}
             </div>
           </motion.button>
 
@@ -257,15 +345,13 @@ export default function MarketOraclePage() {
               className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-4xl mb-3">🚀</div>
-              <div className="text-xl font-black mb-1">Start Autonomous Mode</div>
+              <div className="text-xl font-black mb-1">Start Autonomous</div>
               <div className="text-sm text-green-100">
                 {!isWalletConnected
                   ? '⚠️ Connect wallet first'
                   : !isReady
                   ? '⏳ Initializing...'
-                  : hasProviders
-                  ? 'Run predictions every 5 min • x402 payments'
-                  : 'Requires providers'}
+                  : `Auto-track ${selectedCoin} every 5 min`}
               </div>
             </motion.button>
           ) : (
@@ -276,9 +362,9 @@ export default function MarketOraclePage() {
               className="bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all"
             >
               <div className="text-4xl mb-3">🛑</div>
-              <div className="text-xl font-black mb-1">Stop Autonomous Mode</div>
+              <div className="text-xl font-black mb-1">Stop Autonomous</div>
               <div className="text-sm text-red-100">
-                Agent is currently running
+                Currently tracking {selectedCoin}
               </div>
             </motion.button>
           )}
@@ -286,19 +372,86 @@ export default function MarketOraclePage() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              oracle.clearHistory()
-              updatePerformance()
-            }}
-            className="bg-white border-2 border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all"
+            onClick={() => setShowCostComparison(!showCostComparison)}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all"
           >
-            <div className="text-4xl mb-3">🗑️</div>
-            <div className="text-xl font-black text-black mb-1">Clear History</div>
-            <div className="text-sm text-gray-600">
-              Reset all predictions and stats
+            <div className="text-4xl mb-3">💰</div>
+            <div className="text-xl font-black mb-1">Cost Comparison</div>
+            <div className="text-sm text-purple-100">
+              x402 vs Traditional APIs
             </div>
           </motion.button>
         </div>
+
+        {/* Cost Comparison Modal */}
+        <AnimatePresence>
+          {showCostComparison && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="mb-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 border-2 border-purple-300 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-black text-black">💰 Cost Efficiency Analysis</h2>
+                <button
+                  onClick={() => setShowCostComparison(false)}
+                  className="text-gray-500 hover:text-black text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+                  <div className="text-2xl mb-3">🏦</div>
+                  <h3 className="text-xl font-black text-black mb-2">Traditional API</h3>
+                  <div className="text-4xl font-black text-red-600 mb-2">${traditionalAPICost}/mo</div>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>✗ Fixed subscription cost</li>
+                    <li>✗ Rate limits (often 100-1000 calls/day)</li>
+                    <li>✗ Pay even when not using</li>
+                    <li>✗ Single data source</li>
+                    <li>✗ No AI insights included</li>
+                  </ul>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl p-6 border-2 border-green-300">
+                  <div className="text-2xl mb-3">⚡</div>
+                  <h3 className="text-xl font-black text-black mb-2">x402 Oracle (This)</h3>
+                  <div className="text-4xl font-black text-green-600 mb-2">
+                    ${x402CostPerMonth.toFixed(2)}/mo
+                  </div>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>✓ Pay-per-prediction micropayments</li>
+                    <li>✓ Unlimited API calls</li>
+                    <li>✓ Pay only for actual usage</li>
+                    <li>✓ Multi-provider consensus (Parallax)</li>
+                    <li>✓ AI-powered predictions included</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 text-white">
+                <div className="flex items-center gap-4">
+                  <div className="text-5xl">🎉</div>
+                  <div>
+                    <div className="text-3xl font-black mb-1">
+                      Save ${costSavings.toFixed(2)}/month ({savingsPercentage.toFixed(1)}%)
+                    </div>
+                    <p className="text-green-100">
+                      Based on {predictionsPerMonth.toLocaleString()} predictions/month (one every 5 minutes). With x402, you pay ~${(performance?.avgCostPerPrediction || 0.001).toFixed(4)} per prediction vs ${(traditionalAPICost / 1000).toFixed(2)} per prediction with traditional APIs.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center text-sm text-gray-600">
+                💡 <strong>Perfect for AI Agents:</strong> No subscriptions, no API keys to manage, no rate limits. Just pay-as-you-go micropayments on Solana.
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Performance Stats */}
         {performance && (
@@ -338,7 +491,7 @@ export default function MarketOraclePage() {
               <div className="text-4xl font-black text-blue-600 mb-1">
                 ${performance.totalCost.toFixed(4)}
               </div>
-              <div className="text-sm text-gray-600 font-semibold">Total Cost (x402)</div>
+              <div className="text-sm text-gray-600 font-semibold">Total x402 Cost</div>
             </motion.div>
 
             <motion.div
@@ -351,7 +504,7 @@ export default function MarketOraclePage() {
               <div className="text-4xl font-black text-purple-600 mb-1">
                 ${(performance.avgCostPerPrediction * 1000).toFixed(2)}
               </div>
-              <div className="text-sm text-gray-600 font-semibold">Cost per 1K predictions</div>
+              <div className="text-sm text-gray-600 font-semibold">Per 1K predictions</div>
             </motion.div>
 
             <motion.div
@@ -451,10 +604,10 @@ export default function MarketOraclePage() {
                     </div>
                   </div>
 
-                  {/* Right Side - Multi-Provider Consensus */}
+                  {/* Right Side - Parallax Multi-Provider Consensus */}
                   <div>
                     <h3 className="text-xl font-black text-black mb-4">
-                      Multi-Provider Consensus ({latestPrediction.providers.length} Parallax Providers)
+                      🤖 Gradient Parallax Consensus ({latestPrediction.providers.length} Providers)
                     </h3>
                     <div className="space-y-3">
                       {latestPrediction.providers.map((provider, idx) => (
@@ -488,14 +641,29 @@ export default function MarketOraclePage() {
                       ))}
                     </div>
 
-                    <div className="mt-6 bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
-                      <div className="text-sm text-blue-700 font-semibold mb-1">x402 Micropayment</div>
-                      <div className="text-2xl font-black text-black">
+                    <div className="mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border-2 border-blue-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="text-2xl">⚡</div>
+                        <div className="text-sm text-blue-700 font-semibold">x402 Micropayment</div>
+                      </div>
+                      <div className="text-3xl font-black text-black mb-1">
                         ${latestPrediction.totalCost.toFixed(4)} total
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Paid per inference • Transparent • On-chain
+                      <div className="text-xs text-gray-600">
+                        Paid per inference • Transparent • On-chain • No subscription
                       </div>
+                    </div>
+
+                    <div className="mt-4 bg-purple-50 rounded-xl p-4 border border-purple-200">
+                      <div className="text-xs text-gray-600 mb-2">
+                        💡 <strong>Why This Matters for Hackathon:</strong>
+                      </div>
+                      <ul className="text-xs text-gray-700 space-y-1">
+                        <li>• Distributed AI inference via Gradient Parallax</li>
+                        <li>• Real micropayments on Solana (not simulated)</li>
+                        <li>• Multi-provider consensus for accuracy</li>
+                        <li>• Production-ready for any AI agent to query</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -557,14 +725,14 @@ export default function MarketOraclePage() {
             className="text-center py-16"
           >
             <div className="text-8xl mb-6">🔮</div>
-            <h3 className="text-3xl font-black text-black mb-3">No Predictions Yet</h3>
+            <h3 className="text-3xl font-black text-black mb-3">Ready to Predict {selectedCoin}?</h3>
             <p className="text-xl text-gray-600 mb-8">
-              Run your first prediction or start autonomous mode to see the AI Market Oracle in action!
+              Run your first prediction or start autonomous mode to see the Oracle in action! Supports {TOTAL_SUPPORTED_COINS}+ cryptocurrencies.
             </p>
           </motion.div>
         )}
 
-        {/* BUILD YOUR OWN CTA - Ecosystem Connection */}
+        {/* BUILD YOUR OWN CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -573,47 +741,41 @@ export default function MarketOraclePage() {
           <div className="text-center mb-6">
             <div className="text-5xl mb-3">🧠</div>
             <h3 className="text-2xl font-black text-black mb-2">
-              Build Your Own AI Agent
+              Deploy Your Own Oracle
             </h3>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              The Market Oracle is just one example. Create custom agents for your needs with our AI-powered builder - no coding required!
+              This Oracle is fully customizable. Deploy your own instance tracking different assets, timeframes, or strategies. Perfect for AI agent ecosystems!
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg border border-purple-200">
-              <div className="text-2xl mb-2">📊</div>
-              <div className="font-bold text-black text-sm mb-1">Custom Analytics</div>
-              <div className="text-xs text-gray-600">Track metrics that matter to you</div>
+              <div className="text-2xl mb-2">🎯</div>
+              <div className="font-bold text-black text-sm mb-1">{TOTAL_SUPPORTED_COINS}+ Assets</div>
+              <div className="text-xs text-gray-600">Track any cryptocurrency market</div>
             </div>
             <div className="bg-white p-4 rounded-lg border border-purple-200">
-              <div className="text-2xl mb-2">⏰</div>
-              <div className="font-bold text-black text-sm mb-1">Autonomous Execution</div>
-              <div className="text-xs text-gray-600">Set it and forget it - runs 24/7</div>
+              <div className="text-2xl mb-2">⚡</div>
+              <div className="font-bold text-black text-sm mb-1">x402 Powered</div>
+              <div className="text-xs text-gray-600">Pay-per-prediction micropayments</div>
             </div>
             <div className="bg-white p-4 rounded-lg border border-purple-200">
-              <div className="text-2xl mb-2">💰</div>
-              <div className="font-bold text-black text-sm mb-1">Micropayments</div>
-              <div className="text-xs text-gray-600">Pay only for what you use</div>
+              <div className="text-2xl mb-2">🤖</div>
+              <div className="font-bold text-black text-sm mb-1">Agent-to-Agent</div>
+              <div className="text-xs text-gray-600">Other agents can query your Oracle</div>
             </div>
           </div>
 
           <div className="flex justify-center gap-4">
             <Link href="/agents?tab=builder">
               <button className="bg-black text-white px-8 py-4 rounded-xl font-bold transition-all hover:bg-gray-800 hover:scale-105 shadow-lg">
-                🚀 Launch Agent Builder
+                🚀 Deploy Custom Oracle
               </button>
             </Link>
             <Link href="/marketplace">
               <button className="bg-white text-black border-2 border-gray-300 px-8 py-4 rounded-xl font-bold transition-all hover:border-purple-400 hover:bg-purple-50">
-                🏪 View Cluster Status
+                🏪 Manage Providers
               </button>
-            </Link>
-          </div>
-
-          <div className="mt-4 text-center">
-            <Link href="/analytics" className="text-purple-600 hover:text-purple-700 font-semibold text-sm">
-              📈 Or view your cost analytics →
             </Link>
           </div>
         </motion.div>
