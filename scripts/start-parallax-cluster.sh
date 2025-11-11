@@ -48,39 +48,38 @@ sleep 2
 mkdir -p logs
 
 # Model to use (lightest for M1 Air)
-MODEL="Qwen/Qwen2.5-0.5B-Instruct"
+MODEL="Qwen/Qwen3-0.6B"
 MAX_BATCH_SIZE=4
 
 echo ""
 echo -e "${GREEN}🚀 Starting Parallax Cluster...${NC}"
 echo ""
 
-# Start Node 1 (Primary)
-echo -e "${BLUE}📡 Starting Node 1 on port 3001...${NC}"
+# Start Node 1 (Scheduler - Primary)
+echo -e "${BLUE}📡 Starting Scheduler (Node 1)...${NC}"
 nohup parallax run \
   -m "$MODEL" \
   -n 1 \
   --host 0.0.0.0 \
-  --port 3001 \
-  --max-batch-size $MAX_BATCH_SIZE \
-  > logs/parallax-node-3001.log 2>&1 &
+  > logs/parallax-scheduler.log 2>&1 &
 NODE1_PID=$!
-echo -e "${GREEN}✓ Node 1 started (PID: $NODE1_PID)${NC}"
+echo -e "${GREEN}✓ Scheduler started (PID: $NODE1_PID)${NC}"
+echo -e "${GREEN}  Listening on http://localhost:3001${NC}"
 
-# Wait a bit before starting second node
-sleep 3
+# Wait for scheduler to fully initialize
+echo ""
+echo -e "${YELLOW}⏳ Waiting for scheduler to initialize (10 seconds)...${NC}"
+sleep 10
 
-# Start Node 2 (Secondary)
-echo -e "${BLUE}📡 Starting Node 2 on port 3002...${NC}"
-nohup parallax run \
-  -m "$MODEL" \
-  -n 1 \
-  --host 0.0.0.0 \
+# Start Node 2 (Worker - joins scheduler)
+echo ""
+echo -e "${BLUE}📡 Starting Worker (Node 2) on port 3002...${NC}"
+nohup parallax join \
   --port 3002 \
-  --max-batch-size $MAX_BATCH_SIZE \
-  > logs/parallax-node-3002.log 2>&1 &
+  > logs/parallax-worker-3002.log 2>&1 &
 NODE2_PID=$!
-echo -e "${GREEN}✓ Node 2 started (PID: $NODE2_PID)${NC}"
+echo -e "${GREEN}✓ Worker started (PID: $NODE2_PID)${NC}"
+echo -e "${GREEN}  Connected to scheduler, listening on port 3002${NC}"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
@@ -88,25 +87,25 @@ echo -e "${GREEN}║  ✅ Parallax Cluster Started Successfully!    ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${BLUE}Cluster Configuration:${NC}"
-echo "  • Node 1: http://localhost:3001 (PID: $NODE1_PID)"
-echo "  • Node 2: http://localhost:3002 (PID: $NODE2_PID)"
+echo "  • Scheduler: http://localhost:3001 (PID: $NODE1_PID)"
+echo "  • Worker: port 3002 (PID: $NODE2_PID)"
 echo "  • Model: $MODEL"
-echo "  • Batch Size: $MAX_BATCH_SIZE"
+echo "  • Architecture: 1 scheduler + 1 worker"
 echo ""
 echo -e "${YELLOW}📊 Logs:${NC}"
-echo "  • Node 1: logs/parallax-node-3001.log"
-echo "  • Node 2: logs/parallax-node-3002.log"
+echo "  • Scheduler: logs/parallax-scheduler.log"
+echo "  • Worker: logs/parallax-worker-3002.log"
 echo ""
 echo -e "${YELLOW}💡 Tips:${NC}"
-echo "  • View Node 1 logs: tail -f logs/parallax-node-3001.log"
-echo "  • View Node 2 logs: tail -f logs/parallax-node-3002.log"
+echo "  • View scheduler logs: tail -f logs/parallax-scheduler.log"
+echo "  • View worker logs: tail -f logs/parallax-worker-3002.log"
 echo "  • Check cluster status: curl http://localhost:3001"
 echo "  • Stop cluster: pkill -f parallax"
 echo ""
-echo -e "${YELLOW}⏳ Waiting for nodes to initialize (30 seconds)...${NC}"
+echo -e "${YELLOW}⏳ Waiting for cluster to be ready (20 seconds)...${NC}"
 
-# Wait for nodes to be ready
-sleep 30
+# Wait for cluster to be ready
+sleep 20
 
 # Health check
 echo ""
@@ -130,12 +129,15 @@ check_node 3002 || HEALTH_OK=false
 
 echo ""
 if [ "$HEALTH_OK" = true ]; then
-  echo -e "${GREEN}🎉 All nodes are healthy and ready!${NC}"
+  echo -e "${GREEN}🎉 Cluster is healthy and ready!${NC}"
   echo ""
   echo "You can now start your ParallaxPay app:"
-  echo "  PARALLAX_CLUSTER_URLS=http://localhost:3001,http://localhost:3002 npm run dev"
+  echo "  PARALLAX_CLUSTER_URLS=http://localhost:3001 npm run dev"
+  echo ""
+  echo -e "${BLUE}Note:${NC} The cluster has 1 scheduler (port 3001) + 1 worker (port 3002)."
+  echo "Your app will communicate with the scheduler, which distributes work to workers."
 else
-  echo -e "${YELLOW}⚠️  Some nodes may still be initializing. Check the logs for details.${NC}"
+  echo -e "${YELLOW}⚠️  Scheduler may still be initializing. Check the logs for details.${NC}"
   echo "First inference will take longer as models are loaded."
 fi
 

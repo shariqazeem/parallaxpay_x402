@@ -110,14 +110,14 @@ pip install parallax-inference
 # cd parallax && pip install -e .
 ```
 
-### 2️⃣ Start Parallax Cluster (2 Nodes)
+### 2️⃣ Start Parallax Cluster (Scheduler + Worker)
 ```bash
 ./scripts/start-parallax-cluster.sh
 ```
-This launches 2 Parallax nodes optimized for M1 Mac:
-- Node 1: `http://localhost:3001`
-- Node 2: `http://localhost:3002`
-- Auto-discovery and load balancing enabled
+This launches Parallax cluster optimized for M1 Mac:
+- **Scheduler**: `http://localhost:3001` (your app talks to this)
+- **Worker**: port `3002` (scheduler distributes work internally)
+- Model: Qwen/Qwen3-0.6B
 
 ### 3️⃣ Setup Environment
 
@@ -129,11 +129,10 @@ npm install
 ```
 
 2. **Configure Environment**
-Create `.env.local` (or copy from `.env.example`):
+Create `.env.local`:
 ```bash
-# Parallax Cluster (MULTI-NODE!)
-PARALLAX_CLUSTER_URLS=http://localhost:3001,http://localhost:3002
-PARALLAX_LOAD_BALANCING=latency-based
+# Parallax Scheduler
+PARALLAX_SCHEDULER_URL=http://localhost:3001
 
 # Supabase (Optional - falls back to localStorage)
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
@@ -141,7 +140,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-key
 
 # x402 Payment Protocol
 NEXT_PUBLIC_NETWORK=solana-devnet
-DEV_MODE=false
 ```
 
 3. **Start Application**
@@ -154,7 +152,7 @@ npm run dev
 http://localhost:3000
 ```
 
-**That's it!** The cluster script already started Parallax nodes for you.
+**That's it!** The cluster script already started Parallax scheduler + worker for you.
 
 ---
 
