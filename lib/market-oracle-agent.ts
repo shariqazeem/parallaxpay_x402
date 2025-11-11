@@ -11,6 +11,7 @@
 
 import { getRealProviderManager } from './real-provider-manager'
 import { supabase, PredictionDB } from './supabase'
+import { getCoinBySymbol, CRYPTO_DATABASE } from './crypto-database'
 
 export interface MarketPrediction {
   id: string
@@ -86,15 +87,14 @@ export class MarketOracleAgent {
     low24h: number
   }> {
     try {
-      // Using CoinGecko API for comprehensive market data
-      const coinIds: { [key: string]: string } = {
-        'BTC': 'bitcoin',
-        'ETH': 'ethereum',
-        'SOL': 'solana',
-        'USDC': 'usd-coin'
+      // Using CoinGecko API with our comprehensive 150+ coin database
+      const coin = getCoinBySymbol(asset)
+
+      if (!coin) {
+        throw new Error(`Cryptocurrency ${asset} not found in database. Supported: ${CRYPTO_DATABASE.length} coins`)
       }
 
-      const coinId = coinIds[asset] || 'bitcoin'
+      const coinId = coin.coinGeckoId
       const response = await fetch(
         `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false`,
         { next: { revalidate: 60 } } // Cache for 60 seconds
