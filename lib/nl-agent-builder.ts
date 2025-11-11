@@ -159,10 +159,16 @@ Respond in JSON format:
    */
   private generateStrategyFromTemplate(analysis: AgentPromptAnalysis): GeneratedStrategy {
     // Extract key parameters from analysis
+    const fullPrompt = (analysis.intent + ' ' + analysis.constraints.join(' ') + ' ' + analysis.triggers.join(' ')).toLowerCase()
     const constraints = analysis.constraints.join(', ').toLowerCase()
     const hasLatencyConstraint = constraints.includes('latency') || constraints.includes('fast') || constraints.includes('speed')
     const hasCostConstraint = constraints.includes('cost') || constraints.includes('cheap') || constraints.includes('price')
     const hasUptimeConstraint = constraints.includes('uptime') || constraints.includes('reliable')
+
+    // Check for time-based constraints
+    const hasTimeConstraint = fullPrompt.includes('hour') || fullPrompt.includes('time') || fullPrompt.includes('am') || fullPrompt.includes('pm') || fullPrompt.includes('midnight')
+    const isOffPeakHours = fullPrompt.includes('off-peak') || fullPrompt.includes('offpeak') || (fullPrompt.includes('midnight') && fullPrompt.includes('6am'))
+    const isBusinessHours = fullPrompt.includes('business hour') || fullPrompt.includes('9am') && fullPrompt.includes('5pm')
 
     const latencyThreshold = hasLatencyConstraint ? this.extractNumber(constraints, 100) : 150
     const costMultiplier = hasCostConstraint ? 0.8 : 1.0
@@ -184,6 +190,26 @@ Respond in JSON format:
   // Constraints: ${safeConstraints}
 
   try {
+    ${hasTimeConstraint ? `// === STEP 0: Check time-based constraints ===
+    const now = new Date()
+    const currentHour = now.getHours()
+
+    ${isOffPeakHours ? `// Only trade during off-peak hours (midnight-6am)
+    if (currentHour >= 6 && currentHour < 24) {
+      return {
+        shouldTrade: false,
+        targetProvider: null,
+        reason: 'Outside off-peak hours (current: ' + currentHour + ':00, allowed: 0:00-6:00)'
+      }
+    }` : isBusinessHours ? `// Only trade during business hours (9am-5pm)
+    if (currentHour < 9 || currentHour >= 17) {
+      return {
+        shouldTrade: false,
+        targetProvider: null,
+        reason: 'Outside business hours (current: ' + currentHour + ':00, allowed: 9:00-17:00)'
+      }
+    }` : ''}
+    ` : ''}
     // === STEP 1: Filter providers based on requirements ===
     const eligibleProviders = providers.filter(p => {
       // Health checks
@@ -289,12 +315,24 @@ Respond in JSON format:
   }
 }`
 
+    // Add time-based warnings
+    const warnings = this.analyzeCodeForWarnings(code)
+    if (hasTimeConstraint) {
+      if (isOffPeakHours) {
+        warnings.push('⏰ Time constraint: Only executes during off-peak hours (midnight-6am)')
+      } else if (isBusinessHours) {
+        warnings.push('⏰ Time constraint: Only executes during business hours (9am-5pm)')
+      } else {
+        warnings.push('⏰ Time-based constraints detected in strategy')
+      }
+    }
+
     return {
       name: strategyName,
       description: `${analysis.strategy} strategy: ${analysis.intent}`,
       code,
       confidence: 0.92,
-      warnings: this.analyzeCodeForWarnings(code),
+      warnings,
       estimatedPerformance: {
         expectedSavings: hasCostConstraint ? 35 : hasLatencyConstraint ? 20 : 25,
         riskLevel: uptimeThreshold > 98 ? 'low' : 'medium',
