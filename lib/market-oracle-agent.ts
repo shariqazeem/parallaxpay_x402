@@ -197,7 +197,7 @@ YOU respond with YOUR analysis:`
           body: JSON.stringify({
             messages: [{ role: 'user', content: prompt }],
             provider: provider.name,
-            max_tokens: 800, // Increased to ensure complete oracle predictions
+            max_tokens: 512, // Increased to ensure complete oracle predictions
           })
         })
 

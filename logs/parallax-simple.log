@@ -1,0 +1,72 @@
+Nov 11 23:51:07.956 [[1m[32mINFO    [0m] cli.py:101                Running command: /Users/macbookair/projects/parallaxpay/parallax/venv/bin/python3 /Users/macbookair/projects/parallaxpay/parallax/src/backend/main.py --model-name Qwen/Qwen2.5-0.5B-Instruct --port 3001
+[3J[H[2J                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+            [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝                          [35m▝[35m▝  [35m▝[35m▝                             [0m
+            [35m▝[35m▝   [35m▝[35m▝[91m▝  [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝            [0m
+            [35m▝[35m▝   [35m▝[35m▝   [95m▝   [35m▝[35m▝  [35m▝[35m▝     [95m▝  [94m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝   [95m▝   [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝             [0m
+            [35m▝[35m▝[35m▝[35m▝[35m▝[95m▝    [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝    [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [95m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝    [35m▝[35m▝              [0m
+            [35m▝[35m▝       [35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝    [35m▝[95m▝  [35m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝   [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝             [0m
+            [35m▝[35m▝        [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝    [35m▝[35m▝[35m▝[35m▝ [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [94m▝[35m▝[35m▝[35m▝ [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝            [0m
+                                                                                [0m
+           [97mb[97my [97mg[97mr[97ma[97md[97mi[97me[97mn[97mt                               [97mC[97mL[97mI [97mV[97me[97mr[97ms[97mi[97mo[97mn [97m0[97m.[97m0[97m.[97m1          [0m
+                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+[93m[Parallax] New version available: 0.1.0 (current: 0.0.1)[0m
+For macOS, run `git pull && pip install -e '.[mac]'` to update.
+For Linux, run `git pull && pip install -e '.[gpu]'` to update.
+For Windows, run `parallax install` to update
+
+INFO:     Started server process [41539]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://localhost:3001 (Press CTRL+C to quit)
+INFO:     ::1:59918 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:59919 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60045 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60046 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60074 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:60205 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60206 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60344 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60345 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60491 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60492 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60616 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60617 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60740 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60741 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60868 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60869 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60873 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:60988 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61135 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61136 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61268 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61269 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61338 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61347 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61348 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61357 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61358 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:61357 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:61358 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:61413 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61414 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61595 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61596 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61648 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:61730 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:61766 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61767 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61840 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:61939 - "GET /health HTTP/1.1" 200 OK
+INFO:     ::1:62012 - "POST /v1/chat/completions HTTP/1.1" 500 Internal Server Error
+INFO:     ::1:62048 - "GET / HTTP/1.1" 200 OK
+INFO:     ::1:62049 - "GET / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [41539]

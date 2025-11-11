@@ -87,7 +87,7 @@ export default function AgentDashboardPage() {
   const [isLoadingAgents, setIsLoadingAgents] = useState(true)
 
   // Token controls for agent runs
-  const [maxTokens, setMaxTokens] = useState(800) // Increased default to ensure complete responses
+  const [maxTokens, setMaxTokens] = useState(512) // Increased default to ensure complete responses
   const fixedCost = 0.001 // Fixed $0.001 per request
 
   // Wallet connection for user payments
@@ -1620,12 +1620,14 @@ function AgentCard({
   index,
   onRun,
   onStop,
+  onDelete,
   identity,
 }: {
   agent: AgentStats
   index: number
   onRun: () => void
   onStop?: () => void
+  onDelete?: () => void
   identity?: AgentIdentity
 }) {
   const { attestBadge, attesting } = useBadgeAttestation()

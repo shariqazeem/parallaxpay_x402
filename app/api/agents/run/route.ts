@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: body.prompt }],
-        max_tokens: 800, // Increased to ensure complete agent responses
+        max_tokens: 512, // Increased to ensure complete agent responses
       }),
     })
 
