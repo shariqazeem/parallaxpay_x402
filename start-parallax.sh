@@ -13,14 +13,19 @@ echo "📦 Installing dependencies..."
 apt-get update -qq
 apt-get install -y git --quiet
 
-echo "📦 Installing Lattica (Parallax dependency) from GitHub..."
+echo "📦 Cloning and installing Parallax from GitHub..."
 pip install --upgrade pip --quiet
-pip install git+https://github.com/GradientHQ/lattica.git --quiet
+cd /tmp
+git clone https://github.com/GradientHQ/parallax.git
+cd parallax
 
-echo "📦 Installing Parallax from GitHub..."
-pip install git+https://github.com/GradientHQ/parallax.git --quiet
+# Install in editable mode (like on Mac)
+pip install -e . --quiet
 
-echo "✅ Parallax and dependencies installed"
+echo "✅ Parallax installed"
+
+# Return to working directory
+cd /app
 
 # Step 1: Start Parallax server with model
 echo "🤖 Starting Parallax server with Qwen/Qwen3-0.6B..."
