@@ -74,12 +74,17 @@ export class ProviderDiscoveryService {
   private roundRobinIndex: number = 0
 
   constructor(schedulerUrls?: string[]) {
-    // Support environment variable for cluster configuration
+    // Support environment variable for scheduler URL
+    // Note: Parallax uses scheduler+worker architecture, so we only monitor the scheduler
     const envUrls = process.env.PARALLAX_CLUSTER_URLS?.split(',').map(url => url.trim()).filter(Boolean)
-    const defaultUrls = [process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001']
+    const singleUrl = process.env.PARALLAX_SCHEDULER_URL
+    const defaultUrls = ['http://localhost:3001']
 
-    this.schedulerUrls = schedulerUrls || envUrls || defaultUrls
-    console.log(`🌐 Parallax cluster URLs: ${this.schedulerUrls.join(', ')}`)
+    // Priority: passed URLs > CLUSTER_URLS env > SCHEDULER_URL env > default
+    this.schedulerUrls = schedulerUrls || envUrls || (singleUrl ? [singleUrl] : defaultUrls)
+
+    console.log(`🌐 Parallax scheduler URL(s): ${this.schedulerUrls.join(', ')}`)
+    console.log(`   (Scheduler handles worker distribution internally)`)
   }
 
   /**
