@@ -97,6 +97,21 @@ export default function AgentDashboardPage() {
   // Global provider state from marketplace
   const { selectedProvider } = useProvider()
 
+  // Helper function to completely remove <think> tags from responses
+  const stripThinkTags = (text: string): string => {
+    if (!text) return text
+
+    // Remove everything between <think> and </think> (including tags)
+    let cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+
+    // If truncated (no closing tag), remove from <think> onwards
+    if (cleaned.includes('<think>')) {
+      cleaned = cleaned.substring(0, cleaned.indexOf('<think>')).trim()
+    }
+
+    return cleaned || 'Response processing...'
+  }
+
   // Identity and scheduler managers (initialized client-side only)
   const [identityManager, setIdentityManager] = useState<ReturnType<typeof getAgentIdentityManager> | null>(null)
   const [scheduler, setScheduler] = useState<ReturnType<typeof getAutonomousAgentScheduler> | null>(null)
@@ -174,8 +189,15 @@ export default function AgentDashboardPage() {
           const withoutWallet = agents.length - withWallet
           console.log(`   📊 Ownership: ${withWallet} with wallet, ${withoutWallet} without wallet`)
           if (publicKey) {
-            const myCount = agents.filter(a => a.wallet_address === publicKey.toBase58()).length
+            const currentWallet = publicKey.toBase58()
+            const myCount = agents.filter(a => a.wallet_address === currentWallet).length
+            console.log(`   👤 Your wallet: ${currentWallet.substring(0, 8)}...`)
             console.log(`   👤 Your agents: ${myCount}`)
+
+            // Debug each agent's ownership
+            agents.forEach((a, i) => {
+              console.log(`   Agent ${i+1}: "${a.name}" - Owner: ${a.wallet_address ? a.wallet_address.substring(0, 8) + '...' : 'none'}`)
+            })
           }
 
           // Also save to localStorage as backup
@@ -231,7 +253,7 @@ export default function AgentDashboardPage() {
           last_run: agent.lastRun,
           last_result: agent.lastResult,
           provider: agent.provider,
-          wallet_address: publicKey?.toBase58(),
+          wallet_address: agent.wallet_address || publicKey?.toBase58(), // FIX: Keep original owner, don't overwrite!
           workflow: agent.workflow,
           // is_public: agent.is_public || false, // TODO: Add column to Supabase first
         }))
@@ -700,7 +722,7 @@ export default function AgentDashboardPage() {
                 status: 'idle' as const,
                 totalRuns: a.totalRuns + 1,
                 lastRun: Date.now(),
-                lastResult: data.finalOutput?.substring(0, 200) || 'Workflow completed',
+                lastResult: stripThinkTags(data.finalOutput || 'Workflow completed').substring(0, 200),
                 provider: selectedProvider?.name || 'Parallax'
               }
             : a
@@ -833,7 +855,7 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: data.response?.substring(0, 200) || 'Success',
+              lastResult: stripThinkTags(data.response || 'Success').substring(0, 200),
               provider: data.provider
             }
           : a
@@ -961,6 +983,42 @@ export default function AgentDashboardPage() {
       a.id === agentId ? { ...a, status: 'idle' as const } : a
     ))
     console.log(`🛑 Manually stopped agent: ${agentId}`)
+  }
+
+  // Delete single agent (only owner can delete)
+  const deleteAgent = async (agentId: string) => {
+    const agent = deployedAgents.find(a => a.id === agentId)
+    if (!agent) return
+
+    // Check ownership
+    const currentWallet = publicKey?.toBase58()
+    if (agent.wallet_address && agent.wallet_address !== currentWallet) {
+      toast.error('❌ You can only delete your own agents!')
+      return
+    }
+
+    if (!confirm(`Delete "${agent.name}"? This cannot be undone.`)) return
+
+    try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('agents')
+        .delete()
+        .eq('id', agentId)
+
+      if (error) {
+        console.error('Supabase delete error:', error)
+        toast.error('Failed to delete from database')
+      } else {
+        console.log(`✅ Deleted agent from Supabase: ${agent.name}`)
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+    }
+
+    // Remove from local state regardless
+    setDeployedAgents(prev => prev.filter(a => a.id !== agentId))
+    toast.success(`🗑️ Deleted "${agent.name}"`)
   }
 
   // Delete all agents from database
@@ -1270,6 +1328,7 @@ export default function AgentDashboardPage() {
                           index={index}
                           onRun={() => runAgent(agent.id)}
                           onStop={() => stopAgent(agent.id)}
+                          onDelete={() => deleteAgent(agent.id)}
                           identity={identity}
                         />
                       )
