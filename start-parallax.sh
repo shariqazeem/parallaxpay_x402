@@ -24,9 +24,13 @@ cd /tmp
 git clone https://github.com/GradientHQ/parallax.git
 cd parallax
 
-# Install in editable mode (CPU-only for ARM VM)
-echo "📦 Installing Parallax (this may take 2-3 minutes)..."
-pip install -e . --quiet
+# Install dependencies manually (lattica will be built later by parallax join)
+echo "📦 Installing Parallax dependencies..."
+pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic --quiet
+
+# Install Parallax without dependency checking (lattica builds on first run)
+echo "📦 Installing Parallax (skipping lattica - will build on join)..."
+pip install -e . --no-deps --quiet
 
 echo "✅ Parallax installed"
 
