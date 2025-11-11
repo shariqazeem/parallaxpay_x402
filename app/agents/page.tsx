@@ -1265,7 +1265,7 @@ export default function AgentDashboardPage() {
                 {/* Deploy Agent Button - visible on My Agents tab */}
                 {activeTab === 'my-agents' && (
                   <button
-                    onClick={() => setActiveTab('builder')}
+                    onClick={() => setShowDeployModal(true)}
                     className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
                   >
                     ✨ Deploy Agent
