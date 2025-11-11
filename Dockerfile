@@ -3,7 +3,14 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Install build dependencies for native modules (bufferutil, utf-8-validate, etc.)
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    linux-headers
 WORKDIR /app
 
 # Copy package files
