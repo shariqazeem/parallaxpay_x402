@@ -30,6 +30,7 @@ interface AgentStats {
   avatar: string
   color: string
   isReal?: boolean  // NEW: flag to distinguish real vs demo agents
+  schedule?: AgentSchedule  // NEW: autonomous scheduling config
 }
 
 interface Trade {
@@ -1284,7 +1285,8 @@ export default function AgentDashboardPage() {
                         lastActionTime: agent.lastRun || agent.deployed,
                         avatar: '🤖',
                         color: 'cyan',
-                        isReal: true
+                        isReal: true,
+                        schedule: agent.schedule  // Pass schedule data
                       }
 
                       return (
@@ -1434,7 +1436,8 @@ export default function AgentDashboardPage() {
                         lastActionTime: agent.lastRun || agent.deployed,
                         avatar: '🌐',
                         color: 'purple',
-                        isReal: true
+                        isReal: true,
+                        schedule: agent.schedule  // Pass schedule data
                       }
 
                       return (
@@ -1729,6 +1732,36 @@ function AgentCard({
           </div>
           <div className="text-xs text-gray-500">{timeStr}</div>
         </div>
+
+        {/* AUTONOMOUS SCHEDULE STATUS - PROMINENT! */}
+        {agent.schedule && agent.schedule.enabled && (
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-300 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⏰</span>
+                <span className="text-sm font-bold text-purple-700">SCHEDULED</span>
+              </div>
+              <div className="px-2 py-1 bg-purple-600 text-white text-xs font-bold rounded">
+                AUTO
+              </div>
+            </div>
+            <div className="text-xs text-gray-700">
+              <div className="mb-1">
+                <span className="font-semibold">Frequency:</span> Every {agent.schedule.intervalMinutes} min
+              </div>
+              {agent.schedule.budget && (
+                <div className="mb-1">
+                  <span className="font-semibold">Budget:</span> ${agent.schedule.budget.maxCostPerExecution} per run
+                </div>
+              )}
+              {agent.schedule.nextRun && (
+                <div className="text-purple-700 font-bold mt-2">
+                  ⏱️ Next run: {new Date(agent.schedule.nextRun).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         {agent.isReal && (
