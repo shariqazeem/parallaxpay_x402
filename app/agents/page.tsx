@@ -62,6 +62,7 @@ interface DeployedAgent {
   schedule?: AgentSchedule  // Autonomous scheduling config
   workflow?: CompositeWorkflow  // For composite agents
   wallet_address?: string  // Owner's wallet address
+  is_public?: boolean  // Flag to mark agents as public/shareable
 }
 
 interface CompositeWorkflow {
@@ -79,14 +80,14 @@ export default function AgentDashboardPage() {
   const [showDeployModal, setShowDeployModal] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
+  const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([]) // All agents from DB
   const [trades, setTrades] = useState<Trade[]>([])
   const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
   const [activeTab, setActiveTab] = useState<'my-agents' | 'builder' | 'marketplace'>('my-agents')
   const [isLoadingAgents, setIsLoadingAgents] = useState(true)
 
   // Token controls for agent runs
-  const [maxTokens, setMaxTokens] = useState(300)
+  const [maxTokens, setMaxTokens] = useState(2000) // Increased default to ensure complete responses
   const fixedCost = 0.001 // Fixed $0.001 per request
 
   // Wallet connection for user payments
@@ -161,10 +162,21 @@ export default function AgentDashboardPage() {
             provider: db.provider,
             identityId: db.identity_id,
             workflow: db.workflow,
+            wallet_address: db.wallet_address, // FIX: Include wallet_address for ownership filtering
+            is_public: db.is_public || false, // FIX: Include is_public flag
           }))
 
           setDeployedAgents(agents)
           console.log(`✅ Loaded ${agents.length} deployed agents from Supabase`)
+
+          // Debug: Log agent ownership info
+          const withWallet = agents.filter(a => a.wallet_address).length
+          const withoutWallet = agents.length - withWallet
+          console.log(`   📊 Ownership: ${withWallet} with wallet, ${withoutWallet} without wallet`)
+          if (publicKey) {
+            const myCount = agents.filter(a => a.wallet_address === publicKey.toBase58()).length
+            console.log(`   👤 Your agents: ${myCount}`)
+          }
 
           // Also save to localStorage as backup
           localStorage.setItem('parallaxpay_deployed_agents', JSON.stringify(agents))
@@ -221,6 +233,7 @@ export default function AgentDashboardPage() {
           provider: agent.provider,
           wallet_address: publicKey?.toBase58(),
           workflow: agent.workflow,
+          is_public: agent.is_public || false, // Include is_public flag
         }))
 
         // Upsert to Supabase (insert or update)
@@ -1382,8 +1395,12 @@ export default function AgentDashboardPage() {
 
             {activeTab === 'marketplace' && !isLoadingAgents && (() => {
               // Filter to show only OTHER users' agents (not current user's own agents)
+              // Also show agents without wallet_address (legacy public agents)
               const publicAgents = publicKey
-                ? deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58())
+                ? deployedAgents.filter(a =>
+                    !a.wallet_address || // Legacy agents without owner
+                    a.wallet_address !== publicKey.toBase58() // Other users' agents
+                  )
                 : deployedAgents;
 
               return (
@@ -2324,7 +2341,7 @@ function DeployAgentModal({
 
         const response = await client.inference({
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 800, // Increased to ensure complete responses (including reasoning)
+          max_tokens: 2000, // Increased to ensure complete responses (including reasoning)
         })
 
         console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))

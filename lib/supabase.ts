@@ -18,6 +18,7 @@ export interface DeployedAgentDB {
   last_result?: string
   provider?: string
   wallet_address?: string
+  is_public?: boolean  // NEW: Flag to mark agents as public/shareable
   workflow?: any
 }
 
