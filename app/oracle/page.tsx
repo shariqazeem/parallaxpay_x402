@@ -183,7 +183,7 @@ export default function MarketOraclePageEnhanced() {
             </div>
           </div>
 
-          {/* Hackathon Feature Banner */}
+          {/* Feature Banner */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -191,11 +191,11 @@ export default function MarketOraclePageEnhanced() {
             className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl p-6 text-white shadow-xl mb-6"
           >
             <div className="flex items-center gap-4">
-              <div className="text-5xl">🏆</div>
+              <div className="text-5xl">🔮</div>
               <div className="flex-1">
-                <h3 className="text-2xl font-black mb-1">x402 Hackathon Demo Feature</h3>
+                <h3 className="text-2xl font-black mb-1">Multi-Asset Market Intelligence</h3>
                 <p className="text-purple-100">
-                  <strong className="text-white">{TOTAL_SUPPORTED_COINS}+ Cryptocurrencies Supported!</strong> Unlike traditional oracles limited to BTC/ETH/SOL, this Oracle covers the entire crypto market - from major coins to DeFi tokens, Layer 1s, Layer 2s, AI tokens, meme coins, and more. Powered by <strong className="text-white">Gradient Parallax</strong> multi-provider consensus + <strong className="text-white">x402 micropayments</strong>.
+                  <strong className="text-white">{TOTAL_SUPPORTED_COINS}+ Cryptocurrencies Supported</strong> — Track and predict any crypto asset from major coins to DeFi tokens, Layer 1s, Layer 2s, AI tokens, meme coins, and more. Powered by <strong className="text-white">Gradient Parallax</strong> multi-provider AI consensus with <strong className="text-white">x402 micropayments</strong> for transparent, pay-per-prediction pricing.
                 </p>
               </div>
             </div>

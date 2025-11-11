@@ -29,19 +29,18 @@ export function CoinSelector({ selectedCoin, onSelectCoin, className = '' }: Coi
 
   // Filter coins based on search and category
   const filteredCoins = useMemo(() => {
-    let coins = CRYPTO_DATABASE
-
-    // Apply category filter
-    if (selectedCategory !== 'ALL') {
-      coins = getCoinsByCategory(selectedCategory as any)
-    }
-
-    // Apply search filter
+    // If searching, search across all coins (ignore category filter)
     if (searchQuery.trim()) {
-      coins = searchCoins(searchQuery)
+      return searchCoins(searchQuery)
     }
 
-    return coins
+    // Otherwise, apply category filter
+    if (selectedCategory !== 'ALL') {
+      return getCoinsByCategory(selectedCategory as any)
+    }
+
+    // Default: show all coins
+    return CRYPTO_DATABASE
   }, [searchQuery, selectedCategory])
 
   const selectedCoinData = CRYPTO_DATABASE.find(c => c.symbol === selectedCoin)
@@ -109,7 +108,13 @@ export function CoinSelector({ selectedCoin, onSelectCoin, className = '' }: Coi
                     type="text"
                     placeholder="Search by name or symbol..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      // Reset category when searching to search across all coins
+                      if (e.target.value.trim()) {
+                        setSelectedCategory('ALL')
+                      }
+                    }}
                     className="w-full px-4 py-2 pl-10 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-400/50"
                   />
                   <svg

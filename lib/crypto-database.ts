@@ -71,6 +71,8 @@ export const CRYPTO_DATABASE: CryptoAsset[] = [
   { symbol: 'IMX', name: 'Immutable X', coinGeckoId: 'immutable-x', category: 'LAYER2', marketCapRank: 38 },
   { symbol: 'METIS', name: 'Metis', coinGeckoId: 'metis-token', category: 'LAYER2', marketCapRank: 75 },
   { symbol: 'BOBA', name: 'Boba Network', coinGeckoId: 'boba-network', category: 'LAYER2', marketCapRank: 120 },
+  { symbol: 'MINA', name: 'Mina Protocol', coinGeckoId: 'mina-protocol', category: 'LAYER2', marketCapRank: 93 },
+  { symbol: 'LSK', name: 'Lisk', coinGeckoId: 'lisk', category: 'LAYER1', marketCapRank: 150 },
 
   // ===== DEFI TOKENS =====
   { symbol: 'UNI', name: 'Uniswap', coinGeckoId: 'uniswap', category: 'DEFI', marketCapRank: 19 },
