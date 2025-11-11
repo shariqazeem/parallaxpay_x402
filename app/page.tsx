@@ -60,20 +60,17 @@ export default function HomePage() {
               </Link>
 
               <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-                <Link href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                  Dashboard
-                </Link>
                 <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Agents
                 </Link>
                 <Link href="/oracle" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Oracle
                 </Link>
-                <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                  Providers
+                <Link href="/analytics" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Analytics
                 </Link>
-                <Link href="/leaderboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                  Leaderboard
+                <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Marketplace
                 </Link>
               </nav>
             </div>
