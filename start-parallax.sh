@@ -26,7 +26,7 @@ cd parallax
 
 # Install dependencies manually (lattica will be built later by parallax join)
 echo "📦 Installing Parallax dependencies..."
-pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic --quiet
+pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic requests click typer rich --quiet
 
 # Install Parallax without dependency checking (lattica builds on first run)
 echo "📦 Installing Parallax (skipping lattica - will build on join)..."
