@@ -8,16 +8,19 @@ set -e
 echo "🚀 Starting Parallax Cluster..."
 echo "================================"
 
-# Install system dependencies and Parallax
+# Install system dependencies
 echo "📦 Installing dependencies..."
 apt-get update -qq
 apt-get install -y git --quiet
 
-echo "📦 Installing Parallax from GitHub..."
+echo "📦 Installing Lattica (Parallax dependency) from GitHub..."
 pip install --upgrade pip --quiet
+pip install git+https://github.com/GradientHQ/lattica.git --quiet
+
+echo "📦 Installing Parallax from GitHub..."
 pip install git+https://github.com/GradientHQ/parallax.git --quiet
 
-echo "✅ Parallax installed"
+echo "✅ Parallax and dependencies installed"
 
 # Step 1: Start Parallax server with model
 echo "🤖 Starting Parallax server with Qwen/Qwen3-0.6B..."
