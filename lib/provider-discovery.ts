@@ -118,8 +118,9 @@ export class ProviderDiscoveryService {
 
   /**
    * Discover providers from Parallax schedulers
+   * Made public so API endpoints can trigger immediate discovery
    */
-  private async discoverProviders(): Promise<void> {
+  async discoverProviders(): Promise<void> {
     const now = Date.now()
 
     for (const schedulerUrl of this.schedulerUrls) {
