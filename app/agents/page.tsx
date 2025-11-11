@@ -73,6 +73,7 @@ interface WorkflowStep {
 export default function AgentDashboardPage() {
   const [showDeployModal, setShowDeployModal] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
   const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
@@ -916,6 +917,57 @@ export default function AgentDashboardPage() {
     }
   }
 
+  // Delete all agents from database
+  const deleteAllAgents = async () => {
+    try {
+      console.log('🗑️ Deleting all agents from Supabase...')
+
+      // Delete all agents from Supabase
+      const { error } = await supabase
+        .from('agents')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all (dummy condition)
+
+      if (error) {
+        console.error('Failed to delete agents:', error)
+        alert('Failed to delete agents from database. Check console for details.')
+        return
+      }
+
+      // Clear local state
+      setDeployedAgents([])
+
+      // Clear local storage
+      localStorage.removeItem('parallaxpay_deployed_agents')
+
+      // Clear identities if manager exists
+      if (identityManager) {
+        // Get all identities and delete them
+        const allIdentities = identityManager.getAllIdentities()
+        allIdentities.forEach(identity => {
+          identityManager.deleteIdentity(identity.id)
+        })
+        setAgentIdentities([])
+      }
+
+      // Clear scheduler if exists
+      if (scheduler) {
+        const allSchedules = scheduler.getActiveSchedules()
+        allSchedules.forEach(schedule => {
+          scheduler.removeSchedule(schedule.agentId)
+        })
+      }
+
+      console.log('✅ All agents deleted successfully')
+      setShowDeleteConfirm(false)
+      alert('✅ All agents have been deleted successfully!')
+
+    } catch (err) {
+      console.error('Error deleting agents:', err)
+      alert('Error deleting agents. Check console for details.')
+    }
+  }
+
   const totalTrades = allAgents.reduce((sum, a) => sum + a.totalTrades, 0)
   const totalProfit = allAgents.reduce((sum, a) => sum + a.profit, 0)
   const avgSuccessRate = allAgents.length > 0
@@ -941,6 +993,51 @@ export default function AgentDashboardPage() {
             }}
             walletAddress={publicKey?.toBase58()}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-6">
+                <div className="text-6xl mb-4">⚠️</div>
+                <h2 className="text-2xl font-black text-black mb-3">Delete All Agents?</h2>
+                <p className="text-gray-600">
+                  This will permanently delete all {deployedAgents.length} deployed agent{deployedAgents.length !== 1 ? 's' : ''} from the database.
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteAllAgents}
+                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 transition-all"
+                >
+                  Delete All
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -974,6 +1071,14 @@ export default function AgentDashboardPage() {
                   Marketplace
                 </button>
               </Link>
+              {deployedAgents.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:text-white hover:bg-red-600 transition-all border border-red-300 hover:border-red-600"
+                >
+                  🗑️ Delete All
+                </button>
+              )}
               <button
                 onClick={() => setShowDeployModal(true)}
                 className="bg-black text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
