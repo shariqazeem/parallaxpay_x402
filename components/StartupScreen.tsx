@@ -36,10 +36,10 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
           setStep(step + 1)
         }, initSteps[step].duration)
       } else {
-        // Complete after last step - smooth transition to white theme
+        // Complete after last step
         setTimeout(() => {
           onComplete()
-        }, 800)
+        }, 500)
       }
     }, 100)
 
@@ -50,20 +50,12 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{
-          opacity: 1,
-          backgroundColor: step === initSteps.length ? '#ffffff' : undefined
-        }}
+        animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{
-          opacity: { duration: 0.5 },
-          backgroundColor: { duration: 0.8, delay: 0.3 }
-        }}
+        transition={{ duration: 0.5 }}
         className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
         style={{
-          background: step === initSteps.length
-            ? '#ffffff'
-            : 'linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 50%, #16213e 100%)'
+          background: 'linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 50%, #16213e 100%)'
         }}
       >
         {/* Animated Grid Background */}
