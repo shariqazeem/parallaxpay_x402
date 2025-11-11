@@ -1,0 +1,14 @@
+[0;34m╔════════════════════════════════════════════════╗[0m
+[0;34m║  Parallax 2-Node Cluster Startup              ║[0m
+[0;34m║  Optimized for M1 Mac                          ║[0m
+[0;34m╚════════════════════════════════════════════════╝[0m
+
+[0;31m❌ Parallax not found![0m
+
+Please install Parallax first:
+  pip install parallax-inference
+
+Or clone and install from source:
+  git clone https://github.com/GradientHQ/parallax.git
+  cd parallax
+  pip install -e .

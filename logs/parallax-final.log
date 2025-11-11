@@ -1,0 +1,34 @@
+Nov 11 23:50:09.193 [[1m[32mINFO    [0m] cli.py:101                Running command: /Users/macbookair/projects/parallaxpay/parallax/venv/bin/python3.12 /Users/macbookair/projects/parallaxpay/parallax/src/backend/main.py --model-name Qwen/Qwen3-0.6B --init-nodes-num 1 --host 0.0.0.0 --port 3001
+[3J[H[2J                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+            [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝                          [35m▝[35m▝  [35m▝[35m▝                             [0m
+            [35m▝[35m▝   [35m▝[35m▝[91m▝  [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝            [0m
+            [35m▝[35m▝   [35m▝[35m▝   [95m▝   [35m▝[35m▝  [35m▝[35m▝     [95m▝  [94m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝   [95m▝   [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝             [0m
+            [35m▝[35m▝[35m▝[35m▝[35m▝[95m▝    [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝    [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [95m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝    [35m▝[35m▝              [0m
+            [35m▝[35m▝       [35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝    [35m▝[95m▝  [35m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝   [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝             [0m
+            [35m▝[35m▝        [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝    [35m▝[35m▝[35m▝[35m▝ [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [94m▝[35m▝[35m▝[35m▝ [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝            [0m
+                                                                                [0m
+           [97mb[97my [97mg[97mr[97ma[97md[97mi[97me[97mn[97mt                               [97mC[97mL[97mI [97mV[97me[97mr[97ms[97mi[97mo[97mn [97m0[97m.[97m0[97m.[97m1          [0m
+                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+[93m[Parallax] New version available: 0.1.0 (current: 0.0.1)[0m
+For macOS, run `git pull && pip install -e '.[mac]'` to update.
+For Linux, run `git pull && pip install -e '.[gpu]'` to update.
+For Windows, run `parallax install` to update
+
+Nov 11 23:50:14.310 [[1m[32mINFO    [0m] scheduler_manage.py:191   Stored scheduler peer id: 12D3KooWFrgA7xixmtbGJB5buvpQ4DWjozZnxyCHa6DFCRV2kzKd
+INFO:     Started server process [39871]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59612 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59614 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59761 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59763 - "GET / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39871]
