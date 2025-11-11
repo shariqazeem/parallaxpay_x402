@@ -3,14 +3,16 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Install build dependencies for native modules (bufferutil, utf-8-validate, etc.)
+# Install build dependencies for native modules (bufferutil, utf-8-validate, usb, etc.)
 RUN apk add --no-cache \
     libc6-compat \
     python3 \
     make \
     g++ \
     gcc \
-    linux-headers
+    linux-headers \
+    eudev-dev \
+    libusb-dev
 WORKDIR /app
 
 # Copy package files
