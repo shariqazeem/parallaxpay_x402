@@ -51,10 +51,11 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] bg-white flex items-center justify-center"
+        className="fixed inset-0 z-[9999] flex items-center justify-center"
+        style={{ backgroundColor: '#ffffff' }}
       >
         {/* Subtle animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" />
 
         {/* Floating subtle circles */}
         <div className="absolute inset-0 overflow-hidden">
