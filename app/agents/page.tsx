@@ -986,7 +986,8 @@ export default function AgentDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - Hidden to prevent public access */}
+      {/*
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
@@ -1030,6 +1031,7 @@ export default function AgentDashboardPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      */}
 
       {/* Header - Only title bar is sticky */}
       <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
@@ -1061,6 +1063,7 @@ export default function AgentDashboardPage() {
                   Marketplace
                 </button>
               </Link>
+              {/* Delete All button hidden to prevent public access
               {deployedAgents.length > 0 && (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
@@ -1069,6 +1072,7 @@ export default function AgentDashboardPage() {
                   🗑️ Delete All
                 </button>
               )}
+              */}
               <button
                 onClick={() => setShowDeployModal(true)}
                 className="bg-black text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
