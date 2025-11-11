@@ -1669,9 +1669,9 @@ function AgentCard({
               {agent.status === 'executing' && onStop ? (
                 <button
                   onClick={onStop}
-                  className="bg-red-600 text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-red-700"
+                  className="bg-red-100 border-2 border-red-600 text-black px-4 py-3 rounded-lg font-semibold transition-all hover:bg-red-200"
                 >
-                  <span>🛑 Stop</span>
+                  <span className="text-red-700 font-bold">🛑 Stop</span>
                 </button>
               ) : (
                 <button
