@@ -262,6 +262,7 @@ export default function AgentDashboardPage() {
           deployed: Date.now(),
           totalRuns: 0,
           status: 'idle',
+          wallet_address: publicKey?.toBase58(), // Add wallet address for ownership
         }
 
         // Add to deployed agents
@@ -535,7 +536,7 @@ export default function AgentDashboardPage() {
 
         // Format result summary
         let resultSummary = `${queryType.toUpperCase()} query for ${walletAddress.substring(0, 10)}...`
-        if (data.data?.balance) {
+        if (data.data?.balance?.sol !== undefined) {
           resultSummary += ` | SOL: ${data.data.balance.sol.toFixed(4)}`
         }
         if (data.data?.transactions?.length) {
