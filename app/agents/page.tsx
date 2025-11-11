@@ -15,6 +15,7 @@ import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 import { LiveActivityFeed } from '@/components/LiveActivityFeed'
 import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 import { AgentBuilderTab } from '@/components/AgentBuilderTab'
+import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 
 interface AgentStats {
   id: string
@@ -1075,56 +1076,7 @@ export default function AgentDashboardPage() {
       </AnimatePresence>
       */}
 
-      {/* Header - Only title bar is sticky */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-[1920px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <h1 className="text-2xl font-black cursor-pointer hover:opacity-70 transition-opacity">
-                  <span className="text-black">ParallaxPay</span>
-                </h1>
-              </Link>
-              <div className="text-gray-400">/</div>
-              <h2 className="text-xl font-bold text-black">
-                Agent Dashboard
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Wallet Connect Button */}
-              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
-
-              <Link href="/analytics">
-                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
-                  Analytics
-                </button>
-              </Link>
-              <Link href="/marketplace">
-                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
-                  Marketplace
-                </button>
-              </Link>
-              {/* Delete All button hidden to prevent public access
-              {deployedAgents.length > 0 && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:text-white hover:bg-red-600 transition-all border border-red-300 hover:border-red-600"
-                >
-                  🗑️ Delete All
-                </button>
-              )}
-              */}
-              <button
-                onClick={() => setShowDeployModal(true)}
-                className="bg-black text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
-              >
-                + Deploy Agent
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <UnifiedNavbar currentPage="agents" showExtraButtons={true} />
 
       {/* Stats and Provider Section - NOT sticky, scrolls away */}
       <div className="border-b border-gray-200 bg-gray-50">

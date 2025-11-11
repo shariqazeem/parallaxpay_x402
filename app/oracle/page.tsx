@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
-import Navbar from '@/app/components/Navbar'
+import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 import { getMarketOracle, MarketPrediction, OraclePerformance } from '@/lib/market-oracle-agent'
 import { useProvider } from '@/app/contexts/ProviderContext'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
@@ -114,7 +114,7 @@ export default function MarketOraclePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <UnifiedNavbar currentPage="oracle" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}

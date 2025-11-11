@@ -153,22 +153,22 @@ export default function HomePage() {
               variants={itemVariants}
               className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 sm:mb-20 lg:mb-24 px-4"
             >
-              <Link href={publicKey ? "/agents" : "/dashboard"}>
+              <Link href="/agents">
                 <motion.button
                   whileHover={{ scale: 1.05, boxShadow: "0 20px 60px -12px rgba(0, 0, 0, 0.25)" }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full sm:w-auto px-12 py-5 text-lg bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-xl"
                 >
-                  Get Started Free
+                  Launch Agents Hub
                 </motion.button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/oracle">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full sm:w-auto px-12 py-5 text-lg bg-white text-black font-bold rounded-xl border-2 border-gray-300 hover:border-black transition-all shadow-lg"
                 >
-                  View Dashboard
+                  Try Market Oracle
                 </motion.button>
               </Link>
             </motion.div>
