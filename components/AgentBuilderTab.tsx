@@ -239,13 +239,13 @@ export function AgentBuilderTab({ onDeploy }: AgentBuilderTabProps) {
                 <button
                   onClick={testAgent}
                   disabled={isTesting}
-                  className="bg-white border-2 border-purple-200 hover:border-purple-400 hover:shadow-md px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50"
+                  className="bg-white border-2 border-purple-200 hover:border-purple-400 hover:shadow-md px-6 py-3 rounded-lg font-bold text-black transition-all disabled:opacity-50"
                 >
                   {isTesting ? '🧪 Testing...' : '🧪 Test Strategy'}
                 </button>
                 <button
                   onClick={downloadCode}
-                  className="bg-white hover:shadow-md border-2 border-gray-200 px-6 py-3 rounded-lg font-bold transition-all"
+                  className="bg-white hover:shadow-md border-2 border-gray-200 px-6 py-3 rounded-lg font-bold text-black transition-all"
                 >
                   📥 Download Code
                 </button>
@@ -275,7 +275,7 @@ export function AgentBuilderTab({ onDeploy }: AgentBuilderTabProps) {
                 {testResult.success ? (
                   <div className="space-y-2">
                     <div className="text-sm text-gray-600">Test result:</div>
-                    <pre className="bg-white p-4 rounded-lg text-xs overflow-x-auto border-2 border-green-200">
+                    <pre className="bg-white p-4 rounded-lg text-xs overflow-x-auto border-2 border-green-200 text-black">
                       {JSON.stringify(testResult.result, null, 2)}
                     </pre>
                   </div>
@@ -290,7 +290,7 @@ export function AgentBuilderTab({ onDeploy }: AgentBuilderTabProps) {
             {/* Generated Code */}
             <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold">📄 Generated Code</h3>
+                <h3 className="text-xl font-bold text-black">📄 Generated Code</h3>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(strategy.code)
