@@ -16,6 +16,8 @@ import { LiveActivityFeed } from '@/components/LiveActivityFeed'
 import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
 import { AgentBuilderTab } from '@/components/AgentBuilderTab'
 import { UnifiedNavbar } from '@/components/UnifiedNavbar'
+import { AgentCardSkeleton, ProviderCardSkeleton, TableRowSkeleton } from '@/components/Skeletons'
+import toast from 'react-hot-toast'
 
 interface AgentStats {
   id: string
@@ -81,6 +83,7 @@ export default function AgentDashboardPage() {
   const [trades, setTrades] = useState<Trade[]>([])
   const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
   const [activeTab, setActiveTab] = useState<'my-agents' | 'builder' | 'marketplace'>('my-agents')
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true)
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
@@ -121,6 +124,7 @@ export default function AgentDashboardPage() {
   // Load deployed agents from Supabase on mount
   useEffect(() => {
     const loadAgents = async () => {
+      setIsLoadingAgents(true)
       try {
         console.log('📥 Loading deployed agents from Supabase...')
 
@@ -186,6 +190,8 @@ export default function AgentDashboardPage() {
         } catch (localError) {
           console.error('Failed to load from localStorage:', localError)
         }
+      } finally {
+        setIsLoadingAgents(false)
       }
     }
 
@@ -927,25 +933,11 @@ export default function AgentDashboardPage() {
       // Show user-friendly error message
       const errorMsg = errorMessage.toLowerCase()
       if (errorMsg.includes('user rejected') || errorMsg.includes('user denied') || errorMsg.includes('cancel')) {
-        alert('❌ Transaction canceled by user.\n\nThe agent is ready to run again when you\'re ready.')
+        toast.error('Transaction canceled by user. Agent is ready to run again.')
       } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
-        alert(
-          `❌ Network error during agent execution:\n\n${errorMessage}\n\n` +
-          `Possible causes:\n` +
-          `1. WiFi disconnected\n` +
-          `2. Parallax server not responding\n` +
-          `3. RPC endpoint timeout\n\n` +
-          `Agent status has been reset. Try again when network is stable.`
-        )
+        toast.error(`Network error: ${errorMessage}. Agent status reset - try again when network is stable.`)
       } else {
-        alert(
-          `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
-          `Troubleshooting:\n` +
-          `1. Ensure wallet is connected (Phantom/Solflare)\n` +
-          `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
-          `3. Verify Parallax is running on localhost:3001\n` +
-          `4. Check browser console for detailed error logs`
-        )
+        toast.error(`Agent execution failed: ${errorMessage}. Check console for details.`)
       }
 
       return { success: false, cost: 0.001, error: errorMessage }
@@ -973,7 +965,7 @@ export default function AgentDashboardPage() {
 
       if (error) {
         console.error('Failed to delete agents:', error)
-        alert('Failed to delete agents from database. Check console for details.')
+        toast.error('Failed to delete agents from database. Check console for details.')
         return
       }
 
@@ -993,11 +985,11 @@ export default function AgentDashboardPage() {
 
       console.log('✅ All agents deleted successfully')
       setShowDeleteConfirm(false)
-      alert('✅ All agents have been deleted successfully!')
+      toast.success('All agents have been deleted successfully!')
 
     } catch (err) {
       console.error('Error deleting agents:', err)
-      alert('Error deleting agents. Check console for details.')
+      toast.error('Error deleting agents. Check console for details.')
     }
   }
 
@@ -1201,8 +1193,27 @@ export default function AgentDashboardPage() {
               </div>
             )}
 
+            {/* LOADING SKELETON - My Agents */}
+            {publicKey && activeTab === 'my-agents' && isLoadingAgents && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-black">
+                    💼 My Agents
+                  </h3>
+                  <div className="text-sm text-gray-400 font-semibold">
+                    Loading...
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[0, 1, 2].map((i) => (
+                    <AgentCardSkeleton key={i} index={i} />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* MY AGENTS SECTION */}
-            {publicKey && activeTab === 'my-agents' && (() => {
+            {publicKey && activeTab === 'my-agents' && !isLoadingAgents && (() => {
               const myAgents = deployedAgents.filter(a =>
                 a.wallet_address === publicKey.toBase58()
               );
@@ -1258,7 +1269,7 @@ export default function AgentDashboardPage() {
             })()}
 
             {/* EMPTY STATE - Show when wallet connected but no agents */}
-            {publicKey && activeTab === 'my-agents' && deployedAgents.filter(a =>
+            {publicKey && activeTab === 'my-agents' && !isLoadingAgents && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
               <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
@@ -1318,13 +1329,31 @@ export default function AgentDashboardPage() {
                   setActiveTab('my-agents')
 
                   // Show success message
-                  alert(`✅ Agent "${newAgent.name}" deployed successfully!\n\nYou can now run it from the My Agents tab.`)
+                  toast.success(`Agent "${newAgent.name}" deployed successfully! You can now run it from the My Agents tab.`)
                 }}
               />
             )}
 
             {/* PUBLIC MARKETPLACE SECTION */}
-            {activeTab === 'marketplace' && (() => {
+            {activeTab === 'marketplace' && isLoadingAgents && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-black">
+                    🌐 Public Marketplace
+                  </h3>
+                  <div className="text-sm text-gray-400 font-semibold">
+                    Loading...
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[0, 1, 2, 3].map((i) => (
+                    <AgentCardSkeleton key={i} index={i} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'marketplace' && !isLoadingAgents && (() => {
               // Filter to show only OTHER users' agents (not current user's own agents)
               const publicAgents = publicKey
                 ? deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58())
@@ -1528,10 +1557,10 @@ function AgentCard({
         result.explorerUrl
       )
 
-      alert(`✅ Badge "${badge.name}" attested on-chain!\n\nTransaction: ${result.signature}\n\nView on explorer: ${result.explorerUrl}`)
+      toast.success(`Badge "${badge.name}" attested on-chain! View on Solana Explorer: ${result.explorerUrl}`)
       setShowAttestModal(false)
     } else {
-      alert(`❌ Attestation failed: ${result.error}`)
+      toast.error(`Attestation failed: ${result.error}`)
     }
   }
 
