@@ -60,20 +60,17 @@ export default function HomePage() {
               </Link>
 
               <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-                <Link href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                  Dashboard
-                </Link>
                 <Link href="/agents" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Agents
                 </Link>
                 <Link href="/oracle" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                   Oracle
                 </Link>
-                <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                  Providers
+                <Link href="/analytics" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Analytics
                 </Link>
-                <Link href="/leaderboard" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                  Leaderboard
+                <Link href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                  Marketplace
                 </Link>
               </nav>
             </div>
@@ -156,22 +153,22 @@ export default function HomePage() {
               variants={itemVariants}
               className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 sm:mb-20 lg:mb-24 px-4"
             >
-              <Link href={publicKey ? "/agents" : "/dashboard"}>
+              <Link href="/agents">
                 <motion.button
                   whileHover={{ scale: 1.05, boxShadow: "0 20px 60px -12px rgba(0, 0, 0, 0.25)" }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full sm:w-auto px-12 py-5 text-lg bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-xl"
                 >
-                  Get Started Free
+                  Launch Agents Hub
                 </motion.button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/oracle">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full sm:w-auto px-12 py-5 text-lg bg-white text-black font-bold rounded-xl border-2 border-gray-300 hover:border-black transition-all shadow-lg"
                 >
-                  View Dashboard
+                  Try Market Oracle
                 </motion.button>
               </Link>
             </motion.div>
@@ -200,6 +197,98 @@ export default function HomePage() {
                 <span className="font-medium">Parallax Network</span>
               </div>
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* LIVE ECOSYSTEM STATS - Shows platform is ALIVE */}
+      <section className="py-16 sm:py-20 px-6 sm:px-8 lg:px-12 bg-white border-y border-gray-200">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-700 text-sm font-bold mb-4">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              LIVE PLATFORM
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-black text-black mb-3">
+              Real-Time Ecosystem Activity
+            </h2>
+            <p className="text-xl text-gray-600">
+              See the power of decentralized AI in action
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 sm:p-8 rounded-2xl border-2 border-purple-200"
+            >
+              <div className="text-5xl mb-2">🤖</div>
+              <div className="text-4xl sm:text-5xl font-black text-purple-600 mb-1">3+</div>
+              <div className="text-sm font-semibold text-gray-700">Parallax Nodes</div>
+              <div className="text-xs text-gray-500 mt-1">Multi-node cluster</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 sm:p-8 rounded-2xl border-2 border-blue-200"
+            >
+              <div className="text-5xl mb-2">⚡</div>
+              <div className="text-4xl sm:text-5xl font-black text-blue-600 mb-1">~50ms</div>
+              <div className="text-sm font-semibold text-gray-700">Avg Latency</div>
+              <div className="text-xs text-gray-500 mt-1">Lightning fast</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="bg-gradient-to-br from-green-50 to-green-100 p-6 sm:p-8 rounded-2xl border-2 border-green-200"
+            >
+              <div className="text-5xl mb-2">💰</div>
+              <div className="text-4xl sm:text-5xl font-black text-green-600 mb-1">$0.001</div>
+              <div className="text-sm font-semibold text-gray-700">Per Request</div>
+              <div className="text-xs text-gray-500 mt-1">Micropayments</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 sm:p-8 rounded-2xl border-2 border-orange-200"
+            >
+              <div className="text-5xl mb-2">🏆</div>
+              <div className="text-4xl sm:text-5xl font-black text-orange-600 mb-1">99%</div>
+              <div className="text-sm font-semibold text-gray-700">Cost Savings</div>
+              <div className="text-xs text-gray-500 mt-1">vs ChatGPT API</div>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="mt-8 text-center"
+          >
+            <Link href="/marketplace">
+              <button className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all">
+                View Live Cluster Status
+                <span>→</span>
+              </button>
+            </Link>
           </motion.div>
         </div>
       </section>

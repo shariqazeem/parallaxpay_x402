@@ -17,7 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { InferenceRequest, InferenceResponse } from '@/app/api/inference/paid/route'
-import { createParallaxClient } from '@/lib/parallax-client'
+import { createClusterClient } from '@/lib/parallax-cluster'
 
 export interface WorkflowStep {
   id: string
@@ -111,20 +111,26 @@ export async function POST(request: NextRequest) {
       console.log(`      💬 Prompt: ${finalPrompt.substring(0, 100)}...`)
 
       try {
-        // Call Parallax directly for each step (bypasses middleware)
-        console.log(`      🤖 Calling Parallax inference...`)
+        // Call Parallax cluster with automatic load balancing
+        console.log(`      🤖 Calling Parallax cluster...`)
 
-        const parallaxClient = createParallaxClient('http://localhost:3001')
-        const parallaxResponse = await parallaxClient.inference({
-          messages: [
-            {
-              role: 'user',
-              content: finalPrompt,
-            },
-          ],
-          max_tokens: 256,
-          temperature: 0.7,
-        })
+        const clusterClient = createClusterClient()
+        const parallaxResponse = await clusterClient.inference(
+          {
+            messages: [
+              {
+                role: 'user',
+                content: finalPrompt,
+              },
+            ],
+            max_tokens: 256,
+            temperature: 0.7,
+          },
+          {
+            strategy: 'round-robin', // Distribute composite steps across nodes
+            maxRetries: 2,
+          }
+        )
 
         // Extract response content (handle multiple Parallax response formats)
         let content = ''
