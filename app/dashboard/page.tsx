@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
@@ -133,12 +134,21 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <Link href="/">
-                <motion.h1
+                <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="text-2xl font-bold text-black cursor-pointer"
+                  className="flex items-center gap-3 cursor-pointer"
                 >
-                  ParallaxPay
-                </motion.h1>
+                  <Image
+                    src="/logo.png"
+                    alt="ParallaxPay Logo"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain"
+                  />
+                  <h1 className="text-2xl font-bold text-black">
+                    ParallaxPay
+                  </h1>
+                </motion.div>
               </Link>
 
               <nav className="hidden md:flex items-center gap-6">
