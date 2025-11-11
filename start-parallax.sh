@@ -15,11 +15,17 @@ apt-get install -y git --quiet
 
 echo "📦 Cloning and installing Parallax from GitHub..."
 pip install --upgrade pip --quiet
+
+# Remove old clone if exists
+rm -rf /tmp/parallax
+
+# Clone and install
 cd /tmp
 git clone https://github.com/GradientHQ/parallax.git
 cd parallax
 
-# Install in editable mode (like on Mac)
+# Install in editable mode (CPU-only for ARM VM)
+echo "📦 Installing Parallax (this may take 2-3 minutes)..."
 pip install -e . --quiet
 
 echo "✅ Parallax installed"
