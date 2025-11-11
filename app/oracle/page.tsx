@@ -28,6 +28,31 @@ export default function MarketOraclePageEnhanced() {
   const onlineProviders = providers.filter(p => p.online)
   const hasProviders = onlineProviders.length > 0
 
+  // Load predictions for current wallet
+  useEffect(() => {
+    if (publicKey) {
+      const walletAddress = publicKey.toBase58()
+      console.log('💼 Loading predictions for wallet:', walletAddress)
+
+      oracle.loadPredictionsForWallet(walletAddress).then(() => {
+        // Restore autonomous asset and timeframe if they were set
+        const autonomousAsset = oracle.getAutonomousAsset()
+        const autonomousTimeframe = oracle.getAutonomousTimeframe()
+
+        if (autonomousAsset && autonomousAsset !== 'SOL') {
+          setSelectedCoin(autonomousAsset)
+        }
+        if (autonomousTimeframe && autonomousTimeframe !== '1h') {
+          setTimeframe(autonomousTimeframe)
+        }
+
+        updatePerformance()
+
+        console.log(`📍 Restored state: ${autonomousAsset} ${autonomousTimeframe}`)
+      })
+    }
+  }, [publicKey, oracle])
+
   useEffect(() => {
     updatePerformance()
     const interval = setInterval(() => {
@@ -81,9 +106,10 @@ export default function MarketOraclePageEnhanced() {
       return
     }
     const walletAddress = publicKey?.toBase58()
-    oracle.startAutonomousMode(5, fetchWithPayment, walletAddress)
+    // Pass the selected coin and timeframe to autonomous mode
+    oracle.startAutonomousMode(selectedCoin, timeframe, 5, fetchWithPayment, walletAddress)
     setIsRunning(true)
-    toast.success(`Autonomous mode started for ${selectedCoin}!`)
+    toast.success(`Autonomous mode started for ${selectedCoin} (${timeframe})!`)
   }
 
   const handleStopAutonomous = () => {

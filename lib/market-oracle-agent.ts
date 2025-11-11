@@ -50,32 +50,90 @@ export class MarketOracleAgent {
   private predictions: MarketPrediction[] = []
   private isRunning = false
   private intervalId?: NodeJS.Timeout
+  private currentWallet?: string
+  private autonomousAsset: string = 'SOL' // Track which asset is being tracked autonomously
+  private autonomousTimeframe: '5m' | '15m' | '1h' | '4h' | '24h' = '1h'
 
   constructor() {
-    this.loadFromLocalStorage()
+    // Don't load from localStorage anymore - we'll load from Supabase per wallet
   }
 
-  private loadFromLocalStorage() {
+  // Load predictions for a specific wallet from Supabase
+  async loadPredictionsForWallet(walletAddress: string) {
     if (typeof window === 'undefined') return
 
+    this.currentWallet = walletAddress
+
     try {
-      const stored = localStorage.getItem('market_oracle_predictions')
-      if (stored) {
-        this.predictions = JSON.parse(stored)
+      // Load from Supabase filtered by wallet
+      const { data, error } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .order('timestamp', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('Failed to load predictions from Supabase:', error)
+        return
+      }
+
+      if (data) {
+        // Convert Supabase format to MarketPrediction format
+        this.predictions = data.map(pred => ({
+          id: pred.id,
+          timestamp: pred.timestamp,
+          asset: pred.asset,
+          currentPrice: Number(pred.current_price),
+          predictedDirection: pred.predicted_direction as 'up' | 'down' | 'neutral',
+          confidence: Number(pred.confidence),
+          timeframe: pred.timeframe as '5m' | '15m' | '1h' | '4h' | '24h',
+          providers: pred.providers_data || [],
+          consensusStrength: Number(pred.consensus_strength),
+          totalCost: Number(pred.total_cost),
+          actualOutcome: pred.actual_outcome as 'up' | 'down' | 'neutral' | undefined,
+          accuracy: pred.accuracy ?? undefined,
+          reasoning: pred.reasoning
+        }))
+
+        console.log(`✅ Loaded ${this.predictions.length} predictions for wallet ${walletAddress.slice(0, 8)}...`)
+      }
+
+      // Restore autonomous mode state from localStorage (wallet-specific)
+      const autonomousState = localStorage.getItem(`oracle_autonomous_${walletAddress}`)
+      if (autonomousState) {
+        const state = JSON.parse(autonomousState)
+        this.autonomousAsset = state.asset || 'SOL'
+        this.autonomousTimeframe = state.timeframe || '1h'
+        console.log(`📍 Restored autonomous state: ${this.autonomousAsset} ${this.autonomousTimeframe}`)
       }
     } catch (error) {
       console.error('Failed to load predictions:', error)
     }
   }
 
-  private saveToLocalStorage() {
-    if (typeof window === 'undefined') return
+  // Save autonomous mode state (wallet-specific)
+  private saveAutonomousState() {
+    if (typeof window === 'undefined' || !this.currentWallet) return
 
     try {
-      localStorage.setItem('market_oracle_predictions', JSON.stringify(this.predictions))
+      const state = {
+        asset: this.autonomousAsset,
+        timeframe: this.autonomousTimeframe,
+        isRunning: this.isRunning
+      }
+      localStorage.setItem(`oracle_autonomous_${this.currentWallet}`, JSON.stringify(state))
     } catch (error) {
-      console.error('Failed to save predictions:', error)
+      console.error('Failed to save autonomous state:', error)
     }
+  }
+
+  getAutonomousAsset(): string {
+    return this.autonomousAsset
+  }
+
+  getAutonomousTimeframe(): '5m' | '15m' | '1h' | '4h' | '24h' {
+    return this.autonomousTimeframe
   }
 
   async fetchMarketData(asset: string): Promise<{
@@ -355,17 +413,15 @@ YOU respond with YOUR analysis:`
       reasoning: combinedReasoning || 'Market analysis based on current trends and sentiment'
     }
 
-    // Add to predictions array
+    // Add to predictions array (in memory)
     this.predictions.unshift(prediction)
 
-    // Keep only last 50 predictions
+    // Keep only last 50 predictions in memory
     if (this.predictions.length > 50) {
       this.predictions = this.predictions.slice(0, 50)
     }
 
-    this.saveToLocalStorage()
-
-    // Save to Supabase if wallet address provided
+    // Save to Supabase if wallet address provided (THIS IS THE SOURCE OF TRUTH)
     if (walletAddress && typeof window !== 'undefined') {
       try {
         const predictionDB: Omit<PredictionDB, 'created_at'> = {
@@ -427,7 +483,28 @@ YOU respond with YOUR analysis:`
     prediction.actualOutcome = actualOutcome
     prediction.accuracy = prediction.predictedDirection === actualOutcome
 
-    this.saveToLocalStorage()
+    // Update in Supabase
+    if (this.currentWallet && typeof window !== 'undefined') {
+      try {
+        const { error } = await supabase
+          .from('predictions')
+          .update({
+            actual_outcome: actualOutcome,
+            accuracy: prediction.accuracy,
+            verified_at: Date.now()
+          })
+          .eq('id', predictionId)
+          .eq('wallet_address', this.currentWallet)
+
+        if (error) {
+          console.error('Failed to update prediction in Supabase:', error)
+        } else {
+          console.log(`🎯 Prediction verified in Supabase: ${prediction.accuracy ? 'CORRECT ✓' : 'INCORRECT ✗'}`)
+        }
+      } catch (error) {
+        console.error('Error verifying prediction:', error)
+      }
+    }
 
     console.log(`🎯 Prediction verified: ${prediction.accuracy ? 'CORRECT ✓' : 'INCORRECT ✗'}`)
   }
@@ -472,21 +549,31 @@ YOU respond with YOUR analysis:`
     }
   }
 
-  startAutonomousMode(intervalMinutes: number = 5, fetchWithPayment?: typeof fetch, walletAddress?: string) {
+  startAutonomousMode(
+    asset: string = 'SOL',
+    timeframe: '5m' | '15m' | '1h' | '4h' | '24h' = '1h',
+    intervalMinutes: number = 5,
+    fetchWithPayment?: typeof fetch,
+    walletAddress?: string
+  ) {
     if (this.isRunning) {
       console.log('⚠️ Oracle already running')
       return
     }
 
     this.isRunning = true
-    console.log(`🚀 Market Oracle starting autonomous mode (every ${intervalMinutes} minutes)`)
+    this.autonomousAsset = asset
+    this.autonomousTimeframe = timeframe
+    this.saveAutonomousState()
+
+    console.log(`🚀 Market Oracle starting autonomous mode for ${asset} (${timeframe}, every ${intervalMinutes} min)`)
 
     // Run immediately
-    this.runPrediction('SOL', '1h', true, fetchWithPayment, walletAddress)
+    this.runPrediction(asset, timeframe, true, fetchWithPayment, walletAddress)
 
     // Then run on interval
     this.intervalId = setInterval(() => {
-      this.runPrediction('SOL', '1h', true, fetchWithPayment, walletAddress)
+      this.runPrediction(asset, timeframe, true, fetchWithPayment, walletAddress)
 
       // Verify old predictions
       const predictionsToVerify = this.predictions.filter(
@@ -503,6 +590,7 @@ YOU respond with YOUR analysis:`
       this.intervalId = undefined
     }
     this.isRunning = false
+    this.saveAutonomousState()
     console.log('🛑 Market Oracle stopped')
   }
 
@@ -514,9 +602,27 @@ YOU respond with YOUR analysis:`
     return this.predictions
   }
 
-  clearHistory() {
+  async clearHistory() {
+    // Clear from memory
     this.predictions = []
-    this.saveToLocalStorage()
+
+    // Clear from Supabase for this wallet
+    if (this.currentWallet && typeof window !== 'undefined') {
+      try {
+        const { error } = await supabase
+          .from('predictions')
+          .delete()
+          .eq('wallet_address', this.currentWallet)
+
+        if (error) {
+          console.error('Failed to clear predictions from Supabase:', error)
+        } else {
+          console.log('✅ Cleared all predictions from Supabase for this wallet')
+        }
+      } catch (error) {
+        console.error('Error clearing predictions:', error)
+      }
+    }
   }
 }
 
