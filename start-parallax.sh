@@ -8,10 +8,14 @@ set -e
 echo "🚀 Starting Parallax Cluster..."
 echo "================================"
 
-# Upgrade pip and install parallax
-echo "📦 Installing Parallax..."
+# Install system dependencies and Parallax
+echo "📦 Installing dependencies..."
+apt-get update -qq
+apt-get install -y git --quiet
+
+echo "📦 Installing Parallax from GitHub..."
 pip install --upgrade pip --quiet
-pip install parallax-gradient --quiet
+pip install git+https://github.com/GradientHQ/parallax.git --quiet
 
 echo "✅ Parallax installed"
 

@@ -40,12 +40,16 @@ sleep 5
 
 # Step 3: Obtain SSL certificate
 echo "🔐 Obtaining SSL certificate..."
-docker compose run --rm certbot certonly \
+docker run --rm \
+    -v $(pwd)/certbot/conf:/etc/letsencrypt \
+    -v $(pwd)/certbot/www:/var/www/certbot \
+    certbot/certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email $EMAIL \
     --agree-tos \
     --no-eff-email \
+    --force-renewal \
     -d $DOMAIN \
     -d www.$DOMAIN
 
