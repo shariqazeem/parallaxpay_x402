@@ -74,7 +74,7 @@ Respond in JSON format:
     try {
       const response = await client.inference({
         messages: [{ role: 'user', content: analysisPrompt }],
-        max_tokens: 500,
+        max_tokens: 2000, // Increased to ensure complete analysis responses
       })
 
       const content = response.choices?.[0]?.message?.content || ''

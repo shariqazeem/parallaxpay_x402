@@ -87,7 +87,7 @@ REASONING: Demo mode prediction based on market sentiment analysis. Configure SO
       },
       body: JSON.stringify({
         messages: body.messages,
-        max_tokens: body.max_tokens || 200,
+        max_tokens: body.max_tokens || 2000, // Increased to ensure complete oracle predictions
       }),
     })
 
