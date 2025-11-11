@@ -8,28 +8,42 @@ set -e
 echo "🚀 Starting Parallax Cluster..."
 echo "================================"
 
-# Install system dependencies
+# Install system dependencies including Rust for lattica
 echo "📦 Installing dependencies..."
 apt-get update -qq
-apt-get install -y git --quiet
+apt-get install -y git curl build-essential --quiet
 
-echo "📦 Cloning and installing Parallax from GitHub..."
+# Install Rust (needed for lattica compilation)
+echo "📦 Installing Rust..."
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --quiet
+source $HOME/.cargo/env
+
+echo "📦 Cloning and building Lattica..."
 pip install --upgrade pip --quiet
+pip install maturin --quiet
 
-# Remove old clone if exists
-rm -rf /tmp/parallax
-
-# Clone and install
+# Build lattica from source
 cd /tmp
+rm -rf /tmp/lattica
+git clone https://github.com/GradientHQ/lattica.git
+cd lattica/bindings/python
+maturin build --release
+pip install target/wheels/*.whl
+
+echo "✅ Lattica built and installed"
+
+# Now install Parallax
+echo "📦 Installing Parallax..."
+cd /tmp
+rm -rf /tmp/parallax
 git clone https://github.com/GradientHQ/parallax.git
 cd parallax
 
-# Install dependencies manually (lattica will be built later by parallax join)
+# Install all dependencies
 echo "📦 Installing Parallax dependencies..."
 pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic requests click typer rich --quiet
 
-# Install Parallax without dependency checking (lattica builds on first run)
-echo "📦 Installing Parallax (skipping lattica - will build on join)..."
+# Install Parallax
 pip install -e . --no-deps --quiet
 
 echo "✅ Parallax installed"
