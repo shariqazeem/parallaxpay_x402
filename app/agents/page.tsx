@@ -939,24 +939,14 @@ export default function AgentDashboardPage() {
 
       // Clear local storage
       localStorage.removeItem('parallaxpay_deployed_agents')
+      localStorage.removeItem('parallaxpay_agent_identities')
+      localStorage.removeItem('parallaxpay_agent_schedules')
 
-      // Clear identities if manager exists
-      if (identityManager) {
-        // Get all identities and delete them
-        const allIdentities = identityManager.getAllIdentities()
-        allIdentities.forEach(identity => {
-          identityManager.deleteIdentity(identity.id)
-        })
-        setAgentIdentities([])
-      }
+      // Clear identities state
+      setAgentIdentities([])
 
-      // Clear scheduler if exists
-      if (scheduler) {
-        const allSchedules = scheduler.getActiveSchedules()
-        allSchedules.forEach(schedule => {
-          scheduler.removeSchedule(schedule.agentId)
-        })
-      }
+      // Clear trades
+      setTrades([])
 
       console.log('✅ All agents deleted successfully')
       setShowDeleteConfirm(false)
