@@ -14,6 +14,7 @@ import { useBadgeAttestation } from '@/lib/use-badge-attestation'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 import { LiveActivityFeed } from '@/components/LiveActivityFeed'
 import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
+import { AgentBuilderTab } from '@/components/AgentBuilderTab'
 
 interface AgentStats {
   id: string
@@ -77,7 +78,7 @@ export default function AgentDashboardPage() {
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
   const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
-  const [activeTab, setActiveTab] = useState<'my-agents' | 'marketplace'>('my-agents')
+  const [activeTab, setActiveTab] = useState<'my-agents' | 'builder' | 'marketplace'>('my-agents')
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
@@ -1225,6 +1226,16 @@ export default function AgentDashboardPage() {
                   💼 My Agents ({deployedAgents.filter(a => a.wallet_address === publicKey.toBase58()).length})
                 </button>
                 <button
+                  onClick={() => setActiveTab('builder')}
+                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
+                    activeTab === 'builder'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  🧠 AI Builder
+                </button>
+                <button
                   onClick={() => setActiveTab('marketplace')}
                   className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
                     activeTab === 'marketplace'
@@ -1315,6 +1326,47 @@ export default function AgentDashboardPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* AI BUILDER TAB */}
+            {publicKey && activeTab === 'builder' && (
+              <AgentBuilderTab
+                onDeploy={(agentData) => {
+                  // Create new agent from builder
+                  const newAgent: DeployedAgent = {
+                    id: `agent-${Date.now()}`,
+                    name: agentData.name || 'AI Generated Agent',
+                    type: 'custom',
+                    prompt: agentData.prompt || agentData.description,
+                    deployed: Date.now(),
+                    totalRuns: 0,
+                    status: 'idle',
+                    wallet_address: publicKey?.toBase58(),
+                  }
+
+                  // Add to local state
+                  setDeployedAgents(prev => [newAgent, ...prev])
+
+                  // Save to Supabase
+                  supabase.from('agents').insert({
+                    id: newAgent.id,
+                    name: newAgent.name,
+                    type: newAgent.type,
+                    prompt: newAgent.prompt,
+                    deployed: newAgent.deployed,
+                    total_runs: 0,
+                    wallet_address: newAgent.wallet_address,
+                  }).then(({ error }) => {
+                    if (error) console.error('Failed to save agent to Supabase:', error)
+                  })
+
+                  // Switch to My Agents tab
+                  setActiveTab('my-agents')
+
+                  // Show success message
+                  alert(`✅ Agent "${newAgent.name}" deployed successfully!\n\nYou can now run it from the My Agents tab.`)
+                }}
+              />
             )}
 
             {/* PUBLIC MARKETPLACE SECTION */}
