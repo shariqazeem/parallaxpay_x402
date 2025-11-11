@@ -1,0 +1,68 @@
+Nov 11 08:37:13.789 [[1m[32mINFO    [0m] cli.py:101                Running command: /Users/macbookair/projects/parallaxpay/parallax/venv/bin/python3.12 /Users/macbookair/projects/parallaxpay/parallax/src/backend/main.py --port 3001 --model-name Qwen/Qwen3-0.6B --init-nodes-num 1 --host 0.0.0.0
+[3J[H[2J                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+            [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝                          [35m▝[35m▝  [35m▝[35m▝                             [0m
+            [35m▝[35m▝   [35m▝[35m▝[91m▝  [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝            [0m
+            [35m▝[35m▝   [35m▝[35m▝   [95m▝   [35m▝[35m▝  [35m▝[35m▝     [95m▝  [94m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝   [95m▝   [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝             [0m
+            [35m▝[35m▝[35m▝[35m▝[35m▝[95m▝    [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝    [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [95m▝[35m▝[35m▝[35m▝[35m▝[35m▝[35m▝    [35m▝[35m▝              [0m
+            [35m▝[35m▝       [35m▝[35m▝   [35m▝[35m▝  [35m▝[35m▝    [35m▝[95m▝  [35m▝[35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝   [35m▝[35m▝   [35m▝[35m▝[35m▝[35m▝             [0m
+            [35m▝[35m▝        [35m▝[35m▝[35m▝[35m▝[35m▝[35m▝  [35m▝[35m▝    [35m▝[35m▝[35m▝[35m▝ [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝  [94m▝[35m▝[35m▝[35m▝ [35m▝[35m▝  [35m▝[35m▝  [35m▝[35m▝            [0m
+                                                                                [0m
+           [97mb[97my [97mg[97mr[97ma[97md[97mi[97me[97mn[97mt                               [97mC[97mL[97mI [97mV[97me[97mr[97ms[97mi[97mo[97mn [97m0[97m.[97m0[97m.[97m1          [0m
+                                                                                [0m
+                                                                                [0m
+                                                                                [0m
+Nov 11 08:37:21.434 [[1m[32mINFO    [0m] scheduler_manage.py:191   Stored scheduler peer id: 12D3KooWKdW3rb3gx922GacK9iX41Yx2AYHVpHpMoRW7ePmmsnND
+INFO:     Started server process [4713]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53541 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53543 - "GET / HTTP/1.1" 200 OK
+Nov 11 08:37:30.504 [[1m[32mINFO    [0m] rpc_connection_handler.py:48 receive node_join request: {'node_id': '12D3KooWLgfg36okWQNreKbT3Gwp46DNUSBDs1kEufkk9wHJau3f', 'hardware': {'node_id': '12D3KooWLgfg36okWQNreKbT3Gwp46DNUSBDs1kEufkk9wHJau3f', 'tflops_fp16': 4.58, 'gpu_name': 'Apple M1', 'memory_gb': 8.0, 'memory_bandwidth_gbps': 100.0, 'device': 'mlx'}, 'kv_cache_ratio': 0.25, 'param_hosting_ratio': 0.65, 'max_concurrent_requests': 8, 'max_sequence_length': 2048, 'rtt_to_nodes': {'12D3KooWKdW3rb3gx922GacK9iX41Yx2AYHVpHpMoRW7ePmmsnND': 0.29070799999999997}, 'status': 'joining', 'is_active': False}
+INFO:     127.0.0.1:53566 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53575 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53577 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53603 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53605 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53631 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53633 - "GET / HTTP/1.1" 200 OK
+Nov 11 08:38:50.816 [[1m[32mINFO    [0m] rpc_connection_handler.py:48 receive node_join request: {'node_id': '12D3KooWPyuadZqAcGJwCteHXrWd5n4vD72DFR4wh418zDaTcJT9', 'hardware': {'node_id': '12D3KooWPyuadZqAcGJwCteHXrWd5n4vD72DFR4wh418zDaTcJT9', 'tflops_fp16': 4.58, 'gpu_name': 'Apple M1', 'memory_gb': 8.0, 'memory_bandwidth_gbps': 100.0, 'device': 'mlx'}, 'kv_cache_ratio': 0.25, 'param_hosting_ratio': 0.65, 'max_concurrent_requests': 8, 'max_sequence_length': 2048, 'rtt_to_nodes': {'12D3KooWLgfg36okWQNreKbT3Gwp46DNUSBDs1kEufkk9wHJau3f': 0.162, '12D3KooWKdW3rb3gx922GacK9iX41Yx2AYHVpHpMoRW7ePmmsnND': 0.313125}, 'status': 'joining', 'is_active': False}
+INFO:     127.0.0.1:53676 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53678 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53804 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53806 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53930 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53932 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54054 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54056 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54179 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54181 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54299 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54301 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54442 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54444 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54567 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54569 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54695 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54697 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54819 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54821 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54945 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54947 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55069 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55071 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55195 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55197 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55320 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55322 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55446 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55448 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55575 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55577 - "GET / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [4713]
