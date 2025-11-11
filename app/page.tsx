@@ -224,38 +224,58 @@ export default function HomePage() {
               <motion.div
                 variants={itemVariants}
                 whileHover={{ y: -8, scale: 1.01, transition: { duration: 0.3 } }}
-                className="bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 rounded-3xl p-10 sm:p-12 shadow-xl hover:shadow-2xl transition-all cursor-pointer relative overflow-hidden"
+                className="bg-gradient-to-br from-gray-900 via-purple-900/90 to-black rounded-3xl p-10 sm:p-12 shadow-2xl hover:shadow-[0_20px_80px_-15px_rgba(139,92,246,0.5)] transition-all duration-500 cursor-pointer relative overflow-hidden border border-purple-500/20"
               >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)] opacity-50" />
+                {/* Animated gradient overlay */}
+                <motion.div
+                  className="absolute inset-0 opacity-30"
+                  animate={{
+                    background: [
+                      'radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.4) 0%, transparent 50%)',
+                      'radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 50%)',
+                      'radial-gradient(circle at 50% 80%, rgba(124, 58, 237, 0.4) 0%, transparent 50%)',
+                      'radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.4) 0%, transparent 50%)',
+                    ],
+                  }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                />
+                {/* Subtle grid pattern */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05)_0%,transparent_50%)] opacity-40" />
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        className="text-6xl"
+                        className="text-6xl filter drop-shadow-[0_0_20px_rgba(168,85,247,0.6)]"
                       >
                         🔮
                       </motion.div>
                       <div>
-                        <h3 className="text-4xl sm:text-5xl font-black text-white mb-2">Market Oracle Agent</h3>
-                        <p className="text-xl text-white/90">Real-time crypto predictions with multi-provider consensus</p>
+                        <h3 className="text-4xl sm:text-5xl font-black text-white mb-2 drop-shadow-lg">Market Oracle Agent</h3>
+                        <p className="text-xl text-purple-100/90">Real-time crypto predictions with multi-provider consensus</p>
                       </div>
                     </div>
-                    <div className="hidden sm:block text-white text-4xl">→</div>
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      className="hidden sm:block text-purple-300 text-4xl"
+                    >
+                      →
+                    </motion.div>
                   </div>
                   <div className="grid sm:grid-cols-3 gap-6 mt-8">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-purple-400/30 hover:border-purple-400/50 hover:bg-white/10 transition-all">
                       <div className="text-3xl font-black text-white mb-1">Autonomous</div>
-                      <div className="text-sm text-white/80">Runs predictions automatically</div>
+                      <div className="text-sm text-purple-200/80">Runs predictions automatically</div>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-purple-400/30 hover:border-purple-400/50 hover:bg-white/10 transition-all">
                       <div className="text-3xl font-black text-white mb-1">x402 Payments</div>
-                      <div className="text-sm text-white/80">Micropayments per inference</div>
+                      <div className="text-sm text-purple-200/80">Micropayments per inference</div>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-purple-400/30 hover:border-purple-400/50 hover:bg-white/10 transition-all">
                       <div className="text-3xl font-black text-white mb-1">Multi-Provider</div>
-                      <div className="text-sm text-white/80">Consensus from Parallax nodes</div>
+                      <div className="text-sm text-purple-200/80">Consensus from Parallax nodes</div>
                     </div>
                   </div>
                 </div>
