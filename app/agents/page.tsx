@@ -900,22 +900,45 @@ export default function AgentDashboardPage() {
         setAgentIdentities(identityManager.getAllIdentities())
       }
 
-      alert(
-        `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
-        `Troubleshooting:\n` +
-        `1. Ensure wallet is connected (Phantom/Solflare)\n` +
-        `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
-        `3. Verify Parallax is running on localhost:3001\n` +
-        `4. Check browser console for detailed error logs`
-      )
-
-      // Reset status on error
+      // Always reset status on error (including transaction cancellations)
       setDeployedAgents(prev => prev.map(a =>
         a.id === agentId ? { ...a, status: 'idle' as const } : a
       ))
 
+      // Show user-friendly error message
+      const errorMsg = errorMessage.toLowerCase()
+      if (errorMsg.includes('user rejected') || errorMsg.includes('user denied') || errorMsg.includes('cancel')) {
+        alert('❌ Transaction canceled by user.\n\nThe agent is ready to run again when you\'re ready.')
+      } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+        alert(
+          `❌ Network error during agent execution:\n\n${errorMessage}\n\n` +
+          `Possible causes:\n` +
+          `1. WiFi disconnected\n` +
+          `2. Parallax server not responding\n` +
+          `3. RPC endpoint timeout\n\n` +
+          `Agent status has been reset. Try again when network is stable.`
+        )
+      } else {
+        alert(
+          `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
+          `Troubleshooting:\n` +
+          `1. Ensure wallet is connected (Phantom/Solflare)\n` +
+          `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
+          `3. Verify Parallax is running on localhost:3001\n` +
+          `4. Check browser console for detailed error logs`
+        )
+      }
+
       return { success: false, cost: 0.001, error: errorMessage }
     }
+  }
+
+  // Manual function to stop stuck agents
+  const stopAgent = (agentId: string) => {
+    setDeployedAgents(prev => prev.map(a =>
+      a.id === agentId ? { ...a, status: 'idle' as const } : a
+    ))
+    console.log(`🛑 Manually stopped agent: ${agentId}`)
   }
 
   // Delete all agents from database
@@ -1243,6 +1266,7 @@ export default function AgentDashboardPage() {
                           agent={agentStats}
                           index={index}
                           onRun={() => runAgent(agent.id)}
+                          onStop={() => stopAgent(agent.id)}
                           identity={identity}
                         />
                       )
@@ -1355,6 +1379,7 @@ export default function AgentDashboardPage() {
                             agent={agentStats}
                             index={index}
                             onRun={() => runAgent(agent.id)}
+                            onStop={() => stopAgent(agent.id)}
                             identity={identity}
                           />
                         </div>
@@ -1420,11 +1445,13 @@ function AgentCard({
   agent,
   index,
   onRun,
+  onStop,
   identity,
 }: {
   agent: AgentStats
   index: number
   onRun: () => void
+  onStop?: () => void
   identity?: AgentIdentity
 }) {
   const { attestBadge, attesting } = useBadgeAttestation()
@@ -1639,17 +1666,22 @@ function AgentCard({
         {agent.isReal && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={onRun}
-                disabled={agent.status === 'executing'}
-                className="bg-black text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
-              >
-                {agent.status === 'executing' ? (
-                  <span>⚡ Running...</span>
-                ) : (
+              {agent.status === 'executing' && onStop ? (
+                <button
+                  onClick={onStop}
+                  className="bg-red-600 text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-red-700"
+                >
+                  <span>🛑 Stop</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onRun}
+                  disabled={agent.status === 'executing'}
+                  className="bg-black text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
+                >
                   <span>▶ Run</span>
-                )}
-              </button>
+                </button>
+              )}
 
               <button
                 onClick={() => setShowScheduleModal(true)}
