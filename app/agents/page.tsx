@@ -77,6 +77,7 @@ export default function AgentDashboardPage() {
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
   const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
+  const [activeTab, setActiveTab] = useState<'my-agents' | 'marketplace'>('my-agents')
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
@@ -1171,8 +1172,34 @@ export default function AgentDashboardPage() {
         <div className="grid grid-cols-12 gap-6">
           {/* Left - Agent Cards */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
+            {/* TAB NAVIGATION */}
+            {publicKey && (
+              <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+                <button
+                  onClick={() => setActiveTab('my-agents')}
+                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
+                    activeTab === 'my-agents'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  💼 My Agents ({deployedAgents.filter(a => a.wallet_address === publicKey.toBase58()).length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('marketplace')}
+                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
+                    activeTab === 'marketplace'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  🏪 Public Marketplace ({deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58()).length})
+                </button>
+              </div>
+            )}
+
             {/* MY AGENTS SECTION */}
-            {publicKey && (() => {
+            {publicKey && activeTab === 'my-agents' && (() => {
               const myAgents = deployedAgents.filter(a =>
                 a.wallet_address === publicKey.toBase58()
               );
@@ -1226,7 +1253,7 @@ export default function AgentDashboardPage() {
             })()}
 
             {/* EMPTY STATE - Show when wallet connected but no agents */}
-            {publicKey && deployedAgents.filter(a =>
+            {publicKey && activeTab === 'my-agents' && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
               <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
@@ -1251,7 +1278,7 @@ export default function AgentDashboardPage() {
             )}
 
             {/* PUBLIC MARKETPLACE SECTION */}
-            {(() => {
+            {activeTab === 'marketplace' && (() => {
               // Filter to show only OTHER users' agents (not current user's own agents)
               const publicAgents = publicKey
                 ? deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58())

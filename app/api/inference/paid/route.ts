@@ -14,7 +14,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createParallaxClient } from '@/lib/parallax-client'
+import { createClusterClient } from '@/lib/parallax-cluster'
+import { getProviderDiscoveryService } from '@/lib/provider-discovery'
 
 export interface InferenceRequest {
   messages: Array<{
@@ -56,30 +57,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get Parallax scheduler URL from env
-    const schedulerUrl = process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001'
+    // Create cluster client (automatically load-balances across available nodes)
+    const clusterClient = createClusterClient()
 
-    // Create Parallax client
-    const parallaxClient = createParallaxClient(schedulerUrl)
+    // Check if any Parallax nodes are available
+    const discovery = getProviderDiscoveryService()
+    const onlineProviders = discovery.getOnlineProviders()
 
-    // Check if Parallax is running
-    const isRunning = await parallaxClient.healthCheck()
-    if (!isRunning) {
+    if (onlineProviders.length === 0) {
+      const clusterUrls = process.env.PARALLAX_CLUSTER_URLS || process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001'
       return NextResponse.json(
         {
-          error: 'Parallax scheduler is not running',
-          details: `Please start Parallax: parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0 --port ${new URL(schedulerUrl).port}`,
+          error: 'No Parallax nodes available',
+          details: `Please start Parallax cluster: ./scripts/start-parallax-cluster.sh\nOr manually: parallax run -m Qwen/Qwen2.5-0.5B-Instruct -n 1 --host 0.0.0.0 --port 3001`,
+          clusterUrls: clusterUrls.split(','),
         },
         { status: 503 }
       )
     }
 
-    // Run inference on Parallax
-    const inferenceResponse = await parallaxClient.inference({
-      messages: body.messages,
-      max_tokens: body.max_tokens || 256,
-      temperature: body.temperature || 0.7,
-    })
+    // Run inference with automatic load balancing
+    const strategy = (process.env.PARALLAX_LOAD_BALANCING as any) || 'latency-based'
+    const maxRetries = parseInt(process.env.CLUSTER_MAX_RETRIES || '3')
+
+    const inferenceResponse = await clusterClient.inference(
+      {
+        messages: body.messages,
+        max_tokens: body.max_tokens || 256,
+        temperature: body.temperature || 0.7,
+      },
+      {
+        strategy,
+        maxRetries,
+        fallbackToAny: true,
+      }
+    )
 
     const latency = Date.now() - startTime
 
@@ -112,9 +124,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get provider info
-    const provider = body.provider || 'Local Parallax Node'
-    const model = inferenceResponse.model || 'Qwen-0.6B'
+    // Get provider info from cluster
+    const clusterStatus = clusterClient.getClusterStatus()
+    const selectedProvider = clusterStatus.providers.find(p => p.status === 'online')
+    const provider = selectedProvider?.name || body.provider || 'Parallax Cluster'
+    const model = inferenceResponse.model || 'Qwen-0.5B'
 
     // Extract payment transaction hash from request headers if available
     // This will be set by the x402 middleware after payment settlement

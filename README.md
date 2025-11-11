@@ -69,11 +69,16 @@ Claude Desktop integration via Model Context Protocol:
 - Solana devnet with USDC payments
 - Transaction history with Solana Explorer links
 
-### 🖥️ **Gradient Parallax Integration**
-- Real local AI inference (not simulated)
-- Provider discovery and benchmarking
-- Provider selection with performance metrics
-- Qwen/Qwen3-0.6B model (can support larger models)
+### 🖥️ **Multi-Node Parallax Cluster** (⭐ CLUSTER ARCHITECTURE!)
+- **Distributed AI inference** across multiple Parallax nodes
+- **Automatic load balancing** (latency-based, round-robin, random)
+- **Provider discovery** - automatically finds and monitors all nodes
+- **Health monitoring** - real-time latency, uptime, reputation tracking
+- **Fault tolerance** - automatic failover if a node goes down
+- **Smart routing** - selects fastest node for each request
+- **Easy setup** - one script launches 2-node cluster optimized for M1 Mac
+- **Live dashboard** - real-time cluster status visualization
+- Qwen/Qwen2.5-0.5B-Instruct model (optimized for M1 Air)
 
 ---
 
@@ -89,15 +94,32 @@ Claude Desktop integration via Model Context Protocol:
 
 ---
 
-## Quick Start
+## 🚀 Quick Start for Judges
 
 ### Prerequisites
 - Node.js 18+
-- Gradient Parallax running locally ([Installation Guide](https://github.com/GradientHQ/parallax))
+- Python 3.11+ (for Parallax)
 - Solana wallet (Phantom/Solflare)
 - Devnet USDC (from https://faucet.circle.com/)
 
-### Setup
+### 1️⃣ Install Parallax
+```bash
+pip install parallax-inference
+# OR clone from source:
+# git clone https://github.com/GradientHQ/parallax.git
+# cd parallax && pip install -e .
+```
+
+### 2️⃣ Start Parallax Cluster (2 Nodes)
+```bash
+./scripts/start-parallax-cluster.sh
+```
+This launches 2 Parallax nodes optimized for M1 Mac:
+- Node 1: `http://localhost:3001`
+- Node 2: `http://localhost:3002`
+- Auto-discovery and load balancing enabled
+
+### 3️⃣ Setup Environment
 
 1. **Clone and Install**
 ```bash
@@ -107,40 +129,32 @@ npm install
 ```
 
 2. **Configure Environment**
-Create `.env.local`:
+Create `.env.local` (or copy from `.env.example`):
 ```bash
-# Solana Wallet
-NEXT_PUBLIC_WALLET_ADDRESS=your-wallet-address
-NEXT_PUBLIC_SOLANA_PRIVATE_KEY=your-private-key
+# Parallax Cluster (MULTI-NODE!)
+PARALLAX_CLUSTER_URLS=http://localhost:3001,http://localhost:3002
+PARALLAX_LOAD_BALANCING=latency-based
 
-# Supabase
+# Supabase (Optional - falls back to localStorage)
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-key
 
-# x402
-NEXT_PUBLIC_DEV_MODE=false
+# x402 Payment Protocol
 NEXT_PUBLIC_NETWORK=solana-devnet
-
-# Parallax
-PARALLAX_SCHEDULER_URL=http://localhost:3001
+DEV_MODE=false
 ```
 
-3. **Start Parallax** (Terminal 1)
-```bash
-cd parallax
-source venv/bin/activate
-parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0
-```
-
-4. **Start ParallaxPay** (Terminal 2)
+3. **Start Application**
 ```bash
 npm run dev
 ```
 
-5. **Open Browser**
+4. **Open Browser**
 ```
 http://localhost:3000
 ```
+
+**That's it!** The cluster script already started Parallax nodes for you.
 
 ---
 
