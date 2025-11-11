@@ -6,6 +6,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - NEXT_PUBLIC_RPC_ENDPOINT=${NEXT_PUBLIC_RPC_ENDPOINT}
+        - NEXT_PUBLIC_X402_GATEWAY_URL=${NEXT_PUBLIC_X402_GATEWAY_URL}
+        - NEXT_PUBLIC_PARALLAX_API_URL=http://parallax:8000
+        - NEXT_PUBLIC_APP_URL=https://parallaxpay.online
     container_name: parallaxpay-app
     restart: unless-stopped
     ports:
@@ -14,8 +21,6 @@ services:
       - .env.production
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_PARALLAX_API_URL=http://parallax:8000
-      - NEXT_PUBLIC_APP_URL=https://parallaxpay.online
     networks:
       - parallaxpay-network
     depends_on:
