@@ -534,7 +534,7 @@ export default function HomePage() {
               Join the future of autonomous AI agents
             </motion.p>
             <motion.div variants={itemVariants}>
-              <Link href={publicKey ? "/agents" : "/dashboard"}>
+              <Link href={publicKey ? "/agents" : "/agents"}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -565,8 +565,8 @@ export default function HomePage() {
             <div className="flex items-center gap-8 text-sm text-gray-400">
               <Link href="/agents" className="hover:text-white transition-colors">Agents</Link>
               <Link href="/marketplace" className="hover:text-white transition-colors">Providers</Link>
-              <Link href="/leaderboard" className="hover:text-white transition-colors">Leaderboard</Link>
-              <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+              <Link href="/oracle" className="hover:text-white transition-colors">Oracle</Link>
+              <Link href="/marketplace" className="hover:text-white transition-colors">Marketplace</Link>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
