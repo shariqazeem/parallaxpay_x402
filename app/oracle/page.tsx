@@ -8,6 +8,7 @@ import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 import { getMarketOracle, MarketPrediction, OraclePerformance } from '@/lib/market-oracle-agent'
 import { useProvider } from '@/app/contexts/ProviderContext'
 import { useX402Payment } from '@/app/hooks/useX402Payment'
+import toast from 'react-hot-toast'
 
 export default function MarketOraclePage() {
   const { publicKey } = useWallet()
@@ -45,17 +46,17 @@ export default function MarketOraclePage() {
 
   const handleRunPrediction = async () => {
     if (!hasProviders) {
-      alert('⚠️ No providers available! Please visit the Marketplace to enable providers first.')
+      toast.error('No providers available! Please visit the Marketplace to enable providers first.')
       return
     }
 
     if (!isWalletConnected) {
-      alert('⚠️ Please connect your Solana wallet to make x402 payments!')
+      toast.error('Please connect your Solana wallet to make x402 payments!')
       return
     }
 
     if (!isReady) {
-      alert('⚠️ Payment client is initializing. Please wait a moment and try again.')
+      toast.error('Payment client is initializing. Please wait a moment and try again.')
       return
     }
 
@@ -70,7 +71,7 @@ export default function MarketOraclePage() {
       updatePerformance()
     } catch (error) {
       console.error('Prediction failed:', error)
-      alert(`Prediction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(`Prediction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsAnalyzing(false)
     }
@@ -78,15 +79,15 @@ export default function MarketOraclePage() {
 
   const handleStartAutonomous = () => {
     if (!hasProviders) {
-      alert('⚠️ No providers available! Please visit the Marketplace to enable providers first.')
+      toast.error('No providers available! Please visit the Marketplace to enable providers first.')
       return
     }
     if (!isWalletConnected) {
-      alert('⚠️ Please connect your Solana wallet first!')
+      toast.error('Please connect your Solana wallet first!')
       return
     }
     if (!isReady) {
-      alert('⚠️ Payment client is initializing. Please wait a moment and try again.')
+      toast.error('Payment client is initializing. Please wait a moment and try again.')
       return
     }
     // Autonomous mode uses client-side wallet payments
@@ -166,12 +167,11 @@ export default function MarketOraclePage() {
             className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white shadow-xl"
           >
             <div className="flex items-center gap-4">
-              <div className="text-5xl">🏆</div>
+              <div className="text-5xl">🔮</div>
               <div>
-                <h3 className="text-2xl font-black mb-1">x402 Solana Hackathon Entry</h3>
+                <h3 className="text-2xl font-black mb-1">AI Market Oracle</h3>
                 <p className="text-purple-100">
-                  <strong>Parallax Eco Track:</strong> Demonstrating autonomous AI agents with x402 micropayments,
-                  multi-provider consensus, and verifiable reputation building.
+                  Powered by <strong>Gradient Parallax</strong> and <strong>x402 micropayments</strong> — Real-time market intelligence through decentralized AI agents with multi-provider consensus and on-chain reputation.
                 </p>
               </div>
             </div>

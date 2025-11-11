@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 

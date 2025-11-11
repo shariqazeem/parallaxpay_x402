@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getAutonomousAgentScheduler, AgentSchedule, ScheduledExecution } from '@/lib/autonomous-agent-scheduler'
+import toast from 'react-hot-toast'
 
 interface AutonomousSchedulerPanelProps {
   agentId: string
@@ -93,7 +94,7 @@ export function AutonomousSchedulerPanel({
       onScheduleChange?.()
     } catch (error) {
       console.error('Failed to schedule agent:', error)
-      alert('Failed to schedule agent. Check console for details.')
+      toast.error('Failed to schedule agent. Check console for details.')
     } finally {
       setIsScheduling(false)
     }
