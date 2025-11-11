@@ -49,9 +49,9 @@ export default function HomePage() {
                   <Image
                     src="/logo.png"
                     alt="ParallaxPay Logo"
-                    width={36}
-                    height={36}
-                    className="w-9 h-9 object-contain"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain"
                   />
                   <h1 className="text-2xl font-bold text-black">
                     ParallaxPay
@@ -467,9 +467,9 @@ export default function HomePage() {
               <Image
                 src="/logo.png"
                 alt="ParallaxPay Logo"
-                width={32}
-                height={32}
-                className="w-8 h-8 object-contain"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
               />
               <div className="text-2xl font-bold">ParallaxPay</div>
             </div>
