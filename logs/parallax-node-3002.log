@@ -1,0 +1,11 @@
+Nov 11 08:12:19.437 [[1m[32mINFO    [0m] cli.py:101                Running command: /Users/macbookair/projects/parallaxpay/parallax/venv/bin/python3.12 /Users/macbookair/projects/parallaxpay/parallax/src/backend/main.py --model-name Qwen/Qwen2.5-0.5B-Instruct --init-nodes-num 1 --host 0.0.0.0 --port 3002 --max-batch-size 4
+usage: main.py [-h] [--initial-peers INITIAL_PEERS [INITIAL_PEERS ...]]
+               [--relay-servers RELAY_SERVERS [RELAY_SERVERS ...]]
+               [--announce-maddrs ANNOUNCE_MADDRS [ANNOUNCE_MADDRS ...]]
+               [--tcp-port TCP_PORT] [--udp-port UDP_PORT]
+               [--dht-prefix DHT_PREFIX] [--host HOST] [--port PORT]
+               [--log-level {DEBUG,INFO,WARNING,ERROR}]
+               [--model-name MODEL_NAME] [--init-nodes-num INIT_NODES_NUM]
+               [--is-local-network IS_LOCAL_NETWORK]
+main.py: error: unrecognized arguments: --max-batch-size 4
+Nov 11 08:12:22.004 [[1m[31mERROR   [0m] cli.py:110                Command failed with exit code 2
