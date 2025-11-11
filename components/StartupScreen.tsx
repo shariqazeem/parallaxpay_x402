@@ -51,73 +51,65 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+        className="fixed inset-0 z-[9999] bg-white flex items-center justify-center"
       >
-        {/* Animated Grid Background */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `
-              linear-gradient(rgba(139, 92, 246, 0.2) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(139, 92, 246, 0.2) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px',
-            animation: 'slideGrid 20s linear infinite'
-          }} />
-        </div>
+        {/* Subtle animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 opacity-60" />
 
-        {/* Floating Particles */}
+        {/* Floating subtle circles */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-purple-500 rounded-full"
-              initial={{
-                x: Math.random() * window.innerWidth,
-                y: Math.random() * window.innerHeight,
-                opacity: 0
+              className="absolute rounded-full bg-gradient-to-br from-purple-200 to-blue-200 opacity-20"
+              style={{
+                width: 100 + Math.random() * 200,
+                height: 100 + Math.random() * 200,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
               }}
               animate={{
-                y: [null, Math.random() * window.innerHeight],
-                opacity: [0, 1, 0]
+                y: [0, -30, 0],
+                x: [0, 15, 0],
+                scale: [1, 1.1, 1],
               }}
               transition={{
-                duration: 3 + Math.random() * 2,
+                duration: 4 + Math.random() * 2,
                 repeat: Infinity,
-                delay: Math.random() * 2
+                delay: Math.random() * 2,
               }}
             />
           ))}
         </div>
 
         {/* Main Content */}
-        <div className="relative z-10 w-full max-w-2xl px-6">
+        <div className="relative z-10 w-full max-w-lg px-6">
           {/* Logo/Title */}
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <motion.h1
-              className="text-6xl font-black mb-4"
-              style={{
-                background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #3B82F6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundSize: '200% 200%',
-              }}
+            <motion.div
+              className="inline-block mb-4"
               animate={{
-                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                rotate: [0, 360],
               }}
               transition={{
-                duration: 3,
+                duration: 20,
                 repeat: Infinity,
                 ease: 'linear'
               }}
             >
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 flex items-center justify-center text-4xl shadow-xl">
+                ⚡
+              </div>
+            </motion.div>
+            <h1 className="text-5xl font-black text-black mb-2">
               ParallaxPay
-            </motion.h1>
-            <p className="text-gray-400 text-lg">Decentralized AI Agent Marketplace</p>
+            </h1>
+            <p className="text-gray-600 text-lg">AI Agent Marketplace on Solana</p>
           </motion.div>
 
           {/* Current Step Display */}
@@ -125,100 +117,86 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
             key={step}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
             className="text-center mb-8"
           >
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <motion.span
-                className="text-5xl"
-                animate={{ rotate: step === initSteps.length - 1 ? 0 : 360 }}
-                transition={{ duration: 1, repeat: step === initSteps.length - 1 ? 0 : Infinity, ease: 'linear' }}
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <motion.div
+                className="text-4xl"
+                animate={{
+                  scale: [1, 1.2, 1],
+                }}
+                transition={{
+                  duration: 0.5,
+                  repeat: step === initSteps.length - 1 ? 0 : Infinity,
+                }}
               >
                 {initSteps[step]?.icon}
-              </motion.span>
+              </motion.div>
             </div>
-            <motion.p
-              className="text-2xl font-bold text-white mb-2"
-              animate={{ opacity: [1, 0.7, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
+            <p className="text-lg font-semibold text-gray-800">
               {initSteps[step]?.text}
-            </motion.p>
+            </p>
           </motion.div>
 
           {/* Progress Bar */}
           <div className="mb-8">
-            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <motion.div
-                className="h-full bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600"
+                className="h-full bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 shadow-lg"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
               />
             </div>
-            <div className="flex justify-between mt-2 text-sm text-gray-500">
-              <span>Initializing...</span>
-              <span>{Math.round(progress)}%</span>
+            <div className="flex justify-between mt-2 text-sm text-gray-600">
+              <span className="font-medium">Setting up your experience...</span>
+              <span className="font-bold">{Math.round(progress)}%</span>
             </div>
           </div>
 
-          {/* Terminal/Logs */}
+          {/* Clean Status List */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="bg-gray-900 rounded-lg p-4 border border-gray-800 h-48 overflow-hidden"
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-lg space-y-2"
           >
-            <div className="font-mono text-xs text-green-400 space-y-1">
-              {logs.map((log, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {log}
-                </motion.div>
-              ))}
-              {/* Blinking cursor */}
-              {step < initSteps.length && (
-                <motion.span
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                  className="inline-block w-2 h-4 bg-green-400 ml-1"
-                />
-              )}
-            </div>
+            {logs.slice(-4).map((log, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex items-center gap-3 text-sm"
+              >
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-gray-700 font-medium">{log.split('] ')[1]}</span>
+              </motion.div>
+            ))}
           </motion.div>
 
           {/* Tech Stats */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="mt-8 grid grid-cols-3 gap-4 text-center"
+            transition={{ delay: 0.6 }}
+            className="mt-8 grid grid-cols-3 gap-3"
           >
-            <div className="bg-gray-900 rounded-lg p-3 border border-gray-800">
-              <div className="text-purple-400 font-bold text-lg">3+</div>
-              <div className="text-gray-500 text-xs">Nodes</div>
+            <div className="bg-white rounded-lg p-4 border-2 border-purple-200 shadow-sm text-center">
+              <div className="text-purple-600 font-bold text-xl">3+</div>
+              <div className="text-gray-600 text-xs font-medium mt-1">Nodes</div>
             </div>
-            <div className="bg-gray-900 rounded-lg p-3 border border-gray-800">
-              <div className="text-pink-400 font-bold text-lg">~50ms</div>
-              <div className="text-gray-500 text-xs">Latency</div>
+            <div className="bg-white rounded-lg p-4 border-2 border-pink-200 shadow-sm text-center">
+              <div className="text-pink-600 font-bold text-xl">~50ms</div>
+              <div className="text-gray-600 text-xs font-medium mt-1">Latency</div>
             </div>
-            <div className="bg-gray-900 rounded-lg p-3 border border-gray-800">
-              <div className="text-blue-400 font-bold text-lg">$0.001</div>
-              <div className="text-gray-500 text-xs">Per Request</div>
+            <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm text-center">
+              <div className="text-blue-600 font-bold text-xl">$0.001</div>
+              <div className="text-gray-600 text-xs font-medium mt-1">Per Request</div>
             </div>
           </motion.div>
         </div>
-
-        <style jsx>{`
-          @keyframes slideGrid {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-          }
-        `}</style>
       </motion.div>
     </AnimatePresence>
   )
