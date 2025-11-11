@@ -563,6 +563,60 @@ export default function MarketOraclePage() {
             </p>
           </motion.div>
         )}
+
+        {/* BUILD YOUR OWN CTA - Ecosystem Connection */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-12 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-8 rounded-xl border-2 border-purple-200 shadow-lg"
+        >
+          <div className="text-center mb-6">
+            <div className="text-5xl mb-3">🧠</div>
+            <h3 className="text-2xl font-black text-black mb-2">
+              Build Your Own AI Agent
+            </h3>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              The Market Oracle is just one example. Create custom agents for your needs with our AI-powered builder - no coding required!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg border border-purple-200">
+              <div className="text-2xl mb-2">📊</div>
+              <div className="font-bold text-black text-sm mb-1">Custom Analytics</div>
+              <div className="text-xs text-gray-600">Track metrics that matter to you</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-purple-200">
+              <div className="text-2xl mb-2">⏰</div>
+              <div className="font-bold text-black text-sm mb-1">Autonomous Execution</div>
+              <div className="text-xs text-gray-600">Set it and forget it - runs 24/7</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-purple-200">
+              <div className="text-2xl mb-2">💰</div>
+              <div className="font-bold text-black text-sm mb-1">Micropayments</div>
+              <div className="text-xs text-gray-600">Pay only for what you use</div>
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-4">
+            <Link href="/agents?tab=builder">
+              <button className="bg-black text-white px-8 py-4 rounded-xl font-bold transition-all hover:bg-gray-800 hover:scale-105 shadow-lg">
+                🚀 Launch Agent Builder
+              </button>
+            </Link>
+            <Link href="/marketplace">
+              <button className="bg-white text-black border-2 border-gray-300 px-8 py-4 rounded-xl font-bold transition-all hover:border-purple-400 hover:bg-purple-50">
+                🏪 View Cluster Status
+              </button>
+            </Link>
+          </div>
+
+          <div className="mt-4 text-center">
+            <Link href="/analytics" className="text-purple-600 hover:text-purple-700 font-semibold text-sm">
+              📈 Or view your cost analytics →
+            </Link>
+          </div>
+        </motion.div>
       </div>
     </div>
   )

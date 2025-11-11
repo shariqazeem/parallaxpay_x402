@@ -416,6 +416,56 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             )}
+
+            {/* ECOSYSTEM CONNECTIONS - CTAs */}
+            {agents.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8 bg-gradient-to-br from-purple-50 to-blue-50 p-8 rounded-xl border-2 border-purple-200 shadow-lg"
+              >
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-black text-black mb-2">
+                    Maximize Your Efficiency
+                  </h3>
+                  <p className="text-gray-600">
+                    Explore more features to get the most out of ParallaxPay
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Link href="/agents?tab=builder">
+                    <div className="bg-white p-6 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-3xl mb-3">🧠</div>
+                      <div className="font-bold text-black mb-1">Deploy More Agents</div>
+                      <div className="text-sm text-gray-600">
+                        Build custom agents to automate more tasks
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/marketplace">
+                    <div className="bg-white p-6 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-3xl mb-3">🏪</div>
+                      <div className="font-bold text-black mb-1">Cluster Health</div>
+                      <div className="text-sm text-gray-600">
+                        Monitor your Parallax cluster performance
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/oracle">
+                    <div className="bg-white p-6 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-3xl mb-3">🔮</div>
+                      <div className="font-bold text-black mb-1">Market Oracle</div>
+                      <div className="text-sm text-gray-600">
+                        Try our flagship AI prediction agent
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
           </div>
         )}
       </div>
