@@ -24,6 +24,7 @@ export default function MarketOraclePageEnhanced() {
   const [latestPrediction, setLatestPrediction] = useState<MarketPrediction | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showCostComparison, setShowCostComparison] = useState(false)
+  const [isPredictionsLoaded, setIsPredictionsLoaded] = useState(false)
 
   const onlineProviders = providers.filter(p => p.online)
   const hasProviders = onlineProviders.length > 0
@@ -33,6 +34,7 @@ export default function MarketOraclePageEnhanced() {
     if (publicKey) {
       const walletAddress = publicKey.toBase58()
       console.log('💼 Loading predictions for wallet:', walletAddress)
+      setIsPredictionsLoaded(false)
 
       oracle.loadPredictionsForWallet(walletAddress).then(() => {
         // Restore autonomous asset and timeframe if they were set
@@ -46,21 +48,31 @@ export default function MarketOraclePageEnhanced() {
           setTimeframe(autonomousTimeframe)
         }
 
+        // Mark predictions as loaded and update performance
+        setIsPredictionsLoaded(true)
         updatePerformance()
 
         console.log(`📍 Restored state: ${autonomousAsset} ${autonomousTimeframe}`)
       })
+    } else {
+      // No wallet connected, reset state
+      setIsPredictionsLoaded(false)
+      setPerformance(null)
+      setLatestPrediction(null)
     }
   }, [publicKey, oracle])
 
+  // Update performance periodically only after predictions are loaded
   useEffect(() => {
+    if (!isPredictionsLoaded) return
+
     updatePerformance()
     const interval = setInterval(() => {
       updatePerformance()
       setIsRunning(oracle.isActive())
     }, 2000)
     return () => clearInterval(interval)
-  }, [oracle])
+  }, [oracle, isPredictionsLoaded])
 
   const updatePerformance = () => {
     const perf = oracle.getPerformance()
