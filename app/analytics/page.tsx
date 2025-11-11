@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 
 interface AgentAnalytics {
@@ -99,34 +99,8 @@ export default function AnalyticsPage() {
   const mostExpensive = agents.length > 0 ? agents.reduce((max, a) => a.totalCost > max.totalCost ? a : max) : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-[1400px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <h1 className="text-2xl font-black cursor-pointer hover:opacity-70 transition-opacity">
-                  <span className="text-black">ParallaxPay</span>
-                </h1>
-              </Link>
-              <div className="text-gray-400">/</div>
-              <h2 className="text-xl font-bold text-black">
-                📊 Analytics
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
-              <Link href="/agents">
-                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
-                  Agents
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      <UnifiedNavbar currentPage="analytics" />
 
       {/* Main Content */}
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -186,6 +160,68 @@ export default function AnalyticsPage() {
                 color="orange"
               />
             </div>
+
+            {/* Cost Comparison - THE BIG WOW MOMENT */}
+            {totalCost > 0 && (
+              <motion.div
+                className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-8 rounded-xl border-2 border-green-300 shadow-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-3">💰</div>
+                  <h3 className="text-2xl font-black text-black mb-2">
+                    Cost Savings vs Traditional AI APIs
+                  </h3>
+                  <p className="text-gray-600">
+                    See how much you're saving with decentralized AI
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {/* ParallaxPay Cost */}
+                  <div className="bg-white p-6 rounded-lg border-2 border-green-200">
+                    <div className="text-sm text-gray-600 mb-2">Your Total Cost</div>
+                    <div className="text-3xl font-black text-green-600 mb-1">
+                      ${totalCost.toFixed(4)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {totalRuns} runs on Parallax
+                    </div>
+                  </div>
+
+                  {/* ChatGPT API Equivalent */}
+                  <div className="bg-white p-6 rounded-lg border-2 border-red-200">
+                    <div className="text-sm text-gray-600 mb-2">ChatGPT API Cost</div>
+                    <div className="text-3xl font-black text-red-600 mb-1">
+                      ${(totalRuns * 0.002).toFixed(4)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ~$0.002 per request
+                    </div>
+                  </div>
+
+                  {/* Savings */}
+                  <div className="bg-gradient-to-br from-green-100 to-emerald-100 p-6 rounded-lg border-2 border-green-400">
+                    <div className="text-sm text-green-700 font-bold mb-2">YOU SAVED</div>
+                    <div className="text-4xl font-black text-green-700 mb-1">
+                      {totalRuns > 0 ? `${((1 - (totalCost / (totalRuns * 0.002))) * 100).toFixed(1)}%` : '0%'}
+                    </div>
+                    <div className="text-sm text-green-700 font-bold">
+                      ${((totalRuns * 0.002) - totalCost).toFixed(4)} saved
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-bold text-green-700">Decentralized AI with Parallax</span> offers
+                    significantly lower costs while maintaining high performance and reliability.
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
             {/* Best Performers */}
             {bestAgent && (
@@ -353,6 +389,56 @@ export default function AnalyticsPage() {
                   </table>
                 </div>
               </div>
+            )}
+
+            {/* ECOSYSTEM CONNECTIONS - CTAs */}
+            {agents.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8 bg-gradient-to-br from-purple-50 to-blue-50 p-8 rounded-xl border-2 border-purple-200 shadow-lg"
+              >
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-black text-black mb-2">
+                    Maximize Your Efficiency
+                  </h3>
+                  <p className="text-gray-600">
+                    Explore more features to get the most out of ParallaxPay
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Link href="/agents?tab=builder">
+                    <div className="bg-white p-6 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-3xl mb-3">🧠</div>
+                      <div className="font-bold text-black mb-1">Deploy More Agents</div>
+                      <div className="text-sm text-gray-600">
+                        Build custom agents to automate more tasks
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/marketplace">
+                    <div className="bg-white p-6 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-3xl mb-3">🏪</div>
+                      <div className="font-bold text-black mb-1">Cluster Health</div>
+                      <div className="text-sm text-gray-600">
+                        Monitor your Parallax cluster performance
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link href="/oracle">
+                    <div className="bg-white p-6 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-3xl mb-3">🔮</div>
+                      <div className="font-bold text-black mb-1">Market Oracle</div>
+                      <div className="text-sm text-gray-600">
+                        Try our flagship AI prediction agent
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </motion.div>
             )}
           </div>
         )}

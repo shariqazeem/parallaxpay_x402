@@ -14,6 +14,8 @@ import { useBadgeAttestation } from '@/lib/use-badge-attestation'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 import { LiveActivityFeed } from '@/components/LiveActivityFeed'
 import { AutonomousSchedulerPanel } from '@/components/AutonomousSchedulerPanel'
+import { AgentBuilderTab } from '@/components/AgentBuilderTab'
+import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 
 interface AgentStats {
   id: string
@@ -29,6 +31,7 @@ interface AgentStats {
   avatar: string
   color: string
   isReal?: boolean  // NEW: flag to distinguish real vs demo agents
+  schedule?: AgentSchedule  // NEW: autonomous scheduling config
 }
 
 interface Trade {
@@ -77,6 +80,7 @@ export default function AgentDashboardPage() {
   const [deployedAgents, setDeployedAgents] = useState<DeployedAgent[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
   const [agentIdentities, setAgentIdentities] = useState<AgentIdentity[]>([])
+  const [activeTab, setActiveTab] = useState<'my-agents' | 'builder' | 'marketplace'>('my-agents')
 
   // Token controls for agent runs
   const [maxTokens, setMaxTokens] = useState(300)
@@ -261,6 +265,7 @@ export default function AgentDashboardPage() {
           deployed: Date.now(),
           totalRuns: 0,
           status: 'idle',
+          wallet_address: publicKey?.toBase58(), // Add wallet address for ownership
         }
 
         // Add to deployed agents
@@ -532,17 +537,32 @@ export default function AgentDashboardPage() {
         console.log(`   Cost: $${cost.toFixed(6)}`)
         console.log(`   Latency: ${latency}ms`)
 
-        // Format result summary
+        // Format result summary with complete info (show zeros explicitly)
         let resultSummary = `${queryType.toUpperCase()} query for ${walletAddress.substring(0, 10)}...`
-        if (data.data?.balance) {
+
+        // Add balance info
+        if (data.data?.balance?.sol !== undefined) {
           resultSummary += ` | SOL: ${data.data.balance.sol.toFixed(4)}`
+        } else if (queryType === 'balance' || queryType === 'all') {
+          resultSummary += ` | SOL: 0.0000`
         }
+
+        // Add transaction count
         if (data.data?.transactions?.length) {
           resultSummary += ` | ${data.data.transactions.length} txs`
+        } else if (queryType === 'transactions' || queryType === 'all') {
+          resultSummary += ` | 0 txs`
         }
+
+        // Add token count
         if (data.data?.tokens?.length) {
           resultSummary += ` | ${data.data.tokens.length} tokens`
+        } else if (queryType === 'balance' || queryType === 'all') {
+          resultSummary += ` | 0 tokens`
         }
+
+        // Add success indicator
+        resultSummary += ` ✓`
 
         // Record execution in identity manager
         if (agent.identityId) {
@@ -899,22 +919,45 @@ export default function AgentDashboardPage() {
         setAgentIdentities(identityManager.getAllIdentities())
       }
 
-      alert(
-        `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
-        `Troubleshooting:\n` +
-        `1. Ensure wallet is connected (Phantom/Solflare)\n` +
-        `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
-        `3. Verify Parallax is running on localhost:3001\n` +
-        `4. Check browser console for detailed error logs`
-      )
-
-      // Reset status on error
+      // Always reset status on error (including transaction cancellations)
       setDeployedAgents(prev => prev.map(a =>
         a.id === agentId ? { ...a, status: 'idle' as const } : a
       ))
 
+      // Show user-friendly error message
+      const errorMsg = errorMessage.toLowerCase()
+      if (errorMsg.includes('user rejected') || errorMsg.includes('user denied') || errorMsg.includes('cancel')) {
+        alert('❌ Transaction canceled by user.\n\nThe agent is ready to run again when you\'re ready.')
+      } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+        alert(
+          `❌ Network error during agent execution:\n\n${errorMessage}\n\n` +
+          `Possible causes:\n` +
+          `1. WiFi disconnected\n` +
+          `2. Parallax server not responding\n` +
+          `3. RPC endpoint timeout\n\n` +
+          `Agent status has been reset. Try again when network is stable.`
+        )
+      } else {
+        alert(
+          `❌ Agent execution failed:\n\n${errorMessage}\n\n` +
+          `Troubleshooting:\n` +
+          `1. Ensure wallet is connected (Phantom/Solflare)\n` +
+          `2. Ensure wallet has devnet USDC (faucet.circle.com)\n` +
+          `3. Verify Parallax is running on localhost:3001\n` +
+          `4. Check browser console for detailed error logs`
+        )
+      }
+
       return { success: false, cost: 0.001, error: errorMessage }
     }
+  }
+
+  // Manual function to stop stuck agents
+  const stopAgent = (agentId: string) => {
+    setDeployedAgents(prev => prev.map(a =>
+      a.id === agentId ? { ...a, status: 'idle' as const } : a
+    ))
+    console.log(`🛑 Manually stopped agent: ${agentId}`)
   }
 
   // Delete all agents from database
@@ -1033,56 +1076,7 @@ export default function AgentDashboardPage() {
       </AnimatePresence>
       */}
 
-      {/* Header - Only title bar is sticky */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-[1920px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <h1 className="text-2xl font-black cursor-pointer hover:opacity-70 transition-opacity">
-                  <span className="text-black">ParallaxPay</span>
-                </h1>
-              </Link>
-              <div className="text-gray-400">/</div>
-              <h2 className="text-xl font-bold text-black">
-                Agent Dashboard
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Wallet Connect Button */}
-              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
-
-              <Link href="/analytics">
-                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
-                  Analytics
-                </button>
-              </Link>
-              <Link href="/marketplace">
-                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
-                  Marketplace
-                </button>
-              </Link>
-              {/* Delete All button hidden to prevent public access
-              {deployedAgents.length > 0 && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:text-white hover:bg-red-600 transition-all border border-red-300 hover:border-red-600"
-                >
-                  🗑️ Delete All
-                </button>
-              )}
-              */}
-              <button
-                onClick={() => setShowDeployModal(true)}
-                className="bg-black text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all"
-              >
-                + Deploy Agent
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <UnifiedNavbar currentPage="agents" showExtraButtons={true} />
 
       {/* Stats and Provider Section - NOT sticky, scrolls away */}
       <div className="border-b border-gray-200 bg-gray-50">
@@ -1171,8 +1165,44 @@ export default function AgentDashboardPage() {
         <div className="grid grid-cols-12 gap-6">
           {/* Left - Agent Cards */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
+            {/* TAB NAVIGATION */}
+            {publicKey && (
+              <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+                <button
+                  onClick={() => setActiveTab('my-agents')}
+                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
+                    activeTab === 'my-agents'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  💼 My Agents ({deployedAgents.filter(a => a.wallet_address === publicKey.toBase58()).length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('builder')}
+                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
+                    activeTab === 'builder'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  🧠 AI Builder
+                </button>
+                <button
+                  onClick={() => setActiveTab('marketplace')}
+                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-all ${
+                    activeTab === 'marketplace'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  🏪 Public Marketplace ({deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58()).length})
+                </button>
+              </div>
+            )}
+
             {/* MY AGENTS SECTION */}
-            {publicKey && (() => {
+            {publicKey && activeTab === 'my-agents' && (() => {
               const myAgents = deployedAgents.filter(a =>
                 a.wallet_address === publicKey.toBase58()
               );
@@ -1207,7 +1237,8 @@ export default function AgentDashboardPage() {
                         lastActionTime: agent.lastRun || agent.deployed,
                         avatar: '🤖',
                         color: 'cyan',
-                        isReal: true
+                        isReal: true,
+                        schedule: agent.schedule  // Pass schedule data
                       }
 
                       return (
@@ -1216,6 +1247,7 @@ export default function AgentDashboardPage() {
                           agent={agentStats}
                           index={index}
                           onRun={() => runAgent(agent.id)}
+                          onStop={() => stopAgent(agent.id)}
                           identity={identity}
                         />
                       )
@@ -1226,7 +1258,7 @@ export default function AgentDashboardPage() {
             })()}
 
             {/* EMPTY STATE - Show when wallet connected but no agents */}
-            {publicKey && deployedAgents.filter(a =>
+            {publicKey && activeTab === 'my-agents' && deployedAgents.filter(a =>
               a.wallet_address === publicKey.toBase58()
             ).length === 0 && (
               <div className="bg-white p-6 rounded-xl border-2 border-blue-200 mb-4 shadow-sm">
@@ -1250,8 +1282,49 @@ export default function AgentDashboardPage() {
               </div>
             )}
 
+            {/* AI BUILDER TAB */}
+            {publicKey && activeTab === 'builder' && (
+              <AgentBuilderTab
+                onDeploy={(agentData) => {
+                  // Create new agent from builder
+                  const newAgent: DeployedAgent = {
+                    id: `agent-${Date.now()}`,
+                    name: agentData.name || 'AI Generated Agent',
+                    type: 'custom',
+                    prompt: agentData.prompt || agentData.description,
+                    deployed: Date.now(),
+                    totalRuns: 0,
+                    status: 'idle',
+                    wallet_address: publicKey?.toBase58(),
+                  }
+
+                  // Add to local state
+                  setDeployedAgents(prev => [newAgent, ...prev])
+
+                  // Save to Supabase
+                  supabase.from('agents').insert({
+                    id: newAgent.id,
+                    name: newAgent.name,
+                    type: newAgent.type,
+                    prompt: newAgent.prompt,
+                    deployed: newAgent.deployed,
+                    total_runs: 0,
+                    wallet_address: newAgent.wallet_address,
+                  }).then(({ error }) => {
+                    if (error) console.error('Failed to save agent to Supabase:', error)
+                  })
+
+                  // Switch to My Agents tab
+                  setActiveTab('my-agents')
+
+                  // Show success message
+                  alert(`✅ Agent "${newAgent.name}" deployed successfully!\n\nYou can now run it from the My Agents tab.`)
+                }}
+              />
+            )}
+
             {/* PUBLIC MARKETPLACE SECTION */}
-            {(() => {
+            {activeTab === 'marketplace' && (() => {
               // Filter to show only OTHER users' agents (not current user's own agents)
               const publicAgents = publicKey
                 ? deployedAgents.filter(a => a.wallet_address !== publicKey.toBase58())
@@ -1315,7 +1388,8 @@ export default function AgentDashboardPage() {
                         lastActionTime: agent.lastRun || agent.deployed,
                         avatar: '🌐',
                         color: 'purple',
-                        isReal: true
+                        isReal: true,
+                        schedule: agent.schedule  // Pass schedule data
                       }
 
                       return (
@@ -1328,6 +1402,7 @@ export default function AgentDashboardPage() {
                             agent={agentStats}
                             index={index}
                             onRun={() => runAgent(agent.id)}
+                            onStop={() => stopAgent(agent.id)}
                             identity={identity}
                           />
                         </div>
@@ -1393,11 +1468,13 @@ function AgentCard({
   agent,
   index,
   onRun,
+  onStop,
   identity,
 }: {
   agent: AgentStats
   index: number
   onRun: () => void
+  onStop?: () => void
   identity?: AgentIdentity
 }) {
   const { attestBadge, attesting } = useBadgeAttestation()
@@ -1608,21 +1685,56 @@ function AgentCard({
           <div className="text-xs text-gray-500">{timeStr}</div>
         </div>
 
+        {/* AUTONOMOUS SCHEDULE STATUS - PROMINENT! */}
+        {agent.schedule && agent.schedule.enabled && (
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-300 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⏰</span>
+                <span className="text-sm font-bold text-purple-700">SCHEDULED</span>
+              </div>
+              <div className="px-2 py-1 bg-purple-600 text-white text-xs font-bold rounded">
+                AUTO
+              </div>
+            </div>
+            <div className="text-xs text-gray-700">
+              <div className="mb-1">
+                <span className="font-semibold">Frequency:</span> Every {agent.schedule.intervalMinutes} min
+              </div>
+              {agent.schedule.budget && (
+                <div className="mb-1">
+                  <span className="font-semibold">Budget:</span> ${agent.schedule.budget.maxCostPerExecution} per run
+                </div>
+              )}
+              {agent.schedule.nextRun && (
+                <div className="text-purple-700 font-bold mt-2">
+                  ⏱️ Next run: {new Date(agent.schedule.nextRun).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         {agent.isReal && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={onRun}
-                disabled={agent.status === 'executing'}
-                className="bg-black text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
-              >
-                {agent.status === 'executing' ? (
-                  <span>⚡ Running...</span>
-                ) : (
+              {agent.status === 'executing' && onStop ? (
+                <button
+                  onClick={onStop}
+                  className="bg-red-100 border-2 border-red-600 text-black px-4 py-3 rounded-lg font-semibold transition-all hover:bg-red-200"
+                >
+                  <span className="text-red-700 font-bold">🛑 Stop</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onRun}
+                  disabled={agent.status === 'executing'}
+                  className="bg-black text-white px-4 py-3 rounded-lg font-semibold transition-all hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
+                >
                   <span>▶ Run</span>
-                )}
-              </button>
+                </button>
+              )}
 
               <button
                 onClick={() => setShowScheduleModal(true)}
