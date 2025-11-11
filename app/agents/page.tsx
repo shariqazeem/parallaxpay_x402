@@ -1895,6 +1895,17 @@ function AgentCard({
               >
                 🤖 Schedule
               </button>
+
+              {/* Delete Button - Only for owned agents */}
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  className="border-2 border-red-200 px-4 py-3 rounded-lg font-semibold transition-all hover:border-red-400 hover:bg-red-50 text-red-700"
+                  title="Delete this agent"
+                >
+                  🗑️ Delete
+                </button>
+              )}
             </div>
 
             {/* Badge Attestation Button */}
