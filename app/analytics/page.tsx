@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 import { supabase, DeployedAgentDB, TransactionDB } from '@/lib/supabase'
 
 interface AgentAnalytics {
@@ -99,34 +99,8 @@ export default function AnalyticsPage() {
   const mostExpensive = agents.length > 0 ? agents.reduce((max, a) => a.totalCost > max.totalCost ? a : max) : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-[1400px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <h1 className="text-2xl font-black cursor-pointer hover:opacity-70 transition-opacity">
-                  <span className="text-black">ParallaxPay</span>
-                </h1>
-              </Link>
-              <div className="text-gray-400">/</div>
-              <h2 className="text-xl font-bold text-black">
-                📊 Analytics
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <WalletMultiButton className="!bg-black !text-white !rounded-lg !px-4 !py-2 !text-sm !font-bold hover:!bg-gray-800 !transition-all" />
-              <Link href="/agents">
-                <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:text-black transition-all border border-gray-200 hover:border-gray-400">
-                  Agents
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      <UnifiedNavbar currentPage="analytics" />
 
       {/* Main Content */}
       <div className="max-w-[1400px] mx-auto px-6 py-8">

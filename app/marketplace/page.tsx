@@ -6,7 +6,7 @@ import LiveOrderBook from '../components/marketplace/LiveOrderBook'
 import ProviderHeatMap from '../components/marketplace/ProviderHeatMap'
 import ProviderList from '../components/marketplace/ProviderList'
 import TradingChart from '../components/marketplace/TradingChart'
-import MarketHeader from '../components/marketplace/MarketHeader'
+import { UnifiedNavbar } from '@/components/UnifiedNavbar'
 import AgentPanel from '../components/marketplace/AgentPanel'
 import OrderPlacementPanel from '../components/marketplace/OrderPlacementPanel'
 import UserPositionPanel from '../components/marketplace/UserPositionPanel'
@@ -34,8 +34,7 @@ export default function MarketplacePage() {
       {/* Trade Animations Overlay */}
       <TradeAnimations />
 
-      {/* Market Header with Stats */}
-      <MarketHeader />
+      <UnifiedNavbar currentPage="marketplace" />
 
       {/* Selected Provider Banner */}
       {selectedProvider && (
