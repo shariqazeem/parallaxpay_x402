@@ -53,6 +53,14 @@ export interface MarketSnapshot {
   }
 }
 
+export type LoadBalancingStrategy = 'round-robin' | 'latency-based' | 'random'
+
+export interface ProviderSelectionOptions {
+  strategy?: LoadBalancingStrategy
+  excludeProviders?: string[]
+  minReputation?: number
+}
+
 /**
  * Provider Discovery Service
  *
@@ -63,9 +71,15 @@ export class ProviderDiscoveryService {
   private schedulerUrls: string[]
   private monitoringInterval: NodeJS.Timeout | null = null
   private updateCallbacks: Set<(snapshot: MarketSnapshot) => void> = new Set()
+  private roundRobinIndex: number = 0
 
-  constructor(schedulerUrls: string[] = ['http://localhost:3001']) {
-    this.schedulerUrls = schedulerUrls
+  constructor(schedulerUrls?: string[]) {
+    // Support environment variable for cluster configuration
+    const envUrls = process.env.PARALLAX_CLUSTER_URLS?.split(',').map(url => url.trim()).filter(Boolean)
+    const defaultUrls = [process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001']
+
+    this.schedulerUrls = schedulerUrls || envUrls || defaultUrls
+    console.log(`🌐 Parallax cluster URLs: ${this.schedulerUrls.join(', ')}`)
   }
 
   /**
@@ -308,6 +322,77 @@ export class ProviderDiscoveryService {
       this.schedulerUrls.push(schedulerUrl)
       console.log(`➕ Added provider: ${schedulerUrl}`)
     }
+  }
+
+  /**
+   * Select best provider based on strategy
+   */
+  selectBestProvider(options: ProviderSelectionOptions = {}): ProviderMetrics | null {
+    const {
+      strategy = 'latency-based',
+      excludeProviders = [],
+      minReputation = 50,
+    } = options
+
+    // Get eligible providers
+    let eligible = this.getOnlineProviders().filter(
+      p => p.reputation >= minReputation && !excludeProviders.includes(p.id)
+    )
+
+    if (eligible.length === 0) {
+      console.warn('⚠️  No eligible providers found')
+      return null
+    }
+
+    // Select based on strategy
+    switch (strategy) {
+      case 'round-robin':
+        return this.selectProviderRoundRobin(eligible)
+      case 'latency-based':
+        return this.selectProviderLatencyBased(eligible)
+      case 'random':
+        return this.selectProviderRandom(eligible)
+      default:
+        return this.selectProviderLatencyBased(eligible)
+    }
+  }
+
+  /**
+   * Round-robin provider selection
+   */
+  private selectProviderRoundRobin(providers: ProviderMetrics[]): ProviderMetrics {
+    const selected = providers[this.roundRobinIndex % providers.length]
+    this.roundRobinIndex++
+    console.log(`🔄 Round-robin selected: ${selected.name} (${selected.address})`)
+    return selected
+  }
+
+  /**
+   * Latency-based provider selection (choose fastest)
+   */
+  private selectProviderLatencyBased(providers: ProviderMetrics[]): ProviderMetrics {
+    // Sort by latency (ascending) and reputation (descending)
+    const sorted = [...providers].sort((a, b) => {
+      // Primary: latency (lower is better)
+      const latencyDiff = a.latency - b.latency
+      if (Math.abs(latencyDiff) > 10) return latencyDiff
+
+      // Secondary: reputation (higher is better)
+      return b.reputation - a.reputation
+    })
+
+    const selected = sorted[0]
+    console.log(`⚡ Latency-based selected: ${selected.name} (${selected.latency}ms, rep: ${selected.reputation})`)
+    return selected
+  }
+
+  /**
+   * Random provider selection
+   */
+  private selectProviderRandom(providers: ProviderMetrics[]): ProviderMetrics {
+    const selected = providers[Math.floor(Math.random() * providers.length)]
+    console.log(`🎲 Random selected: ${selected.name}`)
+    return selected
   }
 
   // Helper methods
