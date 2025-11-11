@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     const inferenceResponse = await clusterClient.inference(
       {
         messages: body.messages,
-        max_tokens: body.max_tokens || 256,
+        max_tokens: body.max_tokens || 2000, // Increased to ensure complete responses
         temperature: body.temperature || 0.7,
       },
       {
@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
           content: 'Your prompt here',
         },
       ],
-      max_tokens: 256,
+      max_tokens: 2000,
       temperature: 0.7,
       provider: 'optional-provider-id',
     },
