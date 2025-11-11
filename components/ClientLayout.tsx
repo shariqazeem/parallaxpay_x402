@@ -30,42 +30,49 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {showStartup && <StartupScreen onComplete={handleStartupComplete} />}
-      {children}
+      {showStartup ? (
+        // Show ONLY startup screen, no children
+        <StartupScreen onComplete={handleStartupComplete} />
+      ) : (
+        // Show ONLY children after startup completes
+        <>
+          {children}
 
-      {/* Toast Notifications Container */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#fff',
-            color: '#000',
-            fontWeight: '600',
-            border: '2px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '16px',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-            style: {
-              border: '2px solid #10b981',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-            style: {
-              border: '2px solid #ef4444',
-            },
-          },
-        }}
-      />
+          {/* Toast Notifications Container */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#fff',
+                color: '#000',
+                fontWeight: '600',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                padding: '16px',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+                style: {
+                  border: '2px solid #10b981',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+                style: {
+                  border: '2px solid #ef4444',
+                },
+              },
+            }}
+          />
+        </>
+      )}
     </>
   )
 }
