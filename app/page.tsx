@@ -220,49 +220,56 @@ export default function HomePage() {
             variants={containerVariants}
             className="mb-8"
           >
-            <Link href="/oracle">
-              <motion.div
-                variants={itemVariants}
-                whileHover={{ y: -8, scale: 1.01, transition: { duration: 0.3 } }}
-                className="bg-white rounded-3xl p-10 sm:p-12 shadow-sm border-2 border-gray-200 hover:shadow-2xl hover:border-black transition-all cursor-pointer relative overflow-hidden"
-              >
-                {/* Subtle gradient accent */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600" />
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -4, transition: { duration: 0.3 } }}
+              className="bg-white rounded-3xl p-10 sm:p-12 shadow-lg hover:shadow-xl transition-all relative overflow-hidden"
+            >
+              {/* Subtle gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600" />
 
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        className="text-6xl"
-                      >
-                        🔮
-                      </motion.div>
-                      <div>
-                        <h3 className="text-4xl sm:text-5xl font-black text-black mb-2">Market Oracle Agent</h3>
-                        <p className="text-xl text-gray-600">Real-time crypto predictions with multi-provider consensus</p>
-                      </div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      className="text-6xl"
+                    >
+                      🔮
+                    </motion.div>
+                    <div>
+                      <h3 className="text-4xl sm:text-5xl font-black text-black mb-2">Market Oracle Agent</h3>
+                      <p className="text-xl text-gray-600">Real-time crypto predictions with multi-provider consensus</p>
                     </div>
-                    <div className="hidden sm:block text-black text-4xl">→</div>
                   </div>
-                  <div className="grid sm:grid-cols-3 gap-6 mt-8">
-                    <div className="bg-gray-50 rounded-2xl p-6 border-2 border-gray-200">
-                      <div className="text-3xl font-black text-black mb-1">Autonomous</div>
-                      <div className="text-sm text-gray-600">Runs predictions automatically</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-6 border-2 border-gray-200">
-                      <div className="text-3xl font-black text-black mb-1">x402 Payments</div>
-                      <div className="text-sm text-gray-600">Micropayments per inference</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-6 border-2 border-gray-200">
-                      <div className="text-3xl font-black text-black mb-1">Multi-Provider</div>
-                      <div className="text-sm text-gray-600">Consensus from Parallax nodes</div>
-                    </div>
+                  <Link href="/oracle">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="hidden sm:flex px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all items-center gap-2"
+                    >
+                      Try it
+                      <span>→</span>
+                    </motion.button>
+                  </Link>
+                </div>
+                <div className="grid sm:grid-cols-3 gap-6 mt-8">
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <div className="text-3xl font-black text-black mb-1">Autonomous</div>
+                    <div className="text-sm text-gray-600">Runs predictions automatically</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <div className="text-3xl font-black text-black mb-1">x402 Payments</div>
+                    <div className="text-sm text-gray-600">Micropayments per inference</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <div className="text-3xl font-black text-black mb-1">Multi-Provider</div>
+                    <div className="text-sm text-gray-600">Consensus from Parallax nodes</div>
                   </div>
                 </div>
-              </motion.div>
-            </Link>
+              </div>
+            </motion.div>
           </motion.div>
 
           <motion.div
