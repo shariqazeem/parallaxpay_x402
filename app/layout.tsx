@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { WalletContextProvider } from './components/WalletProvider'
 import { ProviderContextProvider } from './contexts/ProviderContext'
+import { ClientLayout } from '@/components/ClientLayout'
 
 export const metadata: Metadata = {
   title: 'ParallaxPay - AI Micropayments on Solana',
@@ -18,7 +19,9 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <WalletContextProvider>
           <ProviderContextProvider>
-            {children}
+            <ClientLayout>
+              {children}
+            </ClientLayout>
           </ProviderContextProvider>
         </WalletContextProvider>
       </body>

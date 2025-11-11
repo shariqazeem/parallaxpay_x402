@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { ProviderCardSkeleton } from './Skeletons'
 
 interface ProviderMetrics {
   id: string
@@ -61,13 +62,22 @@ export function ClusterStatusDashboard() {
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200 shadow-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-black flex items-center gap-2">
+              <span className="text-2xl">⚡</span>
+              Parallax Cluster Status
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Loading cluster status...
+            </p>
           </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[0, 1, 2].map((i) => (
+            <ProviderCardSkeleton key={i} index={i} />
+          ))}
         </div>
       </div>
     )
