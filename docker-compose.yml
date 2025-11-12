@@ -1,0 +1,94 @@
+# Docker Compose configuration for ParallaxPay
+
+services:
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - NEXT_PUBLIC_RPC_ENDPOINT=${NEXT_PUBLIC_RPC_ENDPOINT}
+        - NEXT_PUBLIC_X402_GATEWAY_URL=${NEXT_PUBLIC_X402_GATEWAY_URL}
+        - NEXT_PUBLIC_PARALLAX_API_URL=http://parallax:8000
+        - NEXT_PUBLIC_APP_URL=https://parallaxpay.online
+    container_name: parallaxpay-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+    networks:
+      - parallaxpay-network
+    depends_on:
+      - parallax
+
+  # Parallax Cluster Service
+  parallax:
+    image: python:3.12-slim
+    container_name: parallaxpay-parallax
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "8000:8000"
+      - "3001:3001"  # Scheduler port
+      - "3002:3002"  # Worker port
+    volumes:
+      - ./start-parallax.sh:/app/start-parallax.sh:ro
+      - ./parallax-data:/app/data
+      - parallax-cache:/root/.cache
+      - parallax-models:/root/.cache/huggingface  # Model cache
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+    networks:
+      - parallaxpay-network
+    command: bash /app/start-parallax.sh
+    shm_size: '2gb'  # Shared memory for model loading
+    # Uncomment below if you have NVIDIA GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: parallaxpay-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - parallaxpay-network
+    depends_on:
+      - app
+
+  # Certbot for SSL
+  certbot:
+    image: certbot/certbot
+    container_name: parallaxpay-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  parallaxpay-network:
+    driver: bridge
+
+volumes:
+  parallax-cache:
+  parallax-models:
