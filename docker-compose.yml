@@ -34,16 +34,29 @@ services:
     working_dir: /app
     ports:
       - "8000:8000"
-      - "3002:3002"
+      - "3001:3001"  # Scheduler port
+      - "3002:3002"  # Worker port
     volumes:
       - ./start-parallax.sh:/app/start-parallax.sh:ro
       - ./parallax-data:/app/data
       - parallax-cache:/root/.cache
+      - parallax-models:/root/.cache/huggingface  # Model cache
     environment:
       - PYTHONUNBUFFERED=1
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
     networks:
       - parallaxpay-network
     command: bash /app/start-parallax.sh
+    shm_size: '2gb'  # Shared memory for model loading
+    # Uncomment below if you have NVIDIA GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
   # Nginx Reverse Proxy
   nginx:
@@ -78,3 +91,4 @@ networks:
 
 volumes:
   parallax-cache:
+  parallax-models:
