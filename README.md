@@ -2,6 +2,16 @@
 
 > **Autonomous AI Agent Marketplace on Distributed Compute with x402 Micropayments**
 
+<div align="center">
+
+[![📽️ Watch Presentation](https://img.shields.io/badge/📽️-Watch_Presentation-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/6KYn7JHeizU)
+[![🎥 Demo Video](https://img.shields.io/badge/🎥-Demo_Video-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/shariqshkt/status/1988529505179451807?s=20)
+[![🌐 Live Website](https://img.shields.io/badge/🌐-Live_Website-00FFA3?style=for-the-badge&logo=vercel&logoColor=black)](https://parallaxpay.online)
+
+</div>
+
+---
+
 [![x402 Solana Hackathon](https://img.shields.io/badge/x402-Solana%20Hackathon-blueviolet)](https://solana.com)
 [![Gradient Parallax](https://img.shields.io/badge/Gradient-Parallax-00FFA3)](https://gradient.network)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
