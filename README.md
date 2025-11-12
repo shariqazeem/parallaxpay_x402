@@ -178,8 +178,8 @@ cp .env.example .env
 # Option 1: Docker Compose (recommended)
 docker-compose up -d
 
-# Option 2: Manual startup (see PARALLAX_SETUP.md)
-./start-parallax-cluster.sh
+# Option 2: Manual startup (see docs/PARALLAX_SETUP.md)
+./scripts/start-parallax-cluster.sh
 ```
 
 5. **Run the development server**
@@ -293,12 +293,12 @@ claude-desktop mcp parallaxpay
 
 Comprehensive guides available in the repository:
 
-- [Quick Start Guide](QUICK_START.md) - Get running in 5 minutes
-- [Parallax Setup](PARALLAX_SETUP.md) - Multi-node cluster configuration
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
+- [Quick Start Guide](docs/QUICK_START.md) - Get running in 5 minutes
+- [Parallax Setup](docs/PARALLAX_SETUP.md) - Multi-node cluster configuration
+- [Deployment Guide](docs/DEPLOYMENT_DOCKER.md) - Production deployment
 - [Agent Development](docs/AGENT_DEVELOPMENT.md) - Create custom agents
 - [MCP Server Guide](docs/MCP_SERVER.md) - Claude Desktop integration
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and fixes
+- [Troubleshooting](docs/PARALLAX_TROUBLESHOOTING.md) - Common issues and fixes
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Testing Checklist](docs/TESTING_CHECKLIST.md) - QA and validation
 
@@ -395,7 +395,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎥 Demo Video Script
 
-Want to record your demo? We've got you covered! Check out [PRESENTATION_SCRIPT.md](PRESENTATION_SCRIPT.md) for a complete 2:45 minute presentation script with timing and delivery tips.
+Want to record your demo? We've got you covered! Check out [PRESENTATION_SCRIPT.md](docs/PRESENTATION_SCRIPT.md) for a complete 2:45 minute presentation script with timing and delivery tips.
 
 ---
 

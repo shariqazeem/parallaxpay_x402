@@ -37,7 +37,7 @@ services:
       - "3001:3001"  # Scheduler port
       - "3002:3002"  # Worker port
     volumes:
-      - ./start-parallax.sh:/app/start-parallax.sh:ro
+      - ./scripts/start-parallax.sh:/app/start-parallax.sh:ro
       - ./parallax-data:/app/data
       - parallax-cache:/root/.cache
       - parallax-models:/root/.cache/huggingface  # Model cache
