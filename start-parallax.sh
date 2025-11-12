@@ -41,7 +41,7 @@ cd parallax
 
 # Install all dependencies including SGLang for Linux
 echo "📦 Installing Parallax dependencies (SGLang backend)..."
-pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic requests click typer rich --quiet
+pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic requests click typer rich torch dijkstar --quiet
 
 # Install SGLang for GPU inference on Linux
 echo "📦 Installing SGLang backend..."
