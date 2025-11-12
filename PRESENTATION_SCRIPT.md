@@ -1,110 +1,94 @@
 # ParallaxPay - Presentation Script
-**Duration: ~2:45 minutes (450 words)**
+**Duration: ~1:50 minutes (290 words) - UNDER 2 MINUTES!**
 
 ---
 
-## [SLIDE 1 - Title] (0:00-0:15) - 15 seconds
+## [SLIDE 1 - Title] (0:00-0:10) - 10 seconds
 
-Hello! I'm excited to present **ParallaxPay** - an autonomous AI agent marketplace built on Gradient Parallax with x402 micropayments on Solana.
-
-**[Pause for 2 seconds]**
+Hi! I'm presenting **ParallaxPay** - an autonomous AI agent marketplace built on Gradient Parallax with x402 micropayments on Solana.
 
 ---
 
-## [SLIDE 2 - The Problem] (0:15-0:35) - 20 seconds
+## [SLIDE 2-3 - Problem & Solution] (0:10-0:30) - 20 seconds
 
-The problem we're solving: AI agents today need compute resources but lack the payment infrastructure to access them autonomously. Traditional payment systems are too slow and expensive for micropayments, and there's no decentralized marketplace connecting agents with compute providers. Plus, there's no trust system for autonomous transactions.
-
----
-
-## [SLIDE 3 - Solution] (0:35-1:00) - 25 seconds
-
-ParallaxPay is our solution: a fully autonomous AI agent marketplace on distributed compute infrastructure. We integrate the x402 protocol for seamless Solana micropayments at just one-tenth of a cent per inference. We're running real distributed compute using Gradient Parallax multi-node clusters, not simulations. Agents use swarm intelligence to collaborate on provider discovery, build on-chain reputation, and schedule themselves to run autonomously without any manual intervention.
+AI agents need compute resources but lack payment infrastructure for autonomous transactions. ParallaxPay solves this with a fully autonomous marketplace using x402 protocol for Solana micropayments at one-tenth of a cent per inference, running on real Gradient Parallax multi-node clusters with swarm intelligence and on-chain reputation.
 
 ---
 
-## [SLIDE 4 - Key Features] (1:00-1:20) - 20 seconds
+## [SLIDE 4 - Key Features] (0:30-0:45) - 15 seconds
 
-Our standout features include: a Market Oracle Agent that makes autonomous crypto predictions using multi-provider consensus. Agent swarms where multiple agents collaborate to benchmark and vote on the best providers. Six specialized agent types covering everything from market intelligence to blockchain queries. Real-time provider discovery with health checking, and we even built an MCP server, qualifying us for a bonus track!
-
----
-
-## [SLIDE 5 - Architecture] (1:20-1:30) - 10 seconds
-
-Here's how it works: AI agents sit at the top, making requests through the x402 protocol, which handles micropayments on Solana. These requests flow to our Parallax compute cluster where they're distributed across worker nodes for inference.
+We've built six specialized agent types including a Market Oracle that makes autonomous crypto predictions with multi-provider consensus, agent swarms that collaborate to benchmark providers, and an MCP server qualifying us for a bonus track.
 
 ---
 
-## [SLIDE 6 - Parallax Integration] (1:30-1:45) - 15 seconds
+## [SLIDE 5 - Architecture] (0:45-0:55) - 10 seconds
 
-Our Gradient Parallax integration is production-ready: we're deploying multi-node clusters with one scheduler and multiple workers, implementing proper load balancing and automatic failover. This is real distributed inference with comprehensive monitoring and health checks - not a simulation.
-
----
-
-## [SLIDE 7 - x402 Integration] (1:45-2:00) - 15 seconds
-
-For payments, we've implemented a complete pay-per-inference model with automatic handling through x402-fetch and x402-express middleware. Every transaction is tracked in real-time with on-chain verification, and users can view a complete public activity feed.
+The architecture is simple: AI agents make requests through x402 protocol for payments on Solana, then our Parallax cluster distributes work across multiple nodes for inference.
 
 ---
 
-## [SLIDE 8 - Demo Features] (2:00-2:20) - 20 seconds
+## [SLIDE 6 - Parallax Integration] (0:55-1:05) - 10 seconds
 
-Let me highlight our live demo features: The Market Oracle makes autonomous predictions about crypto prices and builds its reputation based on accuracy. Agent swarms collaborate to discover and rank compute providers using consensus voting. And every single inference payment flows through Solana in real-time, which you can see in our live transaction feed.
-
-**[If doing live demo: "Let me quickly show you..."]**
+Our Parallax integration uses a true multi-node cluster with one scheduler and multiple workers, proper load balancing, and automatic failover. This is real distributed inference, not simulated.
 
 ---
 
-## [SLIDE 9 - Competitive Advantages] (2:20-2:40) - 20 seconds
+## [SLIDE 7 - x402 Integration] (1:05-1:15) - 10 seconds
 
-Why ParallaxPay wins: We're the only submission with a true multi-node Parallax cluster. Our agents are truly autonomous with self-scheduling, not requiring manual clicks. We implement swarm intelligence with real consensus algorithms. The platform is production-ready with Docker deployment, SSL, and comprehensive error handling. We qualify for multiple tracks including the MCP Server track. And we've built exceptional documentation with nine detailed guides covering setup, deployment, and troubleshooting.
+Every inference payment flows through x402 with automatic handling, real-time transaction tracking, and on-chain verification visible in our public activity feed.
 
 ---
 
-## [SLIDE 10 - Closing] (2:40-2:45) - 5 seconds
+## [SLIDE 8 - Demo Features] (1:15-1:25) - 10 seconds
 
-ParallaxPay represents the future of autonomous AI economies - where agents discover compute, pay for services, and build reputation, all without human intervention. Thank you!
+Our Market Oracle autonomously predicts crypto prices, builds reputation based on accuracy, while agent swarms vote on best providers and all payments flow through Solana in real-time.
+
+---
+
+## [SLIDE 9 - Competitive Advantages] (1:25-1:45) - 20 seconds
+
+Why we win: We're the only submission with a true multi-node Parallax cluster. Our agents are truly autonomous with self-scheduling. We implement real swarm intelligence with consensus algorithms. It's production-ready with Docker and comprehensive error handling. We qualify for multiple tracks. And we have exceptional documentation with nine detailed guides.
+
+---
+
+## [SLIDE 10 - Closing] (1:45-1:50) - 5 seconds
+
+ParallaxPay is the future of autonomous AI economies. Thank you!
 
 ---
 
 ## TIMING NOTES:
-- **Total: ~165 seconds (2:45)**
+- **Total: ~110 seconds (1:50) - Comfortably under 2 minutes!**
 - Speak clearly at 150-160 words per minute
-- Use natural pauses between slides
-- Emphasize key numbers and features
-- If showing live demo on slide 8, add 15 seconds (total 3:00)
+- Brief pause between slides (1-2 seconds)
+- Emphasize: "autonomous," "multi-node," "real distributed," "swarm intelligence"
 
 ## DELIVERY TIPS:
-1. **Smile and maintain energy throughout**
-2. **Pause after important points**
-3. **Use hand gestures to emphasize "autonomous," "swarm," "real-time"**
-4. **Make eye contact with camera/judges**
-5. **Have demo ready in another tab for slide 8 (optional)**
-6. **End with confidence - don't rush the closing**
+1. **Speak confidently and clearly** - Don't rush!
+2. **Emphasize key phrases**: "autonomous," "multi-node," "real distributed," "swarm intelligence"
+3. **Smile and maintain energy** - Show enthusiasm for your project
+4. **Brief pauses between slides** - Let key points sink in
+5. **End with confidence** - Strong closing
 
-## KEY PHRASES TO EMPHASIZE:
-- "Truly autonomous"
-- "Real distributed compute, not simulated"
-- "Multi-node Parallax cluster"
-- "Swarm intelligence with consensus"
-- "Production-ready"
-- "One-tenth of a cent per inference"
+## QUICK PRACTICE GUIDE:
+- Read through 2-3 times before recording
+- Time yourself - aim for 1:50-2:00
+- Record in a quiet space with good lighting
+- Speak at ~150 words per minute (conversational pace)
+- Have slides visible while recording
 
 ---
 
-## BACKUP RESPONSES (If Q&A follows):
-
-**Q: How is this different from other agent platforms?**
-A: Most platforms require manual execution. ParallaxPay agents schedule and run themselves, collaborate in swarms, and handle their own payments autonomously.
+## BACKUP Q&A (If judges ask):
 
 **Q: Is the Parallax cluster real or simulated?**
-A: 100% real. We deploy one scheduler and multiple workers. All requests go through the scheduler which load-balances across workers. You can verify this in our Docker Compose setup.
+A: 100% real. One scheduler + multiple workers with proper load balancing. Check our Docker Compose setup.
 
-**Q: What happens if a Parallax node goes down?**
-A: Our provider discovery service continuously monitors node health. If a node fails, requests automatically route to healthy nodes with exponential backoff retry logic.
+**Q: How is this different from other agent platforms?**
+A: We're the only one with true multi-node Parallax, self-scheduling agents, and swarm collaboration with consensus.
 
-**Q: How do agents build reputation?**
-A: Through on-chain attestations after successful predictions. The Market Oracle, for example, tracks prediction accuracy over time and displays trust badges based on performance.
+**Q: What happens if a node fails?**
+A: Automatic failover with health monitoring and exponential backoff retry logic.
 
-**Q: Can this scale?**
-A: Absolutely. The architecture supports N worker nodes, horizontal scaling of the Next.js frontend, and Supabase handles the database with connection pooling. We also have comprehensive caching strategies.
+**Q: How do you qualify for multiple tracks?**
+A: Primary track is Parallax Eco (best agent on Parallax). Bonus track is MCP Server (Model Context Protocol integration for Claude Desktop).
