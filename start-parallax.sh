@@ -39,9 +39,9 @@ rm -rf /tmp/parallax
 git clone https://github.com/GradientHQ/parallax.git
 cd parallax
 
-# Install all dependencies
+# Install all dependencies (including torch and dijkstar)
 echo "📦 Installing Parallax dependencies..."
-pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic requests click typer rich --quiet
+pip install msgpack safetensors huggingface-hub numpy pyzmq psutil httpx aiohttp uvicorn fastapi pydantic requests click typer rich torch dijkstar --quiet
 
 # Install Parallax
 pip install -e . --no-deps --quiet
