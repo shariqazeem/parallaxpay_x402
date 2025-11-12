@@ -1,0 +1,59 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next
+out
+dist
+build
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+*.log
+.npm
+
+# Local env files
+.env
+.env.local
+.env.development
+.env.production
+.env.production.local
+.env*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Deployment
+docker-compose.yml
+Dockerfile
+.dockerignore
+deploy.sh
+certbot
+nginx
+
+# Documentation
+*.md
+docs
+
+# Cache
+.cache
+.parcel-cache
+.eslintcache
