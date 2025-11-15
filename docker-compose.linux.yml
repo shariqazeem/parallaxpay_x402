@@ -22,20 +22,28 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      # Solana Configuration
+      # Solana Configuration (CRITICAL for x402 payments!)
       - NEXT_PUBLIC_SOLANA_RPC_URL=${NEXT_PUBLIC_SOLANA_RPC_URL:-https://api.devnet.solana.com}
       - X402_NETWORK=${X402_NETWORK:-solana-devnet}
+      - X402_FACILITATOR_URL=${X402_FACILITATOR_URL:-https://x402.org/facilitator}
       - SOLANA_PRIVATE_KEY=${SOLANA_PRIVATE_KEY}
+      - SOLANA_WALLET_ADDRESS=${SOLANA_WALLET_ADDRESS}
+      # CDP Configuration (for x402 payments)
+      - CDP_API_KEY_ID=${CDP_API_KEY_ID}
+      - CDP_API_KEY_SECRET=${CDP_API_KEY_SECRET}
+      - NEXT_PUBLIC_CDP_CLIENT_KEY=${NEXT_PUBLIC_CDP_CLIENT_KEY}
       # Supabase
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       # Gradient Cloud API (IMPORTANT for Linux deployment!)
       - GRADIENT_API_KEY=${GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
+      - NEXT_PUBLIC_GRADIENT_API_KEY=${NEXT_PUBLIC_GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
       - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-oss-120b}
       - GRADIENT_BASE_URL=${GRADIENT_BASE_URL:-https://apis.gradient.network/api/v1}
       # Application
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
       - NEXT_PUBLIC_DEV_MODE=${NEXT_PUBLIC_DEV_MODE:-false}
+      - NEXT_PUBLIC_NETWORK=${NEXT_PUBLIC_NETWORK:-solana-devnet}
       - ENABLE_TX_LOGGING=${ENABLE_TX_LOGGING:-true}
       # Parallax (will use Gradient as fallback since not available on Linux)
       - PARALLAX_SCHEDULER_URL=${PARALLAX_SCHEDULER_URL:-http://localhost:3001}
