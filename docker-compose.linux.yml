@@ -1,0 +1,82 @@
+# Docker Compose for ParallaxPay on Linux (aarch64/x86_64)
+# Uses Gradient Cloud API fallback instead of Parallax (which requires macOS)
+
+services:
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - NEXT_PUBLIC_RPC_ENDPOINT=${NEXT_PUBLIC_RPC_ENDPOINT:-https://api.devnet.solana.com}
+        - NEXT_PUBLIC_X402_GATEWAY_URL=${NEXT_PUBLIC_X402_GATEWAY_URL}
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://parallaxpay.online}
+        # Gradient Cloud API (fallback)
+        - GRADIENT_API_KEY=${GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
+        - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-oss-120b}
+    container_name: parallaxpay-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      # Solana Configuration
+      - NEXT_PUBLIC_SOLANA_RPC_URL=${NEXT_PUBLIC_SOLANA_RPC_URL:-https://api.devnet.solana.com}
+      - X402_NETWORK=${X402_NETWORK:-solana-devnet}
+      - SOLANA_PRIVATE_KEY=${SOLANA_PRIVATE_KEY}
+      # Supabase
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      # Gradient Cloud API (IMPORTANT for Linux deployment!)
+      - GRADIENT_API_KEY=${GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
+      - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-oss-120b}
+      - GRADIENT_BASE_URL=${GRADIENT_BASE_URL:-https://apis.gradient.network/api/v1}
+      # Application
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_DEV_MODE=${NEXT_PUBLIC_DEV_MODE:-false}
+      - ENABLE_TX_LOGGING=${ENABLE_TX_LOGGING:-true}
+      # Parallax (will use Gradient as fallback since not available on Linux)
+      - PARALLAX_SCHEDULER_URL=${PARALLAX_SCHEDULER_URL:-http://localhost:3001}
+      - PARALLAX_LOAD_BALANCING=${PARALLAX_LOAD_BALANCING:-latency-based}
+      - CLUSTER_MAX_RETRIES=${CLUSTER_MAX_RETRIES:-3}
+    networks:
+      - parallaxpay-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/cluster/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: parallaxpay-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - parallaxpay-network
+    depends_on:
+      - app
+
+  # Certbot for SSL (optional, for production domains)
+  certbot:
+    image: certbot/certbot
+    container_name: parallaxpay-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  parallaxpay-network:
+    driver: bridge
