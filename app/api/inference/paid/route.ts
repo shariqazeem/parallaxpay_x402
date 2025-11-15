@@ -4,18 +4,23 @@
  * This endpoint is protected by x402 payment middleware.
  * Clients must include X-PAYMENT header with valid payment to access.
  *
+ * Supports multiple AI backends:
+ * - Parallax Cluster (local distributed compute)
+ * - Gradient Cloud API (cloud fallback when Parallax unavailable)
+ *
  * Flow:
  * 1. Client requests inference
  * 2. Middleware returns 402 Payment Required
  * 3. Client creates payment and retries with X-PAYMENT header
- * 4. Middleware verifies payment via facilitator
- * 5. This handler runs inference on Parallax
+ * 4. Middleware verifies payment via facilitator (x402 Solana micropayment)
+ * 5. This handler routes to appropriate backend (Parallax or Gradient Cloud)
  * 6. Response includes inference result + X-PAYMENT-RESPONSE header with tx details
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClusterClient } from '@/lib/parallax-cluster'
 import { getProviderDiscoveryService } from '@/lib/provider-discovery'
+import { getRealProviderManager } from '@/lib/real-provider-manager'
 
 export interface InferenceRequest {
   messages: Array<{
@@ -57,51 +62,142 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create cluster client (automatically load-balances across available nodes)
-    const clusterClient = createClusterClient()
+    // Check if requesting a specific provider (e.g., Gradient Cloud)
+    const providerManager = getRealProviderManager()
 
-    // Check if any Parallax nodes are available
-    const discovery = getProviderDiscoveryService()
-    let onlineProviders = discovery.getOnlineProviders()
+    // Ensure providers are discovered before trying to get a specific one
+    let allProviders = providerManager.getAllProviders()
+    if (allProviders.length === 0) {
+      console.log('🔍 No providers in cache, discovering...')
+      await providerManager.discoverProviders()
+      allProviders = providerManager.getAllProviders()
+    }
 
-    // If no providers found, trigger immediate re-discovery
-    if (onlineProviders.length === 0) {
-      console.log('⚠️  No providers found, triggering immediate discovery...')
-      await discovery.discoverProviders()
-      onlineProviders = discovery.getOnlineProviders()
+    // Get requested provider by ID or name
+    let requestedProvider = body.provider ? providerManager.getProvider(body.provider) : null
 
-      // If still no providers after re-discovery, return error
-      if (onlineProviders.length === 0) {
-        const clusterUrls = process.env.PARALLAX_CLUSTER_URLS || process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001'
+    // If not found by ID, try matching by name
+    if (!requestedProvider && body.provider) {
+      requestedProvider = allProviders.find(p => p.name === body.provider) || null
+    }
+
+    console.log(`📋 Request details:`)
+    console.log(`   Requested provider: ${body.provider || 'auto-select'}`)
+    console.log(`   Found provider: ${requestedProvider ? `${requestedProvider.name} (${requestedProvider.type})` : 'none'}`)
+    console.log(`   Available providers: ${allProviders.map(p => `${p.name} (${p.id})`).join(', ')}`)
+
+    let inferenceResponse: any
+    let providerName: string
+    let modelName: string
+
+    // Route to appropriate backend based on provider type
+    if (requestedProvider && requestedProvider.type === 'gradient-cloud') {
+      // ==========================================
+      // GRADIENT CLOUD API PATH (with x402 payment)
+      // ==========================================
+      console.log('🌐 Using Gradient Cloud API backend (x402 payment applied)')
+
+      const apiKey = process.env.NEXT_PUBLIC_GRADIENT_API_KEY || process.env.GRADIENT_API_KEY
+      if (!apiKey) {
         return NextResponse.json(
           {
-            error: 'No Parallax nodes available',
-            details: `Please start Parallax cluster: ./scripts/start-parallax-cluster.sh\nOr manually: parallax run -m Qwen/Qwen3-0.6B -n 1 --host 0.0.0.0`,
-            clusterUrls: clusterUrls.split(','),
+            error: 'Gradient Cloud API not configured',
+            details: 'Set GRADIENT_API_KEY in environment variables',
           },
           { status: 503 }
         )
-      } else {
-        console.log(`✅ Discovery successful! Found ${onlineProviders.length} provider(s)`)
       }
+
+      // Call Gradient Cloud API
+      const gradientResponse = await fetch('https://apis.gradient.network/api/v1/ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: requestedProvider.model || 'openai/gpt-oss-120b',
+          messages: body.messages,
+          max_tokens: body.max_tokens || 512,
+          temperature: body.temperature || 0.7,
+          performance_type: 0,
+          stream: false,
+        }),
+      })
+
+      if (!gradientResponse.ok) {
+        const errorText = await gradientResponse.text()
+        console.error('❌ Gradient Cloud API error:', errorText)
+        return NextResponse.json(
+          {
+            error: 'Gradient Cloud API request failed',
+            details: errorText,
+          },
+          { status: gradientResponse.status }
+        )
+      }
+
+      inferenceResponse = await gradientResponse.json()
+      providerName = requestedProvider.name
+      modelName = requestedProvider.model
+    } else {
+      // ==========================================
+      // PARALLAX CLUSTER PATH (with x402 payment)
+      // ==========================================
+      console.log('💻 Using Parallax Cluster backend (x402 payment applied)')
+
+      // Create cluster client (automatically load-balances across available nodes)
+      const clusterClient = createClusterClient()
+
+      // Check if any Parallax nodes are available
+      const discovery = getProviderDiscoveryService()
+      let onlineProviders = discovery.getOnlineProviders()
+
+      // If no providers found, trigger immediate re-discovery
+      if (onlineProviders.length === 0) {
+        console.log('⚠️  No providers found, triggering immediate discovery...')
+        await discovery.discoverProviders()
+        onlineProviders = discovery.getOnlineProviders()
+
+        // If still no providers after re-discovery, return error
+        if (onlineProviders.length === 0) {
+          const clusterUrls = process.env.PARALLAX_CLUSTER_URLS || process.env.PARALLAX_SCHEDULER_URL || 'http://localhost:3001'
+          return NextResponse.json(
+            {
+              error: 'No providers available',
+              details: `No Parallax nodes or Gradient Cloud configured. Start Parallax: ./scripts/start-parallax-cluster.sh\nOr set GRADIENT_API_KEY for cloud fallback`,
+              clusterUrls: clusterUrls.split(','),
+            },
+            { status: 503 }
+          )
+        } else {
+          console.log(`✅ Discovery successful! Found ${onlineProviders.length} provider(s)`)
+        }
+      }
+
+      // Run inference with automatic load balancing
+      const strategy = (process.env.PARALLAX_LOAD_BALANCING as any) || 'latency-based'
+      const maxRetries = parseInt(process.env.CLUSTER_MAX_RETRIES || '3')
+
+      inferenceResponse = await clusterClient.inference(
+        {
+          messages: body.messages,
+          max_tokens: 512, // Balanced for M1 8GB RAM
+          temperature: body.temperature || 0.7,
+        },
+        {
+          strategy,
+          maxRetries,
+          fallbackToAny: true,
+        }
+      )
+
+      // Get provider info from cluster
+      const clusterStatus = clusterClient.getClusterStatus()
+      const selectedProvider = clusterStatus.providers.find(p => p.status === 'online')
+      providerName = selectedProvider?.name || body.provider || 'Parallax Cluster'
+      modelName = inferenceResponse.model || 'Qwen-0.5B'
     }
-
-    // Run inference with automatic load balancing
-    const strategy = (process.env.PARALLAX_LOAD_BALANCING as any) || 'latency-based'
-    const maxRetries = parseInt(process.env.CLUSTER_MAX_RETRIES || '3')
-
-    const inferenceResponse = await clusterClient.inference(
-      {
-        messages: body.messages,
-        max_tokens: 512, // Balanced for M1 8GB RAM
-        temperature: body.temperature || 0.7,
-      },
-      {
-        strategy,
-        maxRetries,
-        fallbackToAny: true,
-      }
-    )
 
     const latency = Date.now() - startTime
 
@@ -129,16 +225,10 @@ export async function POST(request: NextRequest) {
 
     if (!content) {
       return NextResponse.json(
-        { error: 'Empty response from Parallax' },
+        { error: 'Empty response from AI provider' },
         { status: 500 }
       )
     }
-
-    // Get provider info from cluster
-    const clusterStatus = clusterClient.getClusterStatus()
-    const selectedProvider = clusterStatus.providers.find(p => p.status === 'online')
-    const provider = selectedProvider?.name || body.provider || 'Parallax Cluster'
-    const model = inferenceResponse.model || 'Qwen-0.5B'
 
     // Extract payment transaction hash from request headers if available
     // This will be set by the x402 middleware after payment settlement
@@ -152,20 +242,21 @@ export async function POST(request: NextRequest) {
     const response: InferenceResponse = {
       response: content,
       tokens,
-      provider,
+      provider: providerName,
       cost,
       latency,
-      model,
+      model: modelName,
       ...(txHash && { txHash }),
     }
 
     // Log successful inference
     if (process.env.ENABLE_TX_LOGGING !== 'false') {
-      console.log(`✅ Paid inference completed`)
+      console.log(`✅ Paid inference completed (x402 payment verified)`)
       console.log(`   Tokens: ${tokens}`)
       console.log(`   Cost: $${cost.toFixed(6)}`)
       console.log(`   Latency: ${latency}ms`)
-      console.log(`   Provider: ${provider}`)
+      console.log(`   Provider: ${providerName}`)
+      console.log(`   Model: ${modelName}`)
       if (txHash) {
         console.log(`   TX Hash: ${txHash}`)
       }
@@ -195,11 +286,22 @@ export async function POST(request: NextRequest) {
  * Returns endpoint information (also protected by x402 payment)
  */
 export async function GET(request: NextRequest) {
+  const providerManager = getRealProviderManager()
+  const allProviders = providerManager.getAllProviders()
+  const providerList = allProviders.map(p => ({
+    id: p.id,
+    name: p.name,
+    type: p.type,
+    model: p.model,
+    online: p.online,
+  }))
+
   return NextResponse.json({
     endpoint: '/api/inference/paid',
-    description: 'AI Inference API with x402 micropayments',
-    price: '$0.001 per 1000 tokens',
+    description: 'AI Inference API with x402 Solana micropayments',
+    price: '$0.001 per request (covers ~1000 tokens)',
     network: process.env.X402_NETWORK || 'solana-devnet',
+    providers: providerList,
     method: 'POST',
     body: {
       messages: [
@@ -210,7 +312,7 @@ export async function GET(request: NextRequest) {
       ],
       max_tokens: 512,
       temperature: 0.7,
-      provider: 'optional-provider-id',
+      provider: 'optional-provider-id (e.g., "parallax-cluster" or "gradient-cloud")',
     },
     response: {
       response: 'AI generated response',
@@ -218,7 +320,7 @@ export async function GET(request: NextRequest) {
       provider: 'provider that fulfilled the request',
       cost: 'cost in USD',
       latency: 'response time in ms',
-      txHash: 'Solana transaction hash',
+      txHash: 'Solana transaction hash (x402 payment proof)',
     },
   })
 }

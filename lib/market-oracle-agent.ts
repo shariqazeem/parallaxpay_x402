@@ -245,16 +245,18 @@ REASONING: Price at ${pricePos}% of range shows ${marketData.priceChange24h > 1 
 YOU respond with YOUR analysis:`
 
         // Call inference endpoint with x402 payment
+        // Both Parallax and Gradient Cloud go through the same paid endpoint
         // Use client-side payment if fetchWithPayment provided, otherwise fall back to server-side
         const apiUrl = fetchWithPayment ? '/api/inference/paid' : '/api/oracle/inference'
         const fetchFn = fetchWithPayment || fetch
 
+        // Pass provider ID so endpoint can route to correct backend (Parallax or Gradient Cloud)
         const response = await fetchFn(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: [{ role: 'user', content: prompt }],
-            provider: provider.name,
+            provider: provider.id, // Use provider ID for routing (e.g., 'gradient-cloud')
             max_tokens: 512, // Increased to ensure complete oracle predictions
           })
         })
@@ -266,13 +268,14 @@ YOU respond with YOUR analysis:`
         const result = await response.json()
 
         // Handle both client-side (/api/inference/paid) and server-side (/api/oracle/inference) responses
+        // Both Parallax and Gradient Cloud use the same response format
         let aiResponse: string
         let latency: number
         let cost: number
         let txHash: string | undefined
 
         if (fetchWithPayment) {
-          // Client-side response from /api/inference/paid
+          // Client-side response from /api/inference/paid (both Parallax and Gradient Cloud)
           aiResponse = result.response || ''
           latency = result.latency || (Date.now() - predictionStart)
           cost = result.cost || 0.001
