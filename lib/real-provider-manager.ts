@@ -56,6 +56,32 @@ export class RealProviderManager {
 
   constructor() {
     console.log('🚀 RealProviderManager initialized')
+    // Initialize Gradient Cloud API as a permanent provider
+    this.initializeGradientProvider()
+  }
+
+  /**
+   * Initialize Gradient Cloud API as a permanent provider
+   */
+  private initializeGradientProvider() {
+    const gradientProvider: RealProvider = {
+      id: 'gradient-cloud-api',
+      url: 'https://apis.gradient.network/api/v1',
+      name: '🌐 Gradient Cloud API',
+      model: 'openai/gpt-oss-120b',
+      region: 'Global CDN',
+      port: 443,
+      online: true, // Always online (cloud service)
+      latency: 500, // ~500ms typical cloud latency
+      price: 0.00045, // $0.45 per 1M tokens output
+      uptime: 99.9, // Cloud SLA
+      lastHealthCheck: Date.now(),
+      successfulRequests: 0,
+      failedRequests: 0,
+    }
+
+    this.providers.set('gradient-cloud-api', gradientProvider)
+    console.log('✅ Gradient Cloud API added to provider manager')
   }
 
   /**
@@ -73,7 +99,8 @@ export class RealProviderManager {
 
     if (!health.online) {
       console.log('❌ Parallax cluster is offline')
-      return []
+      // Still return Gradient even if Parallax is offline
+      return Array.from(this.providers.values())
     }
 
     console.log(`✅ Parallax cluster online (${health.latency}ms)`)
@@ -99,7 +126,8 @@ export class RealProviderManager {
     console.log(`  ✓ ${provider.name} (${provider.latency}ms)`)
     console.log(`📊 Cluster ready - works with any number of connected workers`)
 
-    return [provider]
+    // Return all providers (Parallax + Gradient)
+    return Array.from(this.providers.values())
   }
 
   /**
