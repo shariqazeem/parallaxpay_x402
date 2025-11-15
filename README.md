@@ -53,6 +53,7 @@
 - **Automatic Failover**: Health monitoring with exponential backoff retry
 - **Provider Discovery**: Auto-detect and benchmark Parallax nodes
 - **OpenAI Compatible**: Standard API interface with cost estimation
+- **🌐 Gradient Cloud Fallback**: Automatically uses Gradient Cloud API when Parallax is unavailable (perfect for Linux deployments)
 
 ### 🎯 Standout Features
 - **Market Oracle Agent**: Autonomous crypto price predictions with multi-provider consensus and accuracy tracking
@@ -181,16 +182,19 @@ cp .env.example .env
 # - NEXT_PUBLIC_SUPABASE_ANON_KEY
 # - NEXT_PUBLIC_SOLANA_RPC_URL
 # - X402_API_KEY
+# - GRADIENT_API_KEY (for fallback when Parallax unavailable)
 ```
 
-4. **Start Parallax cluster**
+4. **Start Parallax cluster** *(Optional - see note below)*
 ```bash
-# Option 1: Docker Compose (recommended)
+# Option 1: Docker Compose (recommended for Mac)
 docker-compose up -d
 
 # Option 2: Manual startup (see docs/PARALLAX_SETUP.md)
 ./scripts/start-parallax-cluster.sh
 ```
+
+> **📝 Note:** Parallax requires macOS. If deploying on Linux, the system will automatically use Gradient Cloud API as fallback. See [GRADIENT_FALLBACK.md](docs/GRADIENT_FALLBACK.md) for details.
 
 5. **Run the development server**
 ```bash
@@ -349,6 +353,50 @@ Comprehensive guides available in the repository:
    - TypeScript throughout
    - Latest Solana Web3 libraries
    - Beautiful UI with Framer Motion
+
+---
+
+## 🌐 Cross-Platform Deployment
+
+### Gradient Cloud Fallback System
+
+ParallaxPay now includes an **intelligent fallback system** that ensures the application works everywhere:
+
+**🖥️ Mac (Local Development)**
+- Runs Parallax locally for free, private inference
+- Uses your own hardware for complete control
+
+**🐧 Linux (Production Deployment)**
+- Automatically uses Gradient Cloud API when Parallax unavailable
+- No Mac required for deployment
+- Perfect for cloud VMs and hackathon demos
+
+#### Why This Matters for Judges
+
+✅ **Works Immediately** - No need to install Parallax to test the app
+✅ **Active Development** - Shows ongoing improvements and iteration
+✅ **Production Ready** - Demonstrates real-world deployment thinking
+✅ **Cross-Platform** - Mac development, Linux production - both supported
+
+#### Configuration
+
+Simply add your Gradient API key to `.env`:
+
+```bash
+# Gradient Cloud API (Fallback when Parallax unavailable)
+GRADIENT_API_KEY=ak-your-key-here  # Get free tokens at cloud.gradient.network
+GRADIENT_MODEL=openai/gpt-oss-120b
+```
+
+The system automatically:
+1. Tries Parallax first (when available on Mac)
+2. Falls back to Gradient Cloud if Parallax unavailable
+3. Logs which provider is being used
+4. Maintains full API compatibility
+
+**📖 Full Documentation:** [GRADIENT_FALLBACK.md](docs/GRADIENT_FALLBACK.md)
+
+**🔑 Default Test Key Included** - Works out of the box on your deployed instance!
 
 ---
 

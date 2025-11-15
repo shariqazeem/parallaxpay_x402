@@ -1,12 +1,16 @@
 /**
- * Parallax Cluster Client
+ * Parallax Cluster Client with Gradient Fallback
  *
- * Intelligent client that automatically load-balances across multiple Parallax nodes
+ * Intelligent client that:
+ * 1. Load-balances across multiple Parallax nodes (when available)
+ * 2. Automatically falls back to Gradient Cloud API when Parallax is unavailable
+ *
  * Uses provider discovery to select the best node for each inference request
  */
 
 import { createParallaxClient, type ParallaxInferenceRequest, type ParallaxInferenceResponse } from './parallax-client'
 import { getProviderDiscoveryService, type LoadBalancingStrategy } from './provider-discovery'
+import { createUnifiedInferenceClient, type UnifiedInferenceRequest } from './unified-inference-client'
 
 export interface ClusterInferenceOptions {
   strategy?: LoadBalancingStrategy
@@ -22,6 +26,7 @@ export interface ClusterInferenceOptions {
 export class ParallaxClusterClient {
   private discoveryService = getProviderDiscoveryService()
   private defaultStrategy: LoadBalancingStrategy = 'latency-based'
+  private unifiedClient = createUnifiedInferenceClient()
 
   /**
    * Perform inference with automatic load balancing
@@ -99,15 +104,39 @@ export class ParallaxClusterClient {
   }
 
   /**
-   * Perform inference on specific provider
+   * Perform inference on specific provider or fallback to Gradient
    */
   private async performInference(
     schedulerUrl: string,
     request: ParallaxInferenceRequest,
     providerId: string
   ): Promise<ParallaxInferenceResponse> {
-    const client = createParallaxClient(schedulerUrl)
-    return await client.inference(request)
+    // First try the specific Parallax provider
+    try {
+      const client = createParallaxClient(schedulerUrl)
+      return await client.inference(request)
+    } catch (error) {
+      // If Parallax fails, try unified client (which will use Gradient as fallback)
+      console.log(`⚠️  Parallax provider ${providerId} failed, attempting Gradient fallback...`)
+
+      const unifiedRequest: UnifiedInferenceRequest = {
+        messages: request.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        maxTokens: request.max_tokens,
+        temperature: request.temperature,
+        stream: request.stream,
+      }
+
+      const response = await this.unifiedClient.inference(unifiedRequest)
+
+      if (response.provider === 'gradient') {
+        console.log('✅ Successfully fell back to Gradient Cloud API')
+      }
+
+      return response as ParallaxInferenceResponse
+    }
   }
 
   /**
