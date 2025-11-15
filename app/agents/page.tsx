@@ -1087,6 +1087,7 @@ export default function AgentDashboardPage() {
             }}
             walletAddress={publicKey?.toBase58()}
             selectedProvider={selectedProvider}
+            fetchWithPayment={fetchWithPayment}
           />
         )}
       </AnimatePresence>
@@ -2325,11 +2326,13 @@ function DeployAgentModal({
   onDeploy,
   walletAddress,
   selectedProvider,
+  fetchWithPayment,
 }: {
   onClose: () => void
   onDeploy: (agent: DeployedAgent) => void
   walletAddress?: string
   selectedProvider?: any
+  fetchWithPayment?: typeof fetch
 }) {
   const [name, setName] = useState('')
   const [type, setType] = useState<'market-oracle' | 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'blockchain-query'>('market-oracle')
@@ -2426,7 +2429,11 @@ function DeployAgentModal({
         // Use x402 payment flow for both providers
         console.log(`🤖 Testing agent with provider: ${selectedProvider?.name || 'auto-select'}`)
 
-        const response = await fetch('/api/inference/paid', {
+        if (!fetchWithPayment) {
+          throw new Error('Please connect your wallet to deploy and test agents with x402 payments')
+        }
+
+        const response = await fetchWithPayment('/api/inference/paid', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
