@@ -56,15 +56,15 @@ export class ParallaxClusterClient {
 
         if (!provider) {
           if (fallbackToAny) {
-            // Try first online provider
+            // Try first online provider (including Gradient)
             const onlineProviders = this.discoveryService.getOnlineProviders()
             if (onlineProviders.length > 0) {
               const fallbackProvider = onlineProviders[0]
-              console.log(`⚠️  No ideal provider, falling back to: ${fallbackProvider.name}`)
+              console.log(`⚠️  No Parallax provider available, using: ${fallbackProvider.name}`)
               return await this.performInference(fallbackProvider.address, request, fallbackProvider.id)
             }
           }
-          throw new Error('No Parallax providers available')
+          throw new Error('No providers available (Parallax offline, Gradient not configured)')
         }
 
         // Perform inference
@@ -99,7 +99,17 @@ export class ParallaxClusterClient {
       }
     }
 
-    // All attempts failed
+    // All attempts failed - try Gradient as last resort
+    console.log('⚠️  All providers failed, attempting Gradient Cloud API as last resort...')
+    try {
+      const gradientProvider = this.discoveryService.getProvider('gradient-cloud-api')
+      if (gradientProvider && gradientProvider.status === 'online') {
+        return await this.performInference(gradientProvider.address, request, gradientProvider.id)
+      }
+    } catch (gradientError) {
+      console.error('❌ Gradient fallback also failed:', gradientError)
+    }
+
     throw new Error(`Cluster inference failed after ${maxRetries} attempts: ${lastError?.message}`)
   }
 
