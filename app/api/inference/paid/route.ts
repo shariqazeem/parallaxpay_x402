@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📋 Request details:`)
     console.log(`   Requested provider: ${body.provider || 'auto-select'}`)
-    console.log(`   Found provider: ${requestedProvider ? `${requestedProvider.name} (${requestedProvider.type})` : 'none'}`)
+    console.log(`   Found provider: ${requestedProvider ? `${requestedProvider.name} (${requestedProvider.id}, type: ${requestedProvider.type || 'N/A'})` : 'none'}`)
     console.log(`   Available providers: ${allProviders.map(p => `${p.name} (${p.id})`).join(', ')}`)
 
     let inferenceResponse: any

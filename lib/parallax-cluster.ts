@@ -1,12 +1,16 @@
 /**
- * Parallax Cluster Client
+ * Parallax Cluster Client with Gradient Fallback
  *
- * Intelligent client that automatically load-balances across multiple Parallax nodes
+ * Intelligent client that:
+ * 1. Load-balances across multiple Parallax nodes (when available)
+ * 2. Automatically falls back to Gradient Cloud API when Parallax is unavailable
+ *
  * Uses provider discovery to select the best node for each inference request
  */
 
 import { createParallaxClient, type ParallaxInferenceRequest, type ParallaxInferenceResponse } from './parallax-client'
 import { getProviderDiscoveryService, type LoadBalancingStrategy } from './provider-discovery'
+import { createUnifiedInferenceClient, type UnifiedInferenceRequest } from './unified-inference-client'
 
 export interface ClusterInferenceOptions {
   strategy?: LoadBalancingStrategy
@@ -22,6 +26,7 @@ export interface ClusterInferenceOptions {
 export class ParallaxClusterClient {
   private discoveryService = getProviderDiscoveryService()
   private defaultStrategy: LoadBalancingStrategy = 'latency-based'
+  private unifiedClient = createUnifiedInferenceClient()
 
   /**
    * Perform inference with automatic load balancing
@@ -51,15 +56,15 @@ export class ParallaxClusterClient {
 
         if (!provider) {
           if (fallbackToAny) {
-            // Try first online provider
+            // Try first online provider (including Gradient)
             const onlineProviders = this.discoveryService.getOnlineProviders()
             if (onlineProviders.length > 0) {
               const fallbackProvider = onlineProviders[0]
-              console.log(`⚠️  No ideal provider, falling back to: ${fallbackProvider.name}`)
+              console.log(`⚠️  No Parallax provider available, using: ${fallbackProvider.name}`)
               return await this.performInference(fallbackProvider.address, request, fallbackProvider.id)
             }
           }
-          throw new Error('No Parallax providers available')
+          throw new Error('No providers available (Parallax offline, Gradient not configured)')
         }
 
         // Perform inference
@@ -94,20 +99,72 @@ export class ParallaxClusterClient {
       }
     }
 
-    // All attempts failed
+    // All attempts failed - try Gradient as last resort
+    console.log('⚠️  All providers failed, attempting Gradient Cloud API as last resort...')
+    try {
+      const gradientProvider = this.discoveryService.getProvider('gradient-cloud-api')
+      if (gradientProvider && gradientProvider.status === 'online') {
+        return await this.performInference(gradientProvider.address, request, gradientProvider.id)
+      }
+    } catch (gradientError) {
+      console.error('❌ Gradient fallback also failed:', gradientError)
+    }
+
     throw new Error(`Cluster inference failed after ${maxRetries} attempts: ${lastError?.message}`)
   }
 
   /**
-   * Perform inference on specific provider
+   * Perform inference on specific provider (Parallax or Gradient)
    */
   private async performInference(
     schedulerUrl: string,
     request: ParallaxInferenceRequest,
     providerId: string
   ): Promise<ParallaxInferenceResponse> {
-    const client = createParallaxClient(schedulerUrl)
-    return await client.inference(request)
+    // Check if this is Gradient Cloud API provider
+    if (providerId === 'gradient-cloud-api') {
+      console.log('🌐 Using Gradient Cloud API (selected from marketplace)')
+
+      const unifiedRequest: UnifiedInferenceRequest = {
+        messages: request.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        maxTokens: request.max_tokens,
+        temperature: request.temperature,
+        stream: request.stream,
+      }
+
+      const response = await this.unifiedClient.inference(unifiedRequest)
+      return response as ParallaxInferenceResponse
+    }
+
+    // Try Parallax provider
+    try {
+      const client = createParallaxClient(schedulerUrl)
+      return await client.inference(request)
+    } catch (error) {
+      // If Parallax fails, try unified client as fallback
+      console.log(`⚠️  Parallax provider ${providerId} failed, attempting Gradient fallback...`)
+
+      const unifiedRequest: UnifiedInferenceRequest = {
+        messages: request.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        maxTokens: request.max_tokens,
+        temperature: request.temperature,
+        stream: request.stream,
+      }
+
+      const response = await this.unifiedClient.inference(unifiedRequest)
+
+      if (response.provider === 'gradient') {
+        console.log('✅ Successfully fell back to Gradient Cloud API')
+      }
+
+      return response as ParallaxInferenceResponse
+    }
   }
 
   /**

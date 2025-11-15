@@ -58,6 +58,34 @@ export class RealProviderManager {
 
   constructor() {
     console.log('🚀 RealProviderManager initialized')
+    // Initialize Gradient Cloud API as a permanent provider
+    this.initializeGradientProvider()
+  }
+
+  /**
+   * Initialize Gradient Cloud API as a permanent provider
+   */
+  private initializeGradientProvider() {
+    const gradientProvider: RealProvider = {
+      id: 'gradient-cloud-api',
+      url: 'https://apis.gradient.network/api/v1',
+      name: '🌐 Gradient Cloud API',
+      model: 'openai/gpt-oss-120b',
+      region: 'Global CDN',
+      port: 443,
+      online: true, // Always online (cloud service)
+      latency: 500, // ~500ms typical cloud latency
+      price: 0.00045, // $0.45 per 1M tokens output
+      uptime: 99.9, // Cloud SLA
+      lastHealthCheck: Date.now(),
+      successfulRequests: 0,
+      failedRequests: 0,
+      type: 'gradient-cloud', // Type for routing
+      apiKey: process.env.NEXT_PUBLIC_GRADIENT_API_KEY || process.env.GRADIENT_API_KEY,
+    }
+
+    this.providers.set('gradient-cloud-api', gradientProvider)
+    console.log('✅ Gradient Cloud API added to provider manager')
   }
 
   /**
@@ -68,77 +96,43 @@ export class RealProviderManager {
    */
   async discoverProviders(): Promise<RealProvider[]> {
     console.log('🔍 Discovering available providers...')
-    const discoveredProviders: RealProvider[] = []
 
     // 1. Try to discover Parallax cluster
     console.log(`   Checking Parallax Scheduler: ${this.PARALLAX_CLUSTER.schedulerUrl}`)
     const health = await this.healthCheck(this.PARALLAX_CLUSTER.schedulerUrl)
 
-    if (health.online) {
-      console.log(`✅ Parallax cluster online (${health.latency}ms)`)
-
-      const parallaxProvider: RealProvider = {
-        id: 'parallax-cluster',
-        url: this.PARALLAX_CLUSTER.schedulerUrl,
-        name: 'Parallax Cluster',
-        model: this.PARALLAX_CLUSTER.model,
-        region: 'Local',
-        port: 3001,
-        online: health.online,
-        latency: health.latency,
-        price: this.calculateDynamicPrice(health.latency),
-        uptime: 100,
-        lastHealthCheck: Date.now(),
-        successfulRequests: 0,
-        failedRequests: 0,
-        type: 'parallax',
-      }
-
-      this.providers.set(parallaxProvider.id, parallaxProvider)
-      discoveredProviders.push(parallaxProvider)
-      console.log(`  ✓ ${parallaxProvider.name} (${parallaxProvider.latency}ms)`)
-    } else {
-      console.log('⚠️  Parallax cluster is offline')
+    if (!health.online) {
+      console.log('❌ Parallax cluster is offline')
+      // Still return Gradient even if Parallax is offline
+      return Array.from(this.providers.values())
     }
 
-    // 2. Add Gradient Cloud API if configured
-    const gradientApiKey = process.env.NEXT_PUBLIC_GRADIENT_API_KEY || process.env.GRADIENT_API_KEY
-    if (gradientApiKey) {
-      console.log('   Checking Gradient Cloud API...')
+    console.log(`✅ Parallax cluster online (${health.latency}ms)`)
 
-      const gradientProvider: RealProvider = {
-        id: 'gradient-cloud',
-        url: 'https://apis.gradient.network/api/v1/ai/chat/completions',
-        name: '🌐 Gradient Cloud API',
-        model: 'openai/gpt-oss-120b',
-        region: 'Cloud',
-        port: 443,
-        online: true, // Assume online if API key is configured
-        latency: 500, // Estimated cloud latency
-        price: 0.0002, // Cloud pricing
-        uptime: 99.9,
-        lastHealthCheck: Date.now(),
-        successfulRequests: 0,
-        failedRequests: 0,
-        type: 'gradient-cloud',
-        apiKey: gradientApiKey,
-      }
-
-      this.providers.set(gradientProvider.id, gradientProvider)
-      discoveredProviders.push(gradientProvider)
-      console.log(`  ✓ ${gradientProvider.name} (API key configured)`)
-    } else {
-      console.log('⚠️  Gradient Cloud API key not configured')
-      console.log('   Set GRADIENT_API_KEY or NEXT_PUBLIC_GRADIENT_API_KEY in .env to enable')
+    // Create single provider entry representing the entire cluster
+    const provider: RealProvider = {
+      id: 'parallax-cluster',
+      url: this.PARALLAX_CLUSTER.schedulerUrl,
+      name: 'Parallax Cluster',
+      model: this.PARALLAX_CLUSTER.model,
+      region: 'Local',
+      port: 3001,
+      online: health.online,
+      latency: health.latency,
+      price: this.calculateDynamicPrice(health.latency),
+      uptime: 100,
+      lastHealthCheck: Date.now(),
+      successfulRequests: 0,
+      failedRequests: 0,
+      type: 'parallax',
     }
 
-    if (discoveredProviders.length === 0) {
-      console.log('❌ No providers available')
-      return []
-    }
+    this.providers.set(provider.id, provider)
+    console.log(`  ✓ ${provider.name} (${provider.latency}ms)`)
+    console.log(`📊 Cluster ready - works with any number of connected workers`)
 
-    console.log(`📊 ${discoveredProviders.length} provider(s) ready`)
-    return discoveredProviders
+    // Return all providers (Parallax + Gradient)
+    return Array.from(this.providers.values())
   }
 
   /**
