@@ -104,19 +104,37 @@ export class ParallaxClusterClient {
   }
 
   /**
-   * Perform inference on specific provider or fallback to Gradient
+   * Perform inference on specific provider (Parallax or Gradient)
    */
   private async performInference(
     schedulerUrl: string,
     request: ParallaxInferenceRequest,
     providerId: string
   ): Promise<ParallaxInferenceResponse> {
-    // First try the specific Parallax provider
+    // Check if this is Gradient Cloud API provider
+    if (providerId === 'gradient-cloud-api') {
+      console.log('🌐 Using Gradient Cloud API (selected from marketplace)')
+
+      const unifiedRequest: UnifiedInferenceRequest = {
+        messages: request.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        maxTokens: request.max_tokens,
+        temperature: request.temperature,
+        stream: request.stream,
+      }
+
+      const response = await this.unifiedClient.inference(unifiedRequest)
+      return response as ParallaxInferenceResponse
+    }
+
+    // Try Parallax provider
     try {
       const client = createParallaxClient(schedulerUrl)
       return await client.inference(request)
     } catch (error) {
-      // If Parallax fails, try unified client (which will use Gradient as fallback)
+      // If Parallax fails, try unified client as fallback
       console.log(`⚠️  Parallax provider ${providerId} failed, attempting Gradient fallback...`)
 
       const unifiedRequest: UnifiedInferenceRequest = {
