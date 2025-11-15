@@ -1086,6 +1086,7 @@ export default function AgentDashboardPage() {
               }
             }}
             walletAddress={publicKey?.toBase58()}
+            selectedProvider={selectedProvider}
           />
         )}
       </AnimatePresence>
@@ -2323,10 +2324,12 @@ function DeployAgentModal({
   onClose,
   onDeploy,
   walletAddress,
+  selectedProvider,
 }: {
   onClose: () => void
   onDeploy: (agent: DeployedAgent) => void
   walletAddress?: string
+  selectedProvider?: any
 }) {
   const [name, setName] = useState('')
   const [type, setType] = useState<'market-oracle' | 'market-intel' | 'social-sentiment' | 'defi-yield' | 'portfolio' | 'composite' | 'custom' | 'blockchain-query'>('market-oracle')
@@ -2419,20 +2422,35 @@ function DeployAgentModal({
       if (type === 'composite') {
         content = `Composite Workflow Ready:\n\n${workflowSteps.map((s, i) => `${i + 1}. ${s.agentName}: "${s.prompt.substring(0, 50)}..."${s.useOutputFrom ? ` (uses output from Step ${i})` : ''}`).join('\n')}\n\nReady to orchestrate ${workflowSteps.length} agents!`
       } else {
-        // Run REAL Parallax inference to test regular agents
-        const { createParallaxClient } = await import('@/lib/parallax-client')
-        const client = createParallaxClient('http://localhost:3001')
+        // Run REAL AI inference using selected provider (Parallax or Gradient Cloud)
+        // Use x402 payment flow for both providers
+        console.log(`🤖 Testing agent with provider: ${selectedProvider?.name || 'auto-select'}`)
 
-        const response = await client.inference({
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 2000, // Increased to ensure complete responses (including reasoning)
+        const response = await fetch('/api/inference/paid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 2000,
+            provider: selectedProvider?.id, // Route to selected provider (Parallax or Gradient Cloud)
+          }),
         })
 
-        console.log('Agent deployment - Parallax response:', JSON.stringify(response, null, 2))
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Failed to connect to ${selectedProvider?.name || 'AI provider'}: ${errorText || response.statusText}`)
+        }
 
-        // Parse response - handle multiple formats
-        if (response.choices && response.choices.length > 0) {
-          const choice = response.choices[0] as any
+        const result = await response.json()
+        console.log('Agent deployment - Provider response:', JSON.stringify(result, null, 2))
+
+        // Handle the standardized response format from /api/inference/paid
+        // The response has a "response" field with the AI-generated content
+        content = result.response || ''
+
+        // If response field not found, try the old Parallax format as fallback
+        if (!content && result.choices && result.choices.length > 0) {
+          const choice = result.choices[0] as any
           console.log('Choice object:', JSON.stringify(choice, null, 2))
 
           // Try standard OpenAI format
@@ -2470,11 +2488,11 @@ function DeployAgentModal({
         console.log('Content after <think> cleanup:', content)
 
         if (!content) {
-          console.error('Failed to extract content. Full response:', response)
+          console.error('Failed to extract content. Full response:', result)
           throw new Error(
-            'Could not extract content from Parallax response. ' +
+            `Could not extract content from ${selectedProvider?.name || 'AI provider'} response. ` +
             'Check browser console for details. Response structure: ' +
-            JSON.stringify(response).substring(0, 200)
+            JSON.stringify(result).substring(0, 200)
           )
         }
       }
