@@ -78,6 +78,9 @@ export class ProviderDiscoveryService {
     // Note: Parallax uses scheduler+worker architecture, so we only monitor the scheduler
     const envUrls = process.env.PARALLAX_CLUSTER_URLS?.split(',').map(url => url.trim()).filter(Boolean)
     const singleUrl = process.env.PARALLAX_SCHEDULER_URL
+
+    // Add Gradient Cloud API as a permanent provider (always available)
+    this.initializeGradientProvider()
     const defaultUrls = ['http://localhost:3001']
 
     // Priority: passed URLs > CLUSTER_URLS env > SCHEDULER_URL env > default
@@ -85,6 +88,54 @@ export class ProviderDiscoveryService {
 
     console.log(`🌐 Parallax scheduler URL(s): ${this.schedulerUrls.join(', ')}`)
     console.log(`   (Scheduler handles worker distribution internally)`)
+  }
+
+  /**
+   * Initialize Gradient Cloud API as a permanent provider
+   */
+  private initializeGradientProvider() {
+    const gradientApiKey = process.env.GRADIENT_API_KEY || 'ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89'
+    const gradientModel = process.env.GRADIENT_MODEL || 'openai/gpt-oss-120b'
+
+    // Check if Gradient is configured
+    if (!gradientApiKey) {
+      console.log('⚠️  Gradient Cloud API key not configured - skipping Gradient provider')
+      return
+    }
+
+    const now = Date.now()
+    const gradientProvider: ProviderMetrics = {
+      id: 'gradient-cloud-api',
+      name: '🌐 Gradient Cloud API',
+      address: 'https://apis.gradient.network/api/v1',
+      status: 'online', // Always online (cloud service)
+
+      // Performance metrics (cloud API is consistently fast)
+      latency: 500, // ~500ms typical cloud latency
+      uptime: 99.9, // High uptime for cloud service
+      reputation: 95, // High reputation
+
+      // Capacity info
+      models: [gradientModel, 'openai/gpt-oss-120b', 'qwen/qwen3-coder-480b-instruct-fp8'],
+      gpu: 'Cloud GPU Pool', // Distributed cloud GPUs
+      region: 'Global CDN',
+
+      // Pricing (from Gradient Cloud)
+      price: 0.00045, // $0.45 per 1M tokens output = $0.00045 per 1K tokens
+
+      // Historical data
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+
+      // Timestamps
+      lastSeen: now,
+      firstSeen: now,
+      lastChecked: now,
+    }
+
+    this.providers.set('gradient-cloud-api', gradientProvider)
+    console.log('✅ Gradient Cloud API added as marketplace provider')
   }
 
   /**
@@ -189,8 +240,17 @@ export class ProviderDiscoveryService {
     const now = Date.now()
 
     for (const provider of this.providers.values()) {
+      // Skip Gradient Cloud API - it's always online (managed cloud service)
+      if (provider.id === 'gradient-cloud-api') {
+        provider.status = 'online'
+        provider.lastSeen = now
+        provider.lastChecked = now
+        provider.uptime = 99.9 // Cloud SLA
+        continue
+      }
+
       try {
-        // Test latency
+        // Test latency for Parallax providers
         const startTime = Date.now()
         const client = createParallaxClient(provider.address)
         const isOnline = await client.healthCheck()
