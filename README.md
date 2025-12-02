@@ -445,9 +445,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Contact & Links
 
 - **GitHub**: [shariqazeem/parallaxpay_x402](https://github.com/shariqazeem/parallaxpay_x402)
-- **Demo Video**: [YouTube Link](#) _(Add after recording)_
-- **Live Demo**: [https://parallaxpay.app](#) _(Add if deployed)_
-- **Twitter**: [@ParallaxPay](#) _(Add if available)_
+- **Demo Video**: [YouTube Link](https://x.com/shariqshkt/status/1988529505179451807?s=20) 
+- **Live Demo**: [https://parallaxpay.online](https://parallaxpay.online) 
+- **Twitter**: [@ParallaxPay](https://x.com/shariqshkt) 
 
 ---
 
