@@ -68,7 +68,7 @@ export class GradientClient {
     const body = {
       model: this.config.model,
       messages: request.messages,
-      max_tokens: request.maxTokens || 512,
+      max_tokens: request.maxTokens || 1024,
       temperature: request.temperature ?? 0.7,
       stream: request.stream ?? false,
     };

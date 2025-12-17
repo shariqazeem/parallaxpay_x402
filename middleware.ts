@@ -31,7 +31,7 @@ if (DEV_MODE) {
 }
 
 // Your Solana wallet address that receives payments
-const address = (process.env.SOLANA_WALLET_ADDRESS || '9qzmG8vPymc2CAMchZgq26qiUFq4pEfTx6HZfpMhh51y') as any
+const address = (process.env.SOLANA_WALLET_ADDRESS || 'EsWeMEvuLDV2Q4CXigZbETzqXfEQwZntQjwD4Cy8AgY5') as any
 
 // Network configuration
 const network = (process.env.X402_NETWORK || 'solana-devnet') as Network

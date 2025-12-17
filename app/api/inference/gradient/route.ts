@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model,
         messages: body.messages,
-        max_tokens: body.max_tokens || 512,
+        max_tokens: body.max_tokens || 1024,
         temperature: body.temperature || 0.7,
         performance_type: 0,
         stream: false, // Use non-streaming for simpler response handling
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
           content: 'Your prompt here',
         },
       ],
-      max_tokens: 512,
+      max_tokens: 1024,
       temperature: 0.7,
       model: 'openai/gpt-4o-mini',
     },

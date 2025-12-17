@@ -9,10 +9,28 @@
 
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { PublicKey, VersionedTransaction } from '@solana/web3.js'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import { base58 } from '@scure/base'
 
 export interface X402FetchOptions extends RequestInit {
   maxPaymentAmount?: number
+}
+
+// Global storage for last transaction signature
+let lastPaymentSignature: string | null = null
+
+/**
+ * Get the last payment transaction signature
+ */
+export function getLastPaymentSignature(): string | null {
+  return lastPaymentSignature
+}
+
+/**
+ * Clear the stored payment signature
+ */
+export function clearLastPaymentSignature(): void {
+  lastPaymentSignature = null
 }
 
 export function useX402Payment() {
@@ -43,7 +61,7 @@ export function useX402Payment() {
 
         console.log('🔑 Initializing Faremeter for connected wallet:', publicKey.toBase58())
 
-        // Create wallet interface for Faremeter
+        // Create wallet interface for Faremeter with signature capture
         const wallet = {
           network: 'devnet' as const,
           publicKey,
@@ -51,7 +69,31 @@ export function useX402Payment() {
             console.log('🔏 Signing payment transaction with connected wallet...')
             // Use connected wallet to sign
             const signed = await signTransaction(tx)
-            console.log('✅ Transaction signed')
+
+            // Capture the transaction signature after signing
+            if (signed.signatures && signed.signatures.length > 0) {
+              const sigBytes = signed.signatures[0]
+
+              // Check if we have a valid signature (64 bytes, not all zeros)
+              if (sigBytes && sigBytes.length === 64) {
+                // Check if signature has any non-zero bytes
+                const hasNonZero = sigBytes.some((b: number) => b !== 0)
+
+                if (hasNonZero) {
+                  try {
+                    const signature = base58.encode(sigBytes)
+                    // Skip if it's the placeholder signature (all 1s)
+                    if (!signature.startsWith('11111111111')) {
+                      lastPaymentSignature = signature
+                      console.log('✅ Transaction signed:', signature.substring(0, 20) + '...')
+                    }
+                  } catch (e) {
+                    console.warn('Failed to encode signature:', e)
+                  }
+                }
+              }
+            }
+
             return signed
           },
         }
@@ -102,10 +144,26 @@ export function useX402Payment() {
     [publicKey, signTransaction, fetchWithPayer]
   )
 
+  /**
+   * Get the last payment transaction signature
+   */
+  const getLastSignature = useCallback(() => {
+    return lastPaymentSignature
+  }, [])
+
+  /**
+   * Clear the last payment signature
+   */
+  const clearSignature = useCallback(() => {
+    lastPaymentSignature = null
+  }, [])
+
   return {
     fetchWithPayment,
     isWalletConnected: !!publicKey,
     walletPublicKey: publicKey,
     isReady: !!fetchWithPayer && !!publicKey,
+    getLastSignature,
+    clearSignature,
   }
 }

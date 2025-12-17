@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           model: requestedProvider.model || 'openai/gpt-4o-mini',
           messages: body.messages,
-          max_tokens: body.max_tokens || 512,
+          max_tokens: body.max_tokens || 1024,
           temperature: body.temperature || 0.7,
           performance_type: 0,
           stream: false,
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       inferenceResponse = await clusterClient.inference(
         {
           messages: body.messages,
-          max_tokens: 512, // Balanced for M1 8GB RAM
+          max_tokens: body.max_tokens || 1024, // Use request value or default to 1024
           temperature: body.temperature || 0.7,
         },
         {
@@ -310,9 +310,9 @@ export async function GET(request: NextRequest) {
           content: 'Your prompt here',
         },
       ],
-      max_tokens: 512,
+      max_tokens: 1024,
       temperature: 0.7,
-      provider: 'optional-provider-id (e.g., "parallax-cluster" or "gradient-cloud")',
+      provider: 'optional-provider-id (e.g., "gradient-cloud-api")',
     },
     response: {
       response: 'AI generated response',

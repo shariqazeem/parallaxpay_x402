@@ -245,7 +245,7 @@ function TradePanel({
   fetchWithPayment: (url: string, options?: RequestInit) => Promise<Response>
 }) {
   const [prompt, setPrompt] = useState('')
-  const [maxTokens, setMaxTokens] = useState(512) // Increased default to ensure complete responses
+  const [maxTokens, setMaxTokens] = useState(1024) // Higher default for complete AI responses
   const [isExecuting, setIsExecuting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

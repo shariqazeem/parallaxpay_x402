@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
                 content: finalPrompt,
               },
             ],
-            max_tokens: 512, // Increased to ensure complete composite agent responses
+            max_tokens: 1024, // Higher default for complete composite responses
             temperature: 0.7,
           },
           {

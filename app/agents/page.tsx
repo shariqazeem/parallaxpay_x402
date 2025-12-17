@@ -86,18 +86,18 @@ export default function AgentDashboardPage() {
   const [activeTab, setActiveTab] = useState<'my-agents' | 'builder' | 'marketplace'>('my-agents')
   const [isLoadingAgents, setIsLoadingAgents] = useState(true)
 
-  // Token controls for agent runs
-  const [maxTokens, setMaxTokens] = useState(512) // Increased default to ensure complete responses
+  // Token controls for agent runs - 1024 tokens ensures complete responses
+  const [maxTokens, setMaxTokens] = useState(1024) // Higher default for complete AI responses
   const fixedCost = 0.001 // Fixed $0.001 per request
 
   // Wallet connection for user payments
   const { publicKey } = useWallet()
-  const { fetchWithPayment, isWalletConnected } = useX402Payment()
+  const { fetchWithPayment, isWalletConnected, getLastSignature, clearSignature } = useX402Payment()
 
   // Global provider state from marketplace
   const { selectedProvider } = useProvider()
 
-  // Helper function to completely remove <think> tags from responses
+  // Helper function to completely remove <think> tags and clean AI responses
   const stripThinkTags = (text: string): string => {
     if (!text) return text
 
@@ -109,7 +109,34 @@ export default function AgentDashboardPage() {
       cleaned = cleaned.substring(0, cleaned.indexOf('<think>')).trim()
     }
 
+    // Clean up extra whitespace and newlines
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim()
+
     return cleaned || text // Return original if cleaning results in empty string
+  }
+
+  // Extract a nice summary from AI response for display
+  const extractResponseSummary = (text: string, maxLength: number = 500): string => {
+    if (!text) return 'No response'
+
+    const cleaned = stripThinkTags(text)
+
+    // If response is short enough, return as is
+    if (cleaned.length <= maxLength) return cleaned
+
+    // Try to find a natural break point
+    const truncated = cleaned.substring(0, maxLength)
+    const lastSentence = truncated.lastIndexOf('.')
+    const lastNewline = truncated.lastIndexOf('\n')
+
+    // Find the best break point
+    const breakPoint = Math.max(lastSentence, lastNewline)
+
+    if (breakPoint > maxLength * 0.5) {
+      return truncated.substring(0, breakPoint + 1) + '...'
+    }
+
+    return truncated + '...'
   }
 
   // Identity and scheduler managers (initialized client-side only)
@@ -722,7 +749,7 @@ export default function AgentDashboardPage() {
                 status: 'idle' as const,
                 totalRuns: a.totalRuns + 1,
                 lastRun: Date.now(),
-                lastResult: stripThinkTags(data.finalOutput || 'Workflow completed').substring(0, 200),
+                lastResult: extractResponseSummary(data.finalOutput || 'Workflow completed', 500),
                 provider: selectedProvider?.name || 'Parallax'
               }
             : a
@@ -807,6 +834,10 @@ export default function AgentDashboardPage() {
       console.log(`   Wallet: ${publicKey?.toBase58().substring(0, 20)}...`)
 
       // Call PROTECTED API endpoint with x402 payment using user's wallet
+      // Use provider ID (e.g., 'gradient-cloud-api') for proper routing
+      const providerId = selectedProvider?.id || 'gradient-cloud-api'
+      console.log(`   Using provider: ${selectedProvider?.name || 'Gradient Cloud'} (${providerId})`)
+
       const response = await fetchWithPayment('/api/inference/paid', {
         method: 'POST',
         headers: {
@@ -815,7 +846,7 @@ export default function AgentDashboardPage() {
         body: JSON.stringify({
           messages: [{ role: 'user', content: agent.prompt }],
           max_tokens: maxTokens, // User-specified token limit
-          provider: selectedProvider?.name, // Send selected provider from marketplace
+          provider: providerId, // Send provider ID for proper routing
         }),
       })
 
@@ -828,8 +859,11 @@ export default function AgentDashboardPage() {
 
       const latency = Date.now() - startTime
 
+      // Get the captured payment signature immediately after response
+      const paymentSignature = getLastSignature()
+
       console.log(`✅ [${agent.name}] Payment successful!`)
-      console.log(`   TX Hash: ${data.txHash || 'pending'}`)
+      console.log(`   TX Hash: ${paymentSignature || data.txHash || 'pending'}`)
       console.log(`   Cost: $${data.cost?.toFixed(6) || '0.001000'}`)
       console.log(`   Latency: ${latency}ms`)
 
@@ -855,13 +889,14 @@ export default function AgentDashboardPage() {
               status: 'idle' as const,
               totalRuns: a.totalRuns + 1,
               lastRun: Date.now(),
-              lastResult: stripThinkTags(data.response || 'Success').substring(0, 200),
+              lastResult: extractResponseSummary(data.response || 'Success', 500),
               provider: data.provider
             }
           : a
       ))
 
       // Add to trade feed with REAL transaction
+      const actualTxHash = paymentSignature || data.txHash || 'pending'
       const newTrade: Trade = {
         id: `trade-${Date.now()}`,
         agentName: agent.name,
@@ -869,10 +904,13 @@ export default function AgentDashboardPage() {
         tokens: data.tokens || 0,
         cost: data.cost || 0.001,
         timestamp: Date.now(),
-        txHash: data.txHash || 'pending',
+        txHash: actualTxHash,
         isReal: true,
       }
       setTrades(prev => [newTrade, ...prev.slice(0, 9)])
+
+      // Clear the signature for next request
+      clearSignature()
 
       // Store in Supabase for transaction history (PUBLIC - visible to all users)
       try {
@@ -884,7 +922,7 @@ export default function AgentDashboardPage() {
           provider: newTrade.provider,
           tokens: newTrade.tokens,
           cost: newTrade.cost,
-          tx_hash: newTrade.txHash,
+          tx_hash: actualTxHash,
           status: 'success',
           network: 'solana-devnet',
           wallet_address: publicKey?.toBase58(),
@@ -1647,11 +1685,12 @@ function AgentCard({
   const { attestBadge, attesting } = useBadgeAttestation()
   const [showAttestModal, setShowAttestModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showResponseModal, setShowResponseModal] = useState(false)
   const identityManager = getAgentIdentityManager()
 
   // Prevent body scroll when modal is open
   useEffect(() => {
-    if (showScheduleModal || showAttestModal) {
+    if (showScheduleModal || showAttestModal || showResponseModal) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
@@ -1659,7 +1698,7 @@ function AgentCard({
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [showScheduleModal, showAttestModal])
+  }, [showScheduleModal, showAttestModal, showResponseModal])
 
   const timeSince = Math.floor((Date.now() - agent.lastActionTime) / 1000)
   const timeStr =
@@ -1844,12 +1883,36 @@ function AgentCard({
           </div>
         </div>
 
-        {/* Last Action */}
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-          <div className="text-sm text-black font-medium mb-1 max-h-48 overflow-y-auto whitespace-pre-wrap break-words">
-            {agent.lastAction}
+        {/* Last Action / AI Response */}
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 p-4 rounded-lg border border-blue-200 mb-4 relative">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">🤖</span>
+              <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">AI Response</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">{timeStr}</span>
+              {agent.lastAction && agent.lastAction.length > 100 && (
+                <button
+                  onClick={() => setShowResponseModal(true)}
+                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded font-semibold transition-colors"
+                >
+                  View Full
+                </button>
+              )}
+            </div>
           </div>
-          <div className="text-xs text-gray-500 mt-2">{timeStr}</div>
+          <div className="text-sm text-gray-800 font-medium max-h-32 overflow-y-auto whitespace-pre-wrap break-words leading-relaxed">
+            {agent.lastAction || 'Ready to run - click "Run" to execute this agent'}
+          </div>
+          {agent.status === 'executing' && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                <span className="text-sm font-semibold text-blue-700">Processing...</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* AUTONOMOUS SCHEDULE STATUS - PROMINENT! */}
@@ -2038,6 +2101,70 @@ function AgentCard({
             >
               Close
             </button>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
+
+      {/* Full Response Modal */}
+      {showResponseModal && typeof window !== 'undefined' && createPortal(
+        <motion.div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowResponseModal(false)}
+        >
+          <motion.div
+            className="bg-white rounded-xl border-2 border-blue-200 p-6 max-w-3xl w-full max-h-[80vh] overflow-hidden shadow-xl flex flex-col"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-black mb-1 flex items-center gap-2">
+                  <span className="text-2xl">{agent.avatar}</span>
+                  {agent.name}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Full AI Response
+                </p>
+              </div>
+              <button
+                onClick={() => setShowResponseModal(false)}
+                className="text-gray-600 hover:text-black transition-colors text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+              <div className="prose prose-sm max-w-none">
+                <div className="text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+                  {agent.lastAction || 'No response yet'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(agent.lastAction || '')
+                  toast.success('Response copied to clipboard!')
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+              >
+                📋 Copy Response
+              </button>
+              <button
+                onClick={() => setShowResponseModal(false)}
+                className="flex-1 bg-black text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all"
+              >
+                Close
+              </button>
+            </div>
           </motion.div>
         </motion.div>,
         document.body

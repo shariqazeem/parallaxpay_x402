@@ -9,7 +9,7 @@ const handle = app.getRequestHandler();
 const PORT = process.env.PORT || 3000;
 
 // Your Solana wallet address (where you receive payments)
-const SOLANA_WALLET = '9qzmG8vPymc2CAMchZgq26qiUFq4pEfTx6HZfpMhh51y';
+const SOLANA_WALLET = 'EsWeMEvuLDV2Q4CXigZbETzqXfEQwZntQjwD4Cy8AgY5';
 
 app.prepare().then(() => {
   const server = express();
