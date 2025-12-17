@@ -15,7 +15,7 @@ services:
         - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://parallaxpay.online}
         # Gradient Cloud API (fallback)
         - GRADIENT_API_KEY=${GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
-        - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-oss-120b}
+        - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-4o-mini}
     container_name: parallaxpay-app
     restart: unless-stopped
     ports:
@@ -38,7 +38,7 @@ services:
       # Gradient Cloud API (IMPORTANT for Linux deployment!)
       - GRADIENT_API_KEY=${GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
       - NEXT_PUBLIC_GRADIENT_API_KEY=${NEXT_PUBLIC_GRADIENT_API_KEY:-ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89}
-      - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-oss-120b}
+      - GRADIENT_MODEL=${GRADIENT_MODEL:-openai/gpt-4o-mini}
       - GRADIENT_BASE_URL=${GRADIENT_BASE_URL:-https://apis.gradient.network/api/v1}
       # Application
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}

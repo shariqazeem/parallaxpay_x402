@@ -98,7 +98,7 @@ export class ProviderDiscoveryService {
    */
   private initializeGradientProvider() {
     const gradientApiKey = process.env.GRADIENT_API_KEY || 'ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89'
-    const gradientModel = process.env.GRADIENT_MODEL || 'openai/gpt-oss-120b'
+    const gradientModel = process.env.GRADIENT_MODEL || 'openai/gpt-4o-mini'
 
     // Check if Gradient is configured
     if (!gradientApiKey) {
@@ -119,7 +119,7 @@ export class ProviderDiscoveryService {
       reputation: 95, // High reputation
 
       // Capacity info
-      models: [gradientModel, 'openai/gpt-oss-120b', 'qwen/qwen3-coder-480b-instruct-fp8'],
+      models: [gradientModel, 'openai/gpt-4o-mini', 'openai/gpt-4o'],
       gpu: 'Cloud GPU Pool', // Distributed cloud GPUs
       region: 'Global CDN',
 

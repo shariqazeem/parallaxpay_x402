@@ -54,7 +54,7 @@ export class GradientClient {
     this.config = {
       apiKey: config.apiKey,
       baseUrl: config.baseUrl || 'https://apis.gradient.network/api/v1',
-      model: config.model || 'openai/gpt-oss-120b',
+      model: config.model || 'openai/gpt-4o-mini',
       timeout: config.timeout || 30000,
     };
   }
@@ -173,7 +173,7 @@ export function createGradientClient(apiKey?: string, model?: string): GradientC
 
   return new GradientClient({
     apiKey: key,
-    model: model || process.env.GRADIENT_MODEL || 'openai/gpt-oss-120b',
+    model: model || process.env.GRADIENT_MODEL || 'openai/gpt-4o-mini',
   });
 }
 

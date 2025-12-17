@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: requestedProvider.model || 'openai/gpt-oss-120b',
+          model: requestedProvider.model || 'openai/gpt-4o-mini',
           messages: body.messages,
           max_tokens: body.max_tokens || 512,
           temperature: body.temperature || 0.7,

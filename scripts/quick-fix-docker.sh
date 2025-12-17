@@ -40,7 +40,7 @@ else
     echo "" >> .env
     echo "# Gradient Cloud API" >> .env
     echo "GRADIENT_API_KEY=ak-f5a93640ff449cd3d44457a5be3172d212355e56fdc0709f0bd5d1a042bc0d89" >> .env
-    echo "GRADIENT_MODEL=openai/gpt-oss-120b" >> .env
+    echo "GRADIENT_MODEL=openai/gpt-4o-mini" >> .env
     echo "✅ Added default Gradient API key to .env"
 fi
 

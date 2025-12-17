@@ -385,7 +385,7 @@ Simply add your Gradient API key to `.env`:
 ```bash
 # Gradient Cloud API (Fallback when Parallax unavailable)
 GRADIENT_API_KEY=ak-your-key-here  # Get free tokens at cloud.gradient.network
-GRADIENT_MODEL=openai/gpt-oss-120b
+GRADIENT_MODEL=openai/gpt-4o-mini
 ```
 
 The system automatically:

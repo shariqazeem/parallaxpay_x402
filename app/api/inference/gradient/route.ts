@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Gradient Cloud API
-    const model = body.model || 'openai/gpt-oss-120b'
+    const model = body.model || 'openai/gpt-4o-mini'
     const gradientResponse = await fetch('https://apis.gradient.network/api/v1/ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
       ],
       max_tokens: 512,
       temperature: 0.7,
-      model: 'openai/gpt-oss-120b',
+      model: 'openai/gpt-4o-mini',
     },
     response: {
       response: 'AI generated response',

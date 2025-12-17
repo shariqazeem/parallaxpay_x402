@@ -71,7 +71,7 @@ export class RealProviderManager {
       id: 'gradient-cloud-api',
       url: 'https://apis.gradient.network/api/v1',
       name: '🌐 Gradient Cloud API',
-      model: 'openai/gpt-oss-120b',
+      model: 'openai/gpt-4o-mini',
       region: 'Global CDN',
       port: 443,
       online: true, // Always online (cloud service)

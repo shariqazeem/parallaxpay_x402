@@ -94,7 +94,7 @@ export class UnifiedInferenceClient {
       gradientModel:
         config.gradientModel ||
         process.env.GRADIENT_MODEL ||
-        'openai/gpt-oss-120b',
+        'openai/gpt-4o-mini',
       gradientBaseUrl:
         config.gradientBaseUrl ||
         process.env.GRADIENT_BASE_URL ||
