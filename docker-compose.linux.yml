@@ -52,11 +52,21 @@ services:
     networks:
       - parallaxpay-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/cluster/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
+    # Auto-restart on unhealthy status
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    # Memory limits to prevent OOM
+    mem_limit: 2g
+    memswap_limit: 2g
 
   # Nginx Reverse Proxy
   nginx:

@@ -41,6 +41,7 @@ export interface BenchmarkResult {
 export class RealProviderManager {
   private providers: Map<string, RealProvider> = new Map()
   private healthCheckInterval: NodeJS.Timeout | null = null
+  private isDestroyed: boolean = false
 
   // Parallax Cluster Configuration
   // Parallax uses scheduler+worker architecture:
@@ -317,26 +318,52 @@ export class RealProviderManager {
 
   /**
    * Start continuous health monitoring
+   * Uses sequential checks to avoid overwhelming providers
    */
   startHealthMonitoring(intervalMs: number = 30000) {
+    // Clear existing interval if any
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+    }
+
     console.log(`🔄 Starting health monitoring (every ${intervalMs}ms)`)
 
     this.healthCheckInterval = setInterval(async () => {
+      if (this.isDestroyed) return
+
       const providerIds = Array.from(this.providers.keys())
 
-      await Promise.all(providerIds.map(async (id) => {
+      // Sequential health checks to avoid overwhelming providers
+      for (const id of providerIds) {
+        if (this.isDestroyed) return // Check between each provider
+
         const provider = this.providers.get(id)
-        if (!provider) return
+        if (!provider) continue
 
-        const health = await this.healthCheck(provider.url)
-        provider.online = health.online
-        provider.latency = health.latency
-        provider.lastHealthCheck = Date.now()
-
-        if (health.online) {
-          provider.price = this.calculateDynamicPrice(health.latency)
+        // Skip Gradient Cloud API - it's always online
+        if (provider.type === 'gradient-cloud') {
+          provider.online = true
+          provider.lastHealthCheck = Date.now()
+          continue
         }
-      }))
+
+        try {
+          const health = await this.healthCheck(provider.url)
+          provider.online = health.online
+          provider.latency = health.latency
+          provider.lastHealthCheck = Date.now()
+
+          if (health.online) {
+            provider.price = this.calculateDynamicPrice(health.latency)
+          }
+        } catch (error) {
+          provider.online = false
+          provider.lastHealthCheck = Date.now()
+        }
+
+        // Small delay between checks to avoid overload
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
     }, intervalMs)
   }
 
@@ -349,6 +376,16 @@ export class RealProviderManager {
       this.healthCheckInterval = null
       console.log('⏹️ Health monitoring stopped')
     }
+  }
+
+  /**
+   * Clean up all resources (call on server shutdown)
+   */
+  destroy() {
+    this.isDestroyed = true
+    this.stopHealthMonitoring()
+    this.providers.clear()
+    console.log('🗑️ Provider manager destroyed')
   }
 
   /**

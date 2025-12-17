@@ -7,7 +7,7 @@
  * This replaces mock provider data with REAL provider discovery
  */
 
-import { createParallaxClient, type ParallaxProvider } from './parallax-client'
+import { createParallaxClient, ParallaxClient, type ParallaxProvider } from './parallax-client'
 
 export interface ProviderMetrics {
   id: string
@@ -72,6 +72,9 @@ export class ProviderDiscoveryService {
   private monitoringInterval: NodeJS.Timeout | null = null
   private updateCallbacks: Set<(snapshot: MarketSnapshot) => void> = new Set()
   private roundRobinIndex: number = 0
+  // Reuse client instances to avoid creating new ones on each check
+  private clientCache: Map<string, ParallaxClient> = new Map()
+  private isDestroyed: boolean = false
 
   constructor(schedulerUrls?: string[]) {
     // Support environment variable for scheduler URL
@@ -168,15 +171,42 @@ export class ProviderDiscoveryService {
   }
 
   /**
+   * Get or create a cached Parallax client for a URL
+   */
+  private getClient(url: string): ParallaxClient {
+    let client = this.clientCache.get(url)
+    if (!client) {
+      client = createParallaxClient(url)
+      this.clientCache.set(url, client)
+    }
+    return client
+  }
+
+  /**
+   * Clean up all resources (call on server shutdown)
+   */
+  destroy() {
+    this.isDestroyed = true
+    this.stop()
+    this.providers.clear()
+    this.updateCallbacks.clear()
+    this.clientCache.clear()
+    console.log('🗑️ Provider discovery service destroyed')
+  }
+
+  /**
    * Discover providers from Parallax schedulers
    * Made public so API endpoints can trigger immediate discovery
    */
   async discoverProviders(): Promise<void> {
+    if (this.isDestroyed) return
+
     const now = Date.now()
 
     for (const schedulerUrl of this.schedulerUrls) {
       try {
-        const client = createParallaxClient(schedulerUrl)
+        // Reuse cached client to avoid creating new connections
+        const client = this.getClient(schedulerUrl)
 
         // Check if scheduler is online
         const isOnline = await client.healthCheck()
@@ -235,11 +265,16 @@ export class ProviderDiscoveryService {
 
   /**
    * Update provider metrics (latency, uptime, etc.)
+   * Uses sequential checks to avoid overwhelming providers
    */
   private async updateMetrics(): Promise<void> {
+    if (this.isDestroyed) return
+
     const now = Date.now()
 
     for (const provider of this.providers.values()) {
+      if (this.isDestroyed) return // Check between each provider
+
       // Skip Gradient Cloud API - it's always online (managed cloud service)
       if (provider.id === 'gradient-cloud-api') {
         provider.status = 'online'
@@ -252,7 +287,8 @@ export class ProviderDiscoveryService {
       try {
         // Test latency for Parallax providers
         const startTime = Date.now()
-        const client = createParallaxClient(provider.address)
+        // Reuse cached client to avoid creating new connections
+        const client = this.getClient(provider.address)
         const isOnline = await client.healthCheck()
         const latency = Date.now() - startTime
 

@@ -48,6 +48,8 @@ export class AutonomousAgentScheduler {
   private schedules: Map<string, AgentSchedule> = new Map()
   private timers: Map<string, NodeJS.Timeout> = new Map()
   private executionHistory: ScheduledExecution[] = []
+  private hourlyResetInterval: NodeJS.Timeout | null = null
+  private readonly MAX_EXECUTION_HISTORY = 500 // Limit memory growth
   private executionCallback?: (agentId: string) => Promise<{
     success: boolean
     cost: number
@@ -215,9 +217,9 @@ export class AutonomousAgentScheduler {
 
     this.executionHistory.push(execution)
 
-    // Keep only last 1000 executions
-    if (this.executionHistory.length > 1000) {
-      this.executionHistory = this.executionHistory.slice(-1000)
+    // Keep only last MAX_EXECUTION_HISTORY executions to prevent memory growth
+    if (this.executionHistory.length > this.MAX_EXECUTION_HISTORY) {
+      this.executionHistory = this.executionHistory.slice(-this.MAX_EXECUTION_HISTORY)
     }
 
     this.saveToStorage()
@@ -326,7 +328,12 @@ export class AutonomousAgentScheduler {
    * Reset hourly counters
    */
   private startHourlyReset(): void {
-    setInterval(() => {
+    // Clear existing interval if any
+    if (this.hourlyResetInterval) {
+      clearInterval(this.hourlyResetInterval)
+    }
+
+    this.hourlyResetInterval = setInterval(() => {
       this.schedules.forEach(schedule => {
         schedule.executionsThisHour = 0
         schedule.spentThisHour = 0
@@ -382,11 +389,29 @@ export class AutonomousAgentScheduler {
    * Stop all schedules (cleanup)
    */
   stopAll(): void {
+    // Clear all agent timers
     this.timers.forEach((timer, agentId) => {
       clearTimeout(timer)
       this.stopAgent(agentId)
     })
-    console.log('⏹️ Stopped all agent schedules')
+
+    // Clear hourly reset interval
+    if (this.hourlyResetInterval) {
+      clearInterval(this.hourlyResetInterval)
+      this.hourlyResetInterval = null
+    }
+
+    console.log('⏹️ Stopped all agent schedules and cleanup complete')
+  }
+
+  /**
+   * Clean up resources (call on server shutdown)
+   */
+  destroy(): void {
+    this.stopAll()
+    this.schedules.clear()
+    this.executionHistory = []
+    console.log('🗑️ Agent scheduler destroyed')
   }
 }
 

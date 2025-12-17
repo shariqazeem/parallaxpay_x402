@@ -72,14 +72,51 @@ export class EnhancedOrderBook extends EventEmitter {
   private trades: Trade[] = []
   private providerAsks: Map<string, UserOrder> = new Map() // Provider sell orders
   private orderIdCounter = 0
+  private updateInterval: NodeJS.Timeout | null = null
+  private readonly MAX_TRADES = 500 // Limit trade history to prevent memory growth
 
   constructor() {
     super()
     console.log('🚀 ENHANCED ORDER BOOK - BEAST MODE ACTIVATED!')
     this.updateProviderAsks()
+    this.startUpdateInterval()
+  }
+
+  /**
+   * Start the provider asks update interval
+   */
+  private startUpdateInterval(): void {
+    // Clear existing interval if any
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval)
+    }
 
     // Auto-update provider asks every 5 seconds
-    setInterval(() => this.updateProviderAsks(), 5000)
+    this.updateInterval = setInterval(() => this.updateProviderAsks(), 5000)
+  }
+
+  /**
+   * Stop the update interval (cleanup)
+   */
+  stopUpdates(): void {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval)
+      this.updateInterval = null
+      console.log('⏹️ Order book updates stopped')
+    }
+  }
+
+  /**
+   * Clean up resources
+   */
+  destroy(): void {
+    this.stopUpdates()
+    this.userOrders.clear()
+    this.userPositions.clear()
+    this.providerAsks.clear()
+    this.trades = []
+    this.removeAllListeners()
+    console.log('🗑️ Order book destroyed')
   }
 
   /**
@@ -294,9 +331,9 @@ export class EnhancedOrderBook extends EventEmitter {
 
       this.trades.push(trade)
 
-      // Keep only last 1000 trades
-      if (this.trades.length > 1000) {
-        this.trades = this.trades.slice(-1000)
+      // Keep only last MAX_TRADES to prevent memory growth
+      if (this.trades.length > this.MAX_TRADES) {
+        this.trades = this.trades.slice(-this.MAX_TRADES)
       }
 
       // Update user positions
